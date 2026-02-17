@@ -1,0 +1,50 @@
+<!-- Placeholder for RJIT Sports Day -->
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="600" viewBox="0 0 800 600">
+  <defs>
+    <linearGradient id="fieldGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#68D391;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#48BB78;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+  
+  <!-- Sky -->
+  <rect width="800" height="300" fill="#87CEEB"/>
+  
+  <!-- Field -->
+  <rect y="300" width="800" height="300" fill="url(#fieldGrad)"/>
+  
+  <!-- Track lines -->
+  <ellipse cx="400" cy="450" rx="250" ry="120" fill="none" stroke="#C53030" stroke-width="8"/>
+  <ellipse cx="400" cy="450" rx="220" ry="100" fill="none" stroke="#E53E3E" stroke-width="6"/>
+  
+  <!-- Banners -->
+  <rect x="50" y="100" width="150" height="80" fill="#4299E1" rx="5"/>
+  <text x="125" y="145" font-family="Arial, sans-serif" font-size="20" font-weight="bold" fill="white" text-anchor="middle">RJIT</text>
+  
+  <rect x="600" y="100" width="150" height="80" fill="#F56565" rx="5"/>
+  <text x="675" y="145" font-family="Arial, sans-serif" font-size="18" font-weight="bold" fill="white" text-anchor="middle">SPORTS</text>
+  
+  <!-- Trophy -->
+  <rect x="360" y="380" width="80" height="10" fill="#D69E2E"/>
+  <path d="M 380 380 L 380 350 L 420 350 L 420 380" fill="#F6AD55"/>
+  <path d="M 370 350 L 400 320 L 430 350 Z" fill="#ECC94B"/>
+  <circle cx="400" cy="315" r="8" fill="#F6E05E"/>
+  
+  <!-- Stick figures (athletes) -->
+  <circle cx="300" cy="420" r="15" fill="#2D3748"/>
+  <line x1="300" y1="435" x2="300" y2="480" stroke="#2D3748" stroke-width="4"/>
+  <line x1="300" y1="450" x2="280" y2="470" stroke="#2D3748" stroke-width="4"/>
+  <line x1="300" y1="450" x2="320" y2="470" stroke="#2D3748" stroke-width="4"/>
+  <line x1="300" y1="480" x2="280" y2="510" stroke="#2D3748" stroke-width="4"/>
+  <line x1="300" y1="480" x2="320" y2="510" stroke="#2D3748" stroke-width="4"/>
+  
+  <circle cx="500" cy="430" r="15" fill="#2D3748"/>
+  <line x1="500" y1="445" x2="500" y2="490" stroke="#2D3748" stroke-width="4"/>
+  <line x1="500" y1="460" x2="480" y2="480" stroke="#2D3748" stroke-width="4"/>
+  <line x1="500" y1="460" x2="520" y2="480" stroke="#2D3748" stroke-width="4"/>
+  <line x1="500" y1="490" x2="480" y2="520" stroke="#2D3748" stroke-width="4"/>
+  <line x1="500" y1="490" x2="520" y2="520" stroke="#2D3748" stroke-width="4"/>
+  
+  <!-- Text -->
+  <text x="400" y="560" font-family="Arial, sans-serif" font-size="28" font-weight="bold" fill="#2D3748" text-anchor="middle">RJIT Sports Day 2025</text>
+</svg>

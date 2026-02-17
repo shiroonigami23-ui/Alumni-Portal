@@ -1,0 +1,28 @@
+# Production environment variables
+environment     = "production"
+aws_region      = "us-east-1"
+project_name    = "alumni-portal"
+
+# VPC Configuration
+vpc_cidr           = "10.0.0.0/16"
+availability_zones = ["us-east-1a", "us-east-1b"]
+
+# RDS PostgreSQL Configuration
+db_instance_class    = "db.t3.medium"
+db_name              = "alumni_portal"
+db_username          = "admin"
+# IMPORTANT: Set this to a secure password before deploying
+db_password          = "CHANGE_THIS_TO_SECURE_PASSWORD"
+db_allocated_storage = 20
+db_engine_version    = "15.4"
+
+# ECS Configuration
+ecs_task_cpu       = "512"
+ecs_task_memory    = "1024"
+ecs_desired_count  = 2
+
+# S3 Configuration
+s3_bucket_name = "alumni-portal-uploads-prod"
+
+# Domain
+domain_name = "alumni.yourinstitution.edu"

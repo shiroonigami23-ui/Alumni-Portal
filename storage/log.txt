@@ -1,0 +1,11 @@
+[2026-02-03 18:19:03] User ID: 34 | Action: SCHEDULE_POST | Details: Post scheduled for 2026-02-03 22:50:03 | IP: ::1
+[2026-02-03 18:35:28] User ID: 34 | Action: CREATE_POLL | Details: Poll created for Post ID: 1 | IP: ::1
+[2026-02-03 18:40:13] User ID: 1 | Action: END_POLL | Details: Poll ID 4 ended manually. | IP: ::1
+[2026-02-03 19:47:16] User ID: 34 | Action: MALICIOUS_UPLOAD | Details: User attempted to upload infected file: eicar_test.txt | IP: ::1
+[2026-02-03 19:47:42] User ID: 34 | Action: MALICIOUS_UPLOAD | Details: User attempted to upload infected file: eicar_test.txt | IP: ::1
+[2026-02-03 19:48:21] User ID: 34 | Action: MALICIOUS_UPLOAD | Details: User attempted to upload infected file: eicar_test.txt | IP: ::1
+[2026-02-03 19:49:03] User ID: 34 | Action: MALICIOUS_UPLOAD | Details: User attempted to upload infected file: eicar_test.txt | IP: ::1
+[2026-02-03 20:20:39] User ID: 39 | Action: KICK_USER | Details: User 37 suspended for 3 days. | IP: ::1
+[2026-02-03 20:25:05] User ID: 1 | Action: PERMANENT_BAN | Details: Admin banned user 37 | IP: ::1
+[2026-02-03 20:25:18] User ID: 1 | Action: USER_APPROVAL | Details: Target ID: 37 set to active | IP: ::1
+[2026-02-04 07:11:14] USER: 1 | ACTION: STREAM_START | DETAILS: Title: Final Backend Test | IP: ::1

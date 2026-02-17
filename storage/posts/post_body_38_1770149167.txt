@@ -1,0 +1,1 @@
+This post uses the exact database column names.

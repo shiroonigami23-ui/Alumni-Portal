@@ -1,0 +1,50 @@
+version: '3.8'
+
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "8080:80"
+    environment:
+      - DB_HOST=db
+      - DB_PORT=5432
+      - DB_NAME=alumni_portal
+      - DB_USER=postgres
+      - DB_PASSWORD=postgres
+      - APP_ENV=development
+      - APP_DEBUG=true
+    volumes:
+      - ./storage:/var/www/html/storage
+    depends_on:
+      - db
+    networks:
+      - alumni-network
+
+  db:
+    image: postgres:15-alpine
+    environment:
+      - POSTGRES_DB=alumni_portal
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    networks:
+      - alumni-network
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    networks:
+      - alumni-network
+
+volumes:
+  postgres-data:
+
+networks:
+  alumni-network:
+    driver: bridge

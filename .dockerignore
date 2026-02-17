@@ -1,0 +1,21 @@
+# Docker ignore file
+.git
+.gitignore
+.env
+.env.local
+README.md
+DEPLOYMENT.md
+*.md
+.vscode
+.idea
+node_modules
+vendor
+*.log
+*.sql
+*.bak
+test_*.ps1
+test_*.php
+debug.php
+db_test.php
+.DS_Store
+Thumbs.db

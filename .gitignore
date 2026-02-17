@@ -1,0 +1,103 @@
+# Environment files (NEVER COMMIT THESE)
+.env
+.env.*
+!.env.example
+.env.production
+.env.local
+.env.development
+
+# Terraform state files (contain sensitive data)
+*.tfstate
+*.tfstate.*
+*.tfvars
+!terraform.tfvars.example
+.terraform/
+.terraform.lock.hcl
+
+# AWS credentials
+.aws/
+credentials
+
+# Database dumps and backups
+*.sql
+*.dump
+*.bak
+deployment/db-backups/
+*.backup
+
+# Logs
+*.log
+logs/
+storage/logs/
+
+# OS files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Composer
+vendor/
+composer.lock
+
+# Node modules (if using)
+node_modules/
+package-lock.json
+yarn.lock
+
+# Build artifacts
+dist/
+build/
+
+# Uploaded files (local development)
+storage/uploads/
+storage/avatars/
+storage/documents/
+storage/profile_pictures/
+
+# Test files
+test_*.php
+test_*.ps1
+debug.php
+db_test.php
+
+# Temporary files
+*.tmp
+*.temp
+tmp/
+temp/
+
+# Docker volumes
+postgres-data/
+
+# Git
+.git/
+
+# Personal notes
+notes.md
+TODO.md
+
+# Secrets and keys
+*.pem
+*.key
+*.cert
+*.crt
+id_rsa*
+*.ppk
+
+# Database connection files with credentials
+config/database.local.php
+
+# Terraform outputs with sensitive data
+terraform-outputs.txt
+
+# Any file with 'secret' or 'private' in name
+*secret*
+*private*
+*credential*

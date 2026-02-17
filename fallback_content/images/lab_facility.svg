@@ -1,0 +1,42 @@
+<!-- Placeholder for RJIT Lab Facility -->
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="600" viewBox="0 0 800 600">
+  <defs>
+    <linearGradient id="labBg" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#F7FAFC;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#EDF2F7;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+  
+  <!-- Background -->
+  <rect width="800" height="600" fill="url(#labBg)"/>
+  
+  <!-- Desks -->
+  <rect x="50" y="350" width="150" height="80" fill="#8B4513" rx="5"/>
+  <rect x="250" y="350" width="150" height="80" fill="#8B4513" rx="5"/>
+  <rect x="450" y="350" width="150" height="80" fill="#8B4513" rx="5"/>
+  <rect x="650" y="350" width="100" height="80" fill="#8B4513" rx="5"/>
+  
+  <!-- Computers -->
+  <rect x="70" y="320" width="110" height="70" fill="#2D3748" rx="3"/>
+  <rect x="75" y="325" width="100" height="55" fill="#4299E1"/>
+  
+  <rect x="270" y="320" width="110" height="70" fill="#2D3748" rx="3"/>
+  <rect x="275" y="325" width="100" height="55" fill="#48BB78"/>
+  
+  <rect x="470" y="320" width="110" height="70" fill="#2D3748" rx="3"/>
+  <rect x="475" y="325" width="100" height="55" fill="#F56565"/>
+  
+  <!-- Ceiling lights -->
+  <rect x="100" y="50" width="120" height="20" fill="#FBD38D" opacity="0.8"/>
+  <rect x="350" y="50" width="120" height="20" fill="#FBD38D" opacity="0.8"/>
+  <rect x="600" y="50" width="120" height="20" fill="#FBD38D" opacity="0.8"/>
+  
+  <!-- Equipment shelves -->
+  <rect x="50" y="150" width="200" height="120" fill="#4A5568"/>
+  <line x1="50" y1="190" x2="250" y2="190" stroke="#718096" stroke-width="3"/>
+  <line x1="50" y1="230" x2="250" y2="230" stroke="#718096" stroke-width="3"/>
+  
+  <!-- Text -->
+  <text x="400" y="520" font-family="Arial, sans-serif" font-size="28" font-weight="bold" fill="#2D3748" text-anchor="middle">Computer Science Lab</text>
+  <text x="400" y="560" font-family="Arial, sans-serif" font-size="16" fill="#4A5568" text-anchor="middle">State-of-the-art Computing Facility</text>
+</svg>
