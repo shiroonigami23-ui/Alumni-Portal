@@ -1,0 +1,1045 @@
+{
+  "api_count": 77,
+  "model_count": 10,
+  "cron_count": 3,
+  "apis": [
+    {
+      "file": "add_comment.php",
+      "has_auth_include": true,
+      "uses_validateRequest": true,
+      "uses_authenticate": false,
+      "new_auth_no_db": false,
+      "uses_db_connect": false,
+      "uses_db_getConnection": true,
+      "has_method_guard": false,
+      "method_mentions": [],
+      "has_known_typo_file_get_content": false
+    },
+    {
+      "file": "add_reply.php",
+      "has_auth_include": true,
+      "uses_validateRequest": true,
+      "uses_authenticate": false,
+      "new_auth_no_db": false,
+      "uses_db_connect": false,
+      "uses_db_getConnection": true,
+      "has_method_guard": false,
+      "method_mentions": [],
+      "has_known_typo_file_get_content": false
+    },
+    {
+      "file": "admin_bulk_users.php",
+      "has_auth_include": true,
+      "uses_validateRequest": true,
+      "uses_authenticate": false,
+      "new_auth_no_db": false,
+      "uses_db_connect": false,
+      "uses_db_getConnection": true,
+      "has_method_guard": false,
+      "method_mentions": [],
+      "has_known_typo_file_get_content": false
+    },
+    {
+      "file": "admin_moderation.php",
+      "has_auth_include": true,
+      "uses_validateRequest": true,
+      "uses_authenticate": false,
+      "new_auth_no_db": false,
+      "uses_db_connect": false,
+      "uses_db_getConnection": true,
+      "has_method_guard": false,
+      "method_mentions": [],
+      "has_known_typo_file_get_content": false
+    },
+    {
+      "file": "admin_stats.php",
+      "has_auth_include": true,
+      "uses_validateRequest": true,
+      "uses_authenticate": false,
+      "new_auth_no_db": false,
+      "uses_db_connect": false,
+      "uses_db_getConnection": true,
+      "has_method_guard": false,
+      "method_mentions": [],
+      "has_known_typo_file_get_content": false
+    },
+    {
+      "file": "apply_job.php",
+      "has_auth_include": false,
+      "uses_validateRequest": false,
+      "uses_authenticate": true,
+      "new_auth_no_db": true,
+      "uses_db_connect": true,
+      "uses_db_getConnection": false,
+      "has_method_guard": false,
+      "method_mentions": [],
+      "has_known_typo_file_get_content": false
+    },
+    {
+      "file": "approve_announcement.php",
+      "has_auth_include": true,
+      "uses_validateRequest": true,
+      "uses_authenticate": false,
+      "new_auth_no_db": false,
+      "uses_db_connect": false,
+      "uses_db_getConnection": true,
+      "has_method_guard": false,
+      "method_mentions": [],
+      "has_known_typo_file_get_content": false
+    },
+    {
+      "file": "approve_event.php",
+      "has_auth_include": true,
+      "uses_validateRequest": true,
+      "uses_authenticate": false,
+      "new_auth_no_db": false,
+      "uses_db_connect": false,
+      "uses_db_getConnection": true,
+      "has_method_guard": false,
+      "method_mentions": [],
+      "has_known_typo_file_get_content": false
+    },
+    {
+      "file": "approve_user.php",
+      "has_auth_include": true,
+      "uses_validateRequest": true,
+      "uses_authenticate": false,
+      "new_auth_no_db": false,
+      "uses_db_connect": false,
+      "uses_db_getConnection": true,
+      "has_method_guard": false,
+      "method_mentions": [],
+      "has_known_typo_file_get_content": false
+    },
+    {
+      "file": "ban_user.php",
+      "has_auth_include": true,
+      "uses_validateRequest": true,
+      "uses_authenticate": false,
+      "new_auth_no_db": false,
+      "uses_db_connect": false,
+      "uses_db_getConnection": true,
+      "has_method_guard": false,
+      "method_mentions": [],
+      "has_known_typo_file_get_content": false
+    },
+    {
+      "file": "block_user.php",
+      "has_auth_include": true,
+      "uses_validateRequest": true,
+      "uses_authenticate": false,
+      "new_auth_no_db": false,
+      "uses_db_connect": false,
+      "uses_db_getConnection": true,
+      "has_method_guard": false,
+      "method_mentions": [],
+      "has_known_typo_file_get_content": false
+    },
+    {
+      "file": "cancel_rsvp.php",
+      "has_auth_include": true,
+      "uses_validateRequest": true,
+      "uses_authenticate": false,
+      "new_auth_no_db": false,
+      "uses_db_connect": false,
+      "uses_db_getConnection": true,
+      "has_method_guard": false,
+      "method_mentions": [],
+      "has_known_typo_file_get_content": false
+    },
+    {
+      "file": "create_announcement.php",
+      "has_auth_include": true,
+      "uses_validateRequest": true,
+      "uses_authenticate": false,
+      "new_auth_no_db": false,
+      "uses_db_connect": false,
+      "uses_db_getConnection": true,
+      "has_method_guard": false,
+      "method_mentions": [],
+      "has_known_typo_file_get_content": false
+    },
+    {
+      "file": "create_comment.php",
+      "has_auth_include": true,
+      "uses_validateRequest": true,
+      "uses_authenticate": false,
+      "new_auth_no_db": false,
+      "uses_db_connect": false,
+      "uses_db_getConnection": true,
+      "has_method_guard": false,
+      "method_mentions": [],
+      "has_known_typo_file_get_content": false
+    },
+    {
+      "file": "create_event.php",
+      "has_auth_include": true,
+      "uses_validateRequest": false,
+      "uses_authenticate": true,
+      "new_auth_no_db": true,
+      "uses_db_connect": true,
+      "uses_db_getConnection": false,
+      "has_method_guard": false,
+      "method_mentions": [],
+      "has_known_typo_file_get_content": false
+    },
+    {
+      "file": "create_poll.php",
+      "has_auth_include": true,
+      "uses_validateRequest": true,
+      "uses_authenticate": false,
+      "new_auth_no_db": false,
+      "uses_db_connect": false,
+      "uses_db_getConnection": true,
+      "has_method_guard": false,
+      "method_mentions": [],
+      "has_known_typo_file_get_content": false
+    },
+    {
+      "file": "create_post.php",
+      "has_auth_include": true,
+      "uses_validateRequest": true,
+      "uses_authenticate": false,
+      "new_auth_no_db": false,
+      "uses_db_connect": false,
+      "uses_db_getConnection": true,
+      "has_method_guard": false,
+      "method_mentions": [],
+      "has_known_typo_file_get_content": false
+    },
+    {
+      "file": "end_poll.php",
+      "has_auth_include": true,
+      "uses_validateRequest": true,
+      "uses_authenticate": false,
+      "new_auth_no_db": false,
+      "uses_db_connect": false,
+      "uses_db_getConnection": true,
+      "has_method_guard": false,
+      "method_mentions": [],
+      "has_known_typo_file_get_content": false
+    },
+    {
+      "file": "events.php",
+      "has_auth_include": true,
+      "uses_validateRequest": true,
+      "uses_authenticate": false,
+      "new_auth_no_db": false,
+      "uses_db_connect": false,
+      "uses_db_getConnection": true,
+      "has_method_guard": false,
+      "method_mentions": [],
+      "has_known_typo_file_get_content": false
+    },
+    {
+      "file": "export_data.php",
+      "has_auth_include": true,
+      "uses_validateRequest": true,
+      "uses_authenticate": false,
+      "new_auth_no_db": false,
+      "uses_db_connect": false,
+      "uses_db_getConnection": true,
+      "has_method_guard": false,
+      "method_mentions": [],
+      "has_known_typo_file_get_content": false
+    },
+    {
+      "file": "generate_token.php",
+      "has_auth_include": true,
+      "uses_validateRequest": true,
+      "uses_authenticate": false,
+      "new_auth_no_db": false,
+      "uses_db_connect": false,
+      "uses_db_getConnection": true,
+      "has_method_guard": false,
+      "method_mentions": [],
+      "has_known_typo_file_get_content": false
+    },
+    {
+      "file": "get_active_streams.php",
+      "has_auth_include": true,
+      "uses_validateRequest": false,
+      "uses_authenticate": false,
+      "new_auth_no_db": false,
+      "uses_db_connect": false,
+      "uses_db_getConnection": true,
+      "has_method_guard": false,
+      "method_mentions": [],
+      "has_known_typo_file_get_content": false
+    },
+    {
+      "file": "get_applicants.php",
+      "has_auth_include": true,
+      "uses_validateRequest": true,
+      "uses_authenticate": false,
+      "new_auth_no_db": false,
+      "uses_db_connect": false,
+      "uses_db_getConnection": true,
+      "has_method_guard": false,
+      "method_mentions": [],
+      "has_known_typo_file_get_content": false
+    },
+    {
+      "file": "get_badges.php",
+      "has_auth_include": true,
+      "uses_validateRequest": true,
+      "uses_authenticate": false,
+      "new_auth_no_db": false,
+      "uses_db_connect": false,
+      "uses_db_getConnection": true,
+      "has_method_guard": false,
+      "method_mentions": [],
+      "has_known_typo_file_get_content": false
+    },
+    {
+      "file": "get_comments.php",
+      "has_auth_include": false,
+      "uses_validateRequest": false,
+      "uses_authenticate": false,
+      "new_auth_no_db": false,
+      "uses_db_connect": false,
+      "uses_db_getConnection": true,
+      "has_method_guard": false,
+      "method_mentions": [],
+      "has_known_typo_file_get_content": false
+    },
+    {
+      "file": "get_event_attendees.php",
+      "has_auth_include": false,
+      "uses_validateRequest": false,
+      "uses_authenticate": false,
+      "new_auth_no_db": false,
+      "uses_db_connect": false,
+      "uses_db_getConnection": true,
+      "has_method_guard": false,
+      "method_mentions": [],
+      "has_known_typo_file_get_content": false
+    },
+    {
+      "file": "get_events.php",
+      "has_auth_include": true,
+      "uses_validateRequest": false,
+      "uses_authenticate": true,
+      "new_auth_no_db": true,
+      "uses_db_connect": true,
+      "uses_db_getConnection": false,
+      "has_method_guard": false,
+      "method_mentions": [],
+      "has_known_typo_file_get_content": false
+    },
+    {
+      "file": "get_feed.php",
+      "has_auth_include": true,
+      "uses_validateRequest": true,
+      "uses_authenticate": false,
+      "new_auth_no_db": false,
+      "uses_db_connect": false,
+      "uses_db_getConnection": true,
+      "has_method_guard": false,
+      "method_mentions": [],
+      "has_known_typo_file_get_content": false
+    },
+    {
+      "file": "get_inbox.php",
+      "has_auth_include": true,
+      "uses_validateRequest": true,
+      "uses_authenticate": false,
+      "new_auth_no_db": false,
+      "uses_db_connect": false,
+      "uses_db_getConnection": true,
+      "has_method_guard": false,
+      "method_mentions": [],
+      "has_known_typo_file_get_content": false
+    },
+    {
+      "file": "get_jobs.php",
+      "has_auth_include": false,
+      "uses_validateRequest": false,
+      "uses_authenticate": false,
+      "new_auth_no_db": false,
+      "uses_db_connect": false,
+      "uses_db_getConnection": true,
+      "has_method_guard": false,
+      "method_mentions": [],
+      "has_known_typo_file_get_content": false
+    },
+    {
+      "file": "get_messages.php",
+      "has_auth_include": true,
+      "uses_validateRequest": true,
+      "uses_authenticate": false,
+      "new_auth_no_db": false,
+      "uses_db_connect": false,
+      "uses_db_getConnection": true,
+      "has_method_guard": false,
+      "method_mentions": [],
+      "has_known_typo_file_get_content": true
+    },
+    {
+      "file": "get_notifications.php",
+      "has_auth_include": true,
+      "uses_validateRequest": true,
+      "uses_authenticate": false,
+      "new_auth_no_db": false,
+      "uses_db_connect": false,
+      "uses_db_getConnection": true,
+      "has_method_guard": false,
+      "method_mentions": [],
+      "has_known_typo_file_get_content": false
+    },
+    {
+      "file": "get_reports.php",
+      "has_auth_include": true,
+      "uses_validateRequest": true,
+      "uses_authenticate": false,
+      "new_auth_no_db": false,
+      "uses_db_connect": false,
+      "uses_db_getConnection": true,
+      "has_method_guard": false,
+      "method_mentions": [],
+      "has_known_typo_file_get_content": false
+    },
+    {
+      "file": "get_upcoming_events.php",
+      "has_auth_include": true,
+      "uses_validateRequest": true,
+      "uses_authenticate": false,
+      "new_auth_no_db": false,
+      "uses_db_connect": false,
+      "uses_db_getConnection": true,
+      "has_method_guard": false,
+      "method_mentions": [],
+      "has_known_typo_file_get_content": false
+    },
+    {
+      "file": "get_user_profile.php",
+      "has_auth_include": true,
+      "uses_validateRequest": true,
+      "uses_authenticate": false,
+      "new_auth_no_db": false,
+      "uses_db_connect": false,
+      "uses_db_getConnection": true,
+      "has_method_guard": false,
+      "method_mentions": [],
+      "has_known_typo_file_get_content": false
+    },
+    {
+      "file": "join_event.php",
+      "has_auth_include": true,
+      "uses_validateRequest": true,
+      "uses_authenticate": false,
+      "new_auth_no_db": false,
+      "uses_db_connect": false,
+      "uses_db_getConnection": true,
+      "has_method_guard": false,
+      "method_mentions": [],
+      "has_known_typo_file_get_content": false
+    },
+    {
+      "file": "kick_user.php",
+      "has_auth_include": true,
+      "uses_validateRequest": true,
+      "uses_authenticate": false,
+      "new_auth_no_db": false,
+      "uses_db_connect": false,
+      "uses_db_getConnection": true,
+      "has_method_guard": false,
+      "method_mentions": [],
+      "has_known_typo_file_get_content": false
+    },
+    {
+      "file": "login.php",
+      "has_auth_include": false,
+      "uses_validateRequest": false,
+      "uses_authenticate": false,
+      "new_auth_no_db": false,
+      "uses_db_connect": false,
+      "uses_db_getConnection": true,
+      "has_method_guard": false,
+      "method_mentions": [],
+      "has_known_typo_file_get_content": false
+    },
+    {
+      "file": "manage-post.php",
+      "has_auth_include": true,
+      "uses_validateRequest": true,
+      "uses_authenticate": false,
+      "new_auth_no_db": false,
+      "uses_db_connect": false,
+      "uses_db_getConnection": true,
+      "has_method_guard": false,
+      "method_mentions": [],
+      "has_known_typo_file_get_content": false
+    },
+    {
+      "file": "mark_notif_read.php",
+      "has_auth_include": true,
+      "uses_validateRequest": true,
+      "uses_authenticate": false,
+      "new_auth_no_db": false,
+      "uses_db_connect": false,
+      "uses_db_getConnection": true,
+      "has_method_guard": false,
+      "method_mentions": [],
+      "has_known_typo_file_get_content": false
+    },
+    {
+      "file": "master_search.php",
+      "has_auth_include": true,
+      "uses_validateRequest": true,
+      "uses_authenticate": false,
+      "new_auth_no_db": false,
+      "uses_db_connect": false,
+      "uses_db_getConnection": true,
+      "has_method_guard": false,
+      "method_mentions": [],
+      "has_known_typo_file_get_content": false
+    },
+    {
+      "file": "me.php",
+      "has_auth_include": true,
+      "uses_validateRequest": true,
+      "uses_authenticate": false,
+      "new_auth_no_db": false,
+      "uses_db_connect": false,
+      "uses_db_getConnection": true,
+      "has_method_guard": true,
+      "method_mentions": [
+        "OPTIONS"
+      ],
+      "has_known_typo_file_get_content": false
+    },
+    {
+      "file": "mentorship.php",
+      "has_auth_include": true,
+      "uses_validateRequest": true,
+      "uses_authenticate": false,
+      "new_auth_no_db": false,
+      "uses_db_connect": false,
+      "uses_db_getConnection": true,
+      "has_method_guard": false,
+      "method_mentions": [],
+      "has_known_typo_file_get_content": false
+    },
+    {
+      "file": "moderate_post.php",
+      "has_auth_include": true,
+      "uses_validateRequest": true,
+      "uses_authenticate": false,
+      "new_auth_no_db": false,
+      "uses_db_connect": false,
+      "uses_db_getConnection": true,
+      "has_method_guard": false,
+      "method_mentions": [],
+      "has_known_typo_file_get_content": false
+    },
+    {
+      "file": "pin_post.php",
+      "has_auth_include": true,
+      "uses_validateRequest": false,
+      "uses_authenticate": true,
+      "new_auth_no_db": true,
+      "uses_db_connect": true,
+      "uses_db_getConnection": false,
+      "has_method_guard": false,
+      "method_mentions": [],
+      "has_known_typo_file_get_content": false
+    },
+    {
+      "file": "post_job.php",
+      "has_auth_include": true,
+      "uses_validateRequest": true,
+      "uses_authenticate": false,
+      "new_auth_no_db": false,
+      "uses_db_connect": false,
+      "uses_db_getConnection": true,
+      "has_method_guard": false,
+      "method_mentions": [],
+      "has_known_typo_file_get_content": false
+    },
+    {
+      "file": "process_fake_report.php",
+      "has_auth_include": true,
+      "uses_validateRequest": true,
+      "uses_authenticate": false,
+      "new_auth_no_db": false,
+      "uses_db_connect": false,
+      "uses_db_getConnection": true,
+      "has_method_guard": false,
+      "method_mentions": [],
+      "has_known_typo_file_get_content": false
+    },
+    {
+      "file": "public_feed.php",
+      "has_auth_include": false,
+      "uses_validateRequest": false,
+      "uses_authenticate": false,
+      "new_auth_no_db": false,
+      "uses_db_connect": false,
+      "uses_db_getConnection": true,
+      "has_method_guard": false,
+      "method_mentions": [],
+      "has_known_typo_file_get_content": false
+    },
+    {
+      "file": "react_to_post.php",
+      "has_auth_include": true,
+      "uses_validateRequest": true,
+      "uses_authenticate": false,
+      "new_auth_no_db": false,
+      "uses_db_connect": false,
+      "uses_db_getConnection": true,
+      "has_method_guard": false,
+      "method_mentions": [],
+      "has_known_typo_file_get_content": false
+    },
+    {
+      "file": "register.php",
+      "has_auth_include": false,
+      "uses_validateRequest": false,
+      "uses_authenticate": false,
+      "new_auth_no_db": false,
+      "uses_db_connect": false,
+      "uses_db_getConnection": true,
+      "has_method_guard": false,
+      "method_mentions": [],
+      "has_known_typo_file_get_content": false
+    },
+    {
+      "file": "register_alumni.php",
+      "has_auth_include": false,
+      "uses_validateRequest": false,
+      "uses_authenticate": false,
+      "new_auth_no_db": false,
+      "uses_db_connect": false,
+      "uses_db_getConnection": true,
+      "has_method_guard": false,
+      "method_mentions": [],
+      "has_known_typo_file_get_content": false
+    },
+    {
+      "file": "register_faculty.php",
+      "has_auth_include": false,
+      "uses_validateRequest": false,
+      "uses_authenticate": false,
+      "new_auth_no_db": false,
+      "uses_db_connect": false,
+      "uses_db_getConnection": true,
+      "has_method_guard": false,
+      "method_mentions": [],
+      "has_known_typo_file_get_content": false
+    },
+    {
+      "file": "register_student.php",
+      "has_auth_include": false,
+      "uses_validateRequest": false,
+      "uses_authenticate": false,
+      "new_auth_no_db": false,
+      "uses_db_connect": false,
+      "uses_db_getConnection": true,
+      "has_method_guard": false,
+      "method_mentions": [],
+      "has_known_typo_file_get_content": false
+    },
+    {
+      "file": "report_content.php",
+      "has_auth_include": true,
+      "uses_validateRequest": true,
+      "uses_authenticate": false,
+      "new_auth_no_db": false,
+      "uses_db_connect": false,
+      "uses_db_getConnection": true,
+      "has_method_guard": false,
+      "method_mentions": [],
+      "has_known_typo_file_get_content": false
+    },
+    {
+      "file": "request_reset.php",
+      "has_auth_include": false,
+      "uses_validateRequest": false,
+      "uses_authenticate": false,
+      "new_auth_no_db": false,
+      "uses_db_connect": false,
+      "uses_db_getConnection": true,
+      "has_method_guard": false,
+      "method_mentions": [],
+      "has_known_typo_file_get_content": false
+    },
+    {
+      "file": "reset_password.php",
+      "has_auth_include": false,
+      "uses_validateRequest": false,
+      "uses_authenticate": false,
+      "new_auth_no_db": false,
+      "uses_db_connect": false,
+      "uses_db_getConnection": true,
+      "has_method_guard": false,
+      "method_mentions": [],
+      "has_known_typo_file_get_content": false
+    },
+    {
+      "file": "resources.php",
+      "has_auth_include": true,
+      "uses_validateRequest": true,
+      "uses_authenticate": false,
+      "new_auth_no_db": false,
+      "uses_db_connect": false,
+      "uses_db_getConnection": true,
+      "has_method_guard": false,
+      "method_mentions": [],
+      "has_known_typo_file_get_content": false
+    },
+    {
+      "file": "restore_content.php",
+      "has_auth_include": true,
+      "uses_validateRequest": true,
+      "uses_authenticate": false,
+      "new_auth_no_db": false,
+      "uses_db_connect": false,
+      "uses_db_getConnection": true,
+      "has_method_guard": false,
+      "method_mentions": [],
+      "has_known_typo_file_get_content": false
+    },
+    {
+      "file": "rsvp_event.php",
+      "has_auth_include": true,
+      "uses_validateRequest": true,
+      "uses_authenticate": false,
+      "new_auth_no_db": false,
+      "uses_db_connect": false,
+      "uses_db_getConnection": true,
+      "has_method_guard": false,
+      "method_mentions": [],
+      "has_known_typo_file_get_content": false
+    },
+    {
+      "file": "schedule_post.php",
+      "has_auth_include": true,
+      "uses_validateRequest": true,
+      "uses_authenticate": false,
+      "new_auth_no_db": false,
+      "uses_db_connect": false,
+      "uses_db_getConnection": true,
+      "has_method_guard": false,
+      "method_mentions": [],
+      "has_known_typo_file_get_content": false
+    },
+    {
+      "file": "search_alumni.php",
+      "has_auth_include": false,
+      "uses_validateRequest": false,
+      "uses_authenticate": false,
+      "new_auth_no_db": false,
+      "uses_db_connect": false,
+      "uses_db_getConnection": true,
+      "has_method_guard": false,
+      "method_mentions": [],
+      "has_known_typo_file_get_content": false
+    },
+    {
+      "file": "search_directory.php",
+      "has_auth_include": false,
+      "uses_validateRequest": true,
+      "uses_authenticate": false,
+      "new_auth_no_db": false,
+      "uses_db_connect": false,
+      "uses_db_getConnection": true,
+      "has_method_guard": false,
+      "method_mentions": [],
+      "has_known_typo_file_get_content": false
+    },
+    {
+      "file": "search_posts.php",
+      "has_auth_include": true,
+      "uses_validateRequest": true,
+      "uses_authenticate": false,
+      "new_auth_no_db": false,
+      "uses_db_connect": false,
+      "uses_db_getConnection": true,
+      "has_method_guard": false,
+      "method_mentions": [],
+      "has_known_typo_file_get_content": false
+    },
+    {
+      "file": "send_message.php",
+      "has_auth_include": true,
+      "uses_validateRequest": true,
+      "uses_authenticate": false,
+      "new_auth_no_db": false,
+      "uses_db_connect": false,
+      "uses_db_getConnection": true,
+      "has_method_guard": false,
+      "method_mentions": [],
+      "has_known_typo_file_get_content": false
+    },
+    {
+      "file": "success_stories.php",
+      "has_auth_include": true,
+      "uses_validateRequest": true,
+      "uses_authenticate": false,
+      "new_auth_no_db": false,
+      "uses_db_connect": false,
+      "uses_db_getConnection": true,
+      "has_method_guard": false,
+      "method_mentions": [],
+      "has_known_typo_file_get_content": false
+    },
+    {
+      "file": "test.php",
+      "has_auth_include": true,
+      "uses_validateRequest": true,
+      "uses_authenticate": false,
+      "new_auth_no_db": false,
+      "uses_db_connect": false,
+      "uses_db_getConnection": true,
+      "has_method_guard": false,
+      "method_mentions": [],
+      "has_known_typo_file_get_content": false
+    },
+    {
+      "file": "test_minimal.php",
+      "has_auth_include": true,
+      "uses_validateRequest": false,
+      "uses_authenticate": false,
+      "new_auth_no_db": false,
+      "uses_db_connect": false,
+      "uses_db_getConnection": true,
+      "has_method_guard": false,
+      "method_mentions": [],
+      "has_known_typo_file_get_content": false
+    },
+    {
+      "file": "toggle_stream.php",
+      "has_auth_include": true,
+      "uses_validateRequest": true,
+      "uses_authenticate": false,
+      "new_auth_no_db": false,
+      "uses_db_connect": false,
+      "uses_db_getConnection": true,
+      "has_method_guard": false,
+      "method_mentions": [],
+      "has_known_typo_file_get_content": false
+    },
+    {
+      "file": "unpin_post.php",
+      "has_auth_include": true,
+      "uses_validateRequest": false,
+      "uses_authenticate": true,
+      "new_auth_no_db": true,
+      "uses_db_connect": true,
+      "uses_db_getConnection": false,
+      "has_method_guard": false,
+      "method_mentions": [],
+      "has_known_typo_file_get_content": false
+    },
+    {
+      "file": "update_privacy.php",
+      "has_auth_include": true,
+      "uses_validateRequest": true,
+      "uses_authenticate": false,
+      "new_auth_no_db": false,
+      "uses_db_connect": false,
+      "uses_db_getConnection": true,
+      "has_method_guard": false,
+      "method_mentions": [],
+      "has_known_typo_file_get_content": false
+    },
+    {
+      "file": "update_profile.php",
+      "has_auth_include": true,
+      "uses_validateRequest": true,
+      "uses_authenticate": false,
+      "new_auth_no_db": false,
+      "uses_db_connect": false,
+      "uses_db_getConnection": true,
+      "has_method_guard": false,
+      "method_mentions": [],
+      "has_known_typo_file_get_content": false
+    },
+    {
+      "file": "upload.php",
+      "has_auth_include": true,
+      "uses_validateRequest": true,
+      "uses_authenticate": false,
+      "new_auth_no_db": false,
+      "uses_db_connect": false,
+      "uses_db_getConnection": true,
+      "has_method_guard": false,
+      "method_mentions": [],
+      "has_known_typo_file_get_content": false
+    },
+    {
+      "file": "upload_avatar.php",
+      "has_auth_include": true,
+      "uses_validateRequest": true,
+      "uses_authenticate": false,
+      "new_auth_no_db": false,
+      "uses_db_connect": false,
+      "uses_db_getConnection": true,
+      "has_method_guard": false,
+      "method_mentions": [],
+      "has_known_typo_file_get_content": false
+    },
+    {
+      "file": "upload_file.php",
+      "has_auth_include": true,
+      "uses_validateRequest": true,
+      "uses_authenticate": false,
+      "new_auth_no_db": false,
+      "uses_db_connect": false,
+      "uses_db_getConnection": true,
+      "has_method_guard": false,
+      "method_mentions": [],
+      "has_known_typo_file_get_content": false
+    },
+    {
+      "file": "upload_verification.php",
+      "has_auth_include": true,
+      "uses_validateRequest": true,
+      "uses_authenticate": false,
+      "new_auth_no_db": false,
+      "uses_db_connect": false,
+      "uses_db_getConnection": true,
+      "has_method_guard": false,
+      "method_mentions": [],
+      "has_known_typo_file_get_content": false
+    },
+    {
+      "file": "view_logs.php",
+      "has_auth_include": true,
+      "uses_validateRequest": true,
+      "uses_authenticate": false,
+      "new_auth_no_db": false,
+      "uses_db_connect": false,
+      "uses_db_getConnection": true,
+      "has_method_guard": false,
+      "method_mentions": [],
+      "has_known_typo_file_get_content": false
+    },
+    {
+      "file": "vote_poll.php",
+      "has_auth_include": true,
+      "uses_validateRequest": true,
+      "uses_authenticate": false,
+      "new_auth_no_db": false,
+      "uses_db_connect": false,
+      "uses_db_getConnection": true,
+      "has_method_guard": false,
+      "method_mentions": [],
+      "has_known_typo_file_get_content": false
+    }
+  ],
+  "models": [
+    {
+      "file": "Event.php",
+      "methods": [
+        "__construct",
+        "create",
+        "getById",
+        "getEvents",
+        "update",
+        "delete",
+        "approve",
+        "reject",
+        "cancel",
+        "rsvp",
+        "cancelRsvp",
+        "getAttendees",
+        "hasRsvp",
+        "getUserEvents"
+      ]
+    },
+    {
+      "file": "Job.php",
+      "methods": [
+        "__construct",
+        "create",
+        "getAll",
+        "getDescription"
+      ]
+    },
+    {
+      "file": "Mentorship.php",
+      "methods": [
+        "__construct",
+        "createRequest",
+        "updateStatus",
+        "getRequestsForMentor"
+      ]
+    },
+    {
+      "file": "Post.php",
+      "methods": [
+        "__construct",
+        "readPublic",
+        "getFileContent"
+      ]
+    },
+    {
+      "file": "Profile.php",
+      "methods": [
+        "__construct",
+        "update"
+      ]
+    },
+    {
+      "file": "Resource.php",
+      "methods": [
+        "__construct",
+        "create",
+        "getAll",
+        "trackDownload"
+      ]
+    },
+    {
+      "file": "Session.php",
+      "methods": [
+        "__construct",
+        "create",
+        "isValid"
+      ]
+    },
+    {
+      "file": "Stream.php",
+      "methods": [
+        "__construct",
+        "start",
+        "end"
+      ]
+    },
+    {
+      "file": "SuccessStory.php",
+      "methods": [
+        "__construct",
+        "create",
+        "getAll",
+        "getContent",
+        "approve"
+      ]
+    },
+    {
+      "file": "User.php",
+      "methods": [
+        "__construct",
+        "create",
+        "emailExists",
+        "login"
+      ]
+    }
+  ],
+  "crons": [
+    {
+      "file": "archive_old_posts.php",
+      "has_transaction": true
+    },
+    {
+      "file": "publish_posts.php",
+      "has_transaction": true
+    },
+    {
+      "file": "purge_archived_content.php",
+      "has_transaction": false
+    }
+  ]
+}

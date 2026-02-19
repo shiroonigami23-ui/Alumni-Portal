@@ -29,7 +29,7 @@ if (!empty($_GET['contact_id'])) {
         $full_path = dirname(__DIR__) . DIRECTORY_SEPARATOR . $msg['content_file_path'];
         
         // 2. Read content from the .txt file (Blueprint Section 1)
-        $content = file_exists($full_path) ? file_get_content($full_path) : "[Content Missing]";
+        $content = file_exists($full_path) ? file_get_contents($full_path) : "[Content Missing]";
 
         $history[] = [
             "message_id" => $msg['message_id'],

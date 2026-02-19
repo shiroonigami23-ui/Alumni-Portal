@@ -11,8 +11,21 @@ require_once __DIR__ . '/../config/Database.php';
 header('Content-Type: application/json');
 
 // Authenticate user
-$auth = new Auth();
-$user = $auth->authenticate();
+$database = new Database();
+$pdo = $database->getConnection();
+
+if (!$pdo) {
+    http_response_code(500);
+    echo json_encode(['message' => 'Database connection failed']);
+    exit;
+}
+
+$auth = new Auth($pdo);
+$user_id = $auth->validateRequest();
+
+$user_stmt = $pdo->prepare("SELECT user_id, role FROM users WHERE user_id = :uid");
+$user_stmt->execute(['uid' => $user_id]);
+$user = $user_stmt->fetch(PDO::FETCH_ASSOC);
 
 if (!$user) {
     http_response_code(401);
@@ -52,9 +65,6 @@ try {
         ]);
         exit;
     }
-    
-    $db = new Database();
-    $pdo = $db->connect();
     
     // Check if job exists
     $stmt = $pdo->prepare("SELECT job_id, company_name FROM jobs WHERE job_id = :job_id");

@@ -45,14 +45,23 @@ class Event {
             $status = ($user['role'] === 'faculty' || $user['role'] === 'admin') 
                       ? 'approved' : 'pending_approval';
 
+            $start_datetime = trim((string)$event_date . ' ' . (string)$event_time);
+            $end_datetime = null;
+            if (!empty($end_date)) {
+                $end_time_value = !empty($end_time) ? $end_time : '23:59:59';
+                $end_datetime = trim((string)$end_date . ' ' . (string)$end_time_value);
+            }
+
+            $location_type = !empty($live_stream_url) ? 'virtual' : 'physical';
+
             $query = "INSERT INTO " . $this->table . " 
-                     (creator_id, title, description, event_date, event_time, end_date, end_time, 
-                      location, visibility, rsvp_limit, banner_url, live_stream_url, 
-                      comments_enabled, status) 
+                     (creator_user_id, title, description, start_datetime, end_datetime, 
+                      location_type, location_address, virtual_link, visibility, rsvp_limit, 
+                      banner_image_url, has_live_stream, live_stream_url, status) 
                      VALUES 
-                     (:creator_id, :title, :description, :event_date, :event_time, :end_date, :end_time, 
-                      :location, :visibility::event_visibility, :rsvp_limit, :banner_url, :live_stream_url, 
-                      :comments_enabled, :status::event_status)
+                     (:creator_id, :title, :description, :start_datetime, :end_datetime, 
+                      :location_type, :location_address, :virtual_link, :visibility::event_visibility, :rsvp_limit, 
+                      :banner_url, :has_live_stream, :live_stream_url, :status::event_status)
                      RETURNING event_id";
 
             $stmt = $this->conn->prepare($query);
@@ -61,16 +70,16 @@ class Event {
                 'creator_id' => $creator_id,
                 'title' => $title,
                 'description' => $description,
-                'event_date' => $event_date,
-                'event_time' => $event_time,
-                'end_date' => $end_date,
-                'end_time' => $end_time,
-                'location' => $location,
+                'start_datetime' => $start_datetime,
+                'end_datetime' => $end_datetime,
+                'location_type' => $location_type,
+                'location_address' => $location_type === 'physical' ? $location : null,
+                'virtual_link' => $location_type === 'virtual' ? $live_stream_url : null,
                 'visibility' => $visibility,
                 'rsvp_limit' => $rsvp_limit,
                 'banner_url' => $banner_url,
+                'has_live_stream' => !empty($live_stream_url),
                 'live_stream_url' => $live_stream_url,
-                'comments_enabled' => $comments_enabled,
                 'status' => $status
             ]);
 
@@ -87,12 +96,18 @@ class Event {
      * Get event by ID
      */
     public function getById($event_id) {
-        $query = "SELECT e.*, 
+        $query = "SELECT e.*,
+                         DATE(e.start_datetime) AS event_date,
+                         TO_CHAR(e.start_datetime, 'HH24:MI:SS') AS event_time,
+                         DATE(e.end_datetime) AS end_date,
+                         TO_CHAR(e.end_datetime, 'HH24:MI:SS') AS end_time,
+                         COALESCE(e.location_address, e.virtual_link) AS location,
+                         e.banner_image_url AS banner_url,
                          p.full_name as creator_name,
                          p.profile_picture_url as creator_avatar,
                          u.role as creator_role
                   FROM " . $this->table . " e
-                  JOIN users u ON e.creator_id = u.user_id
+                  JOIN users u ON e.creator_user_id = u.user_id
                   JOIN profiles p ON u.user_id = p.user_id
                   WHERE e.event_id = :event_id";
         
@@ -114,42 +129,48 @@ class Event {
         
         switch($filter) {
             case 'upcoming':
-                $where_clauses[] = "e.event_date >= CURRENT_DATE";
+                $where_clauses[] = "DATE(e.start_datetime) >= CURRENT_DATE";
                 $where_clauses[] = "e.status = 'approved'::event_status";
-                $order = "ORDER BY e.event_date ASC, e.event_time ASC";
+                $order = "ORDER BY e.start_datetime ASC";
                 break;
             case 'past':
-                $where_clauses[] = "e.event_date < CURRENT_DATE";
+                $where_clauses[] = "DATE(e.start_datetime) < CURRENT_DATE";
                 $where_clauses[] = "e.status = 'approved'::event_status";
-                $order = "ORDER BY e.event_date DESC, e.event_time DESC";
+                $order = "ORDER BY e.start_datetime DESC";
                 break;
             case 'pending':
                 $where_clauses[] = "e.status = 'pending_approval'::event_status";
                 $order = "ORDER BY e.created_at DESC";
                 break;
             case 'all':
-                $order = "ORDER BY e.event_date DESC, e.event_time DESC";
+                $order = "ORDER BY e.start_datetime DESC";
                 break;
             default:
-                $where_clauses[] = "e.event_date >= CURRENT_DATE";
+                $where_clauses[] = "DATE(e.start_datetime) >= CURRENT_DATE";
                 $where_clauses[] = "e.status = 'approved'::event_status";
-                $order = "ORDER BY e.event_date ASC, e.event_time ASC";
+                $order = "ORDER BY e.start_datetime ASC";
         }
         
         if ($user_id !== null) {
-            $where_clauses[] = "e.creator_id = :user_id";
+            $where_clauses[] = "e.creator_user_id = :user_id";
         }
         
         $where = "WHERE " . implode(" AND ", $where_clauses);
         
-        $query = "SELECT e.*, 
+        $query = "SELECT e.*,
+                         DATE(e.start_datetime) AS event_date,
+                         TO_CHAR(e.start_datetime, 'HH24:MI:SS') AS event_time,
+                         DATE(e.end_datetime) AS end_date,
+                         TO_CHAR(e.end_datetime, 'HH24:MI:SS') AS end_time,
+                         COALESCE(e.location_address, e.virtual_link) AS location,
+                         e.banner_image_url AS banner_url,
                          p.full_name as creator_name,
                          p.profile_picture_url as creator_avatar,
                          u.role as creator_role,
                          e.rsvp_count,
                          e.waitlist_count
                   FROM " . $this->table . " e
-                  JOIN users u ON e.creator_id = u.user_id
+                  JOIN users u ON e.creator_user_id = u.user_id
                   JOIN profiles p ON u.user_id = p.user_id
                   $where
                   $order
@@ -338,22 +359,28 @@ class Event {
      */
     public function getUserEvents($user_id, $filter = 'upcoming') {
         $date_filter = ($filter === 'upcoming') 
-            ? "e.event_date >= CURRENT_DATE" 
-            : "e.event_date < CURRENT_DATE";
+            ? "DATE(e.start_datetime) >= CURRENT_DATE" 
+            : "DATE(e.start_datetime) < CURRENT_DATE";
         
-        $query = "SELECT e.*, 
+        $query = "SELECT e.*,
+                         DATE(e.start_datetime) AS event_date,
+                         TO_CHAR(e.start_datetime, 'HH24:MI:SS') AS event_time,
+                         DATE(e.end_datetime) AS end_date,
+                         TO_CHAR(e.end_datetime, 'HH24:MI:SS') AS end_time,
+                         COALESCE(e.location_address, e.virtual_link) AS location,
+                         e.banner_image_url AS banner_url,
                          p.full_name as creator_name,
                          p.profile_picture_url as creator_avatar,
                          u.role as creator_role,
                          er.rsvp_status
                   FROM event_rsvps er
                   JOIN " . $this->table . " e ON er.event_id = e.event_id
-                  JOIN users u ON e.creator_id = u.user_id
+                  JOIN users u ON e.creator_user_id = u.user_id
                   JOIN profiles p ON u.user_id = p.user_id
                   WHERE er.user_id = :user_id 
                     AND e.status = 'approved'::event_status
                     AND $date_filter
-                  ORDER BY e.event_date ASC, e.event_time ASC";
+                  ORDER BY e.start_datetime ASC";
         
         $stmt = $this->conn->prepare($query);
         $stmt->execute(['user_id' => $user_id]);

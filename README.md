@@ -259,6 +259,38 @@ aws logs tail /aws/alumni-portal --follow
 
 ### Metrics
 
+## Local Fallback (XAMPP + PostgreSQL)
+
+Use this when AWS is not available, so you can keep development and testing unblocked:
+
+1. Start Apache from XAMPP.
+2. Start PostgreSQL (port `5432`).
+3. Confirm DB:
+   - `C:\xampp\php\php.exe db_test.php`
+4. Open app:
+   - `http://localhost/alumni_portal`
+
+Auto-start fallback added:
+
+- Startup script: `C:\Users\shiro\AppData\Roaming\Microsoft\Windows\Start Menu\Programs\Startup\start_xampp_postgres.bat`
+- Behavior: checks `127.0.0.1:5432`; starts PostgreSQL only if it is down.
+
+## Local Verification Command
+
+Run:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\verify_local.ps1
+```
+
+Optional authenticated checks:
+
+```powershell
+$env:TEST_EMAIL="your_user@domain.com"
+$env:TEST_PASSWORD="your_password"
+powershell -ExecutionPolicy Bypass -File .\verify_local.ps1
+```
+
 Access CloudWatch dashboard for:
 - ECS service metrics
 - ALB request metrics

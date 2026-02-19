@@ -12,6 +12,7 @@ This guide will help you deploy the RJIT Alumni Portal to AWS with full producti
 - Terraform >= 1.0
 - Git
 - PostgreSQL client (for migrations)
+- Existing S3 bucket for Terraform backend state (`alumni-portal-terraform-state`) or update `terraform/main.tf` backend values
 
 ## Architecture Overview
 
@@ -113,6 +114,11 @@ terraform apply
 terraform output > ../deployment/terraform-outputs.txt
 ```
 
+Important:
+
+- If Terraform backend bucket does not exist yet, create it first or `terraform init` will fail.
+- If you deploy from Windows PowerShell, run equivalent commands directly instead of bash snippets.
+
 This will create:
 - VPC with public/private subnets across 2 AZs
 - RDS PostgreSQL database (Multi-AZ in production)
@@ -150,8 +156,11 @@ RDS_ENDPOINT=$(cd terraform && terraform output -raw rds_address)
 # Connect to database
 psql -h $RDS_ENDPOINT -U admin -d alumni_portal
 
-# Run your schema file
-psql -h $RDS_ENDPOINT -U admin -d alumni_portal < database/schema.sql
+# Option A: restore from local database dump
+./deployment/migrate-to-rds.sh
+
+# Option B: run your own schema/migrations if maintained separately
+# psql -h $RDS_ENDPOINT -U admin -d alumni_portal < path/to/schema.sql
 ```
 
 ### 6. Deploy Application

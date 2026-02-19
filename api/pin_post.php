@@ -13,8 +13,21 @@ header('Content-Type: application/json');
 
 $data = json_decode(file_get_contents("php://input"), true);
 
-$auth = new Auth();
-$user = $auth->authenticate();
+$database = new Database();
+$db = $database->getConnection();
+
+if (!$db) {
+    http_response_code(500);
+    echo json_encode(['message' => 'Database connection failed']);
+    exit;
+}
+
+$auth = new Auth($db);
+$user_id = $auth->validateRequest();
+
+$user_stmt = $db->prepare("SELECT user_id, role FROM users WHERE user_id = :uid");
+$user_stmt->execute(['uid' => $user_id]);
+$user = $user_stmt->fetch(PDO::FETCH_ASSOC);
 
 if (!$user) {
     http_response_code(401);
@@ -27,9 +40,6 @@ if (!isset($data['post_id'])) {
     echo json_encode(['message' => 'post_id required']);
     exit;
 }
-
-$database = new Database();
-$db = $database->connect();
 
 try {
     // Check if post exists and belongs to user

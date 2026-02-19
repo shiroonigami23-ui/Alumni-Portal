@@ -1,0 +1,15 @@
+{
+  "api_count": 77,
+  "apis_with_legacy_auth_pattern": [
+    "apply_job.php",
+    "create_event.php",
+    "get_events.php",
+    "pin_post.php",
+    "unpin_post.php"
+  ],
+  "legacy_auth_count": 5,
+  "apis_without_method_guard": 76,
+  "apis_with_file_get_content_typo": [
+    "get_messages.php"
+  ]
+}

@@ -10,9 +10,28 @@ require_once '../models/Event.php';
 
 header('Content-Type: application/json');
 
+// Connect to database
+$database = new Database();
+$db = $database->getConnection();
+
+if (!$db) {
+    http_response_code(500);
+    echo json_encode(['message' => 'Database connection failed']);
+    exit;
+}
+
 // Authenticate user (optional for public events)
-$auth = new Auth();
-$user = $auth->authenticate(false); // Don't require auth
+$user = null;
+$headers = function_exists('apache_request_headers') ? apache_request_headers() : $_SERVER;
+$authHeader = $headers['Authorization'] ?? ($headers['authorization'] ?? ($_SERVER['HTTP_AUTHORIZATION'] ?? null));
+
+if ($authHeader && preg_match('/Bearer\s(\S+)/', $authHeader)) {
+    $auth = new Auth($db);
+    $user_id = $auth->validateRequest();
+    $user_stmt = $db->prepare("SELECT user_id, role FROM users WHERE user_id = :uid");
+    $user_stmt->execute(['uid' => $user_id]);
+    $user = $user_stmt->fetch(PDO::FETCH_ASSOC);
+}
 
 // Get query parameters
 $filter = $_GET['filter'] ?? 'upcoming'; // upcoming, past, pending, my_events, all
@@ -20,9 +39,6 @@ $user_id = $_GET['user_id'] ?? null;
 $limit = isset($_GET['limit']) ? (int)$_GET['limit'] : 20;
 $offset = isset($_GET['offset']) ? (int)$_GET['offset'] : 0;
 
-// Connect to database
-$database = new Database();
-$db = $database->connect();
 $eventModel = new Event($db);
 
 // Handle "my_events" filter

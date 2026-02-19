@@ -14,9 +14,22 @@ header('Content-Type: application/json');
 // Get POST data
 $data = json_decode(file_get_contents("php://input"), true);
 
-// Authenticate user
-$auth = new Auth();
-$user = $auth->authenticate();
+// Connect to database and authenticate user
+$database = new Database();
+$db = $database->getConnection();
+
+if (!$db) {
+    http_response_code(500);
+    echo json_encode(['message' => 'Database connection failed']);
+    exit;
+}
+
+$auth = new Auth($db);
+$user_id = $auth->validateRequest();
+
+$user_stmt = $db->prepare("SELECT user_id, role FROM users WHERE user_id = :uid");
+$user_stmt->execute(['uid' => $user_id]);
+$user = $user_stmt->fetch(PDO::FETCH_ASSOC);
 
 if (!$user) {
     http_response_code(401);
@@ -38,16 +51,19 @@ if (!isset($data['title']) || !isset($data['description']) || !isset($data['even
     exit;
 }
 
-// Connect to database
-$database = new Database();
-$db = $database->connect();
 $eventModel = new Event($db);
 
 // Handle description file storage
 $description_file_path = null;
 if (!empty($data['description'])) {
-    $description_file_path = 'storage/events/event_desc_' . time() . '.txt';
-    file_put_contents($description_file_path, $data['description']);
+    $events_dir = dirname(__DIR__) . DIRECTORY_SEPARATOR . 'storage' . DIRECTORY_SEPARATOR . 'events';
+    if (!is_dir($events_dir)) {
+        mkdir($events_dir, 0755, true);
+    }
+    $description_filename = 'event_desc_' . time() . '.txt';
+    $description_absolute_path = $events_dir . DIRECTORY_SEPARATOR . $description_filename;
+    file_put_contents($description_absolute_path, $data['description']);
+    $description_file_path = 'storage/events/' . $description_filename;
 }
 
 // Extract event data
@@ -57,7 +73,7 @@ $event_date = $data['event_date'];
 $event_time = $data['event_time'] ?? '00:00:00';
 $end_date = $data['end_date'] ?? null;
 $end_time = $data['end_time'] ?? null;
-$location = $data['location'] ?? null;
+$location = $data['location'] ?? 'TBD';
 $visibility = $data['visibility'] ?? 'public';
 $rsvp_limit = $data['rsvp_limit'] ?? null;
 $banner_url = $data['banner_url'] ?? null;

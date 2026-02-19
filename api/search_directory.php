@@ -41,6 +41,14 @@ $search = $_GET['search'] ?? null; // General search term
 try {
     // Re-using $pdo from above
 
+    $roleStmt = $pdo->prepare("SELECT role FROM users WHERE user_id = :uid");
+    $roleStmt->execute(['uid' => $user_id]);
+    $currentUserRole = $roleStmt->fetchColumn();
+    if (!$currentUserRole) {
+        http_response_code(401);
+        echo json_encode(['message' => 'Unauthorized user']);
+        exit;
+    }
 
     // Base query - join users, profiles, and aggregate tech skills
     $query = "
@@ -125,7 +133,7 @@ try {
     }
 
     // Exclude private profiles (unless admin)
-    if ($user['role'] !== 'admin') {
+    if ($currentUserRole !== 'admin') {
         $query .= " AND p.is_private = FALSE";
     }
 

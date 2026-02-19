@@ -1,0 +1,399 @@
+{
+    "summary":  {
+                    "timestamp":  "2026-02-20T00:39:07",
+                    "total":  77,
+                    "fatal_count":  0,
+                    "status_200":  11,
+                    "status_401":  62,
+                    "status_403":  0,
+                    "status_405":  0,
+                    "status_other":  4
+                },
+    "results":  [
+                    {
+                        "file":  "add_comment.php",
+                        "status":  401,
+                        "fatal":  false
+                    },
+                    {
+                        "file":  "add_reply.php",
+                        "status":  401,
+                        "fatal":  false
+                    },
+                    {
+                        "file":  "admin_bulk_users.php",
+                        "status":  401,
+                        "fatal":  false
+                    },
+                    {
+                        "file":  "admin_moderation.php",
+                        "status":  401,
+                        "fatal":  false
+                    },
+                    {
+                        "file":  "admin_stats.php",
+                        "status":  401,
+                        "fatal":  false
+                    },
+                    {
+                        "file":  "apply_job.php",
+                        "status":  401,
+                        "fatal":  false
+                    },
+                    {
+                        "file":  "approve_announcement.php",
+                        "status":  401,
+                        "fatal":  false
+                    },
+                    {
+                        "file":  "approve_event.php",
+                        "status":  401,
+                        "fatal":  false
+                    },
+                    {
+                        "file":  "approve_user.php",
+                        "status":  401,
+                        "fatal":  false
+                    },
+                    {
+                        "file":  "ban_user.php",
+                        "status":  401,
+                        "fatal":  false
+                    },
+                    {
+                        "file":  "block_user.php",
+                        "status":  401,
+                        "fatal":  false
+                    },
+                    {
+                        "file":  "cancel_rsvp.php",
+                        "status":  401,
+                        "fatal":  false
+                    },
+                    {
+                        "file":  "create_announcement.php",
+                        "status":  401,
+                        "fatal":  false
+                    },
+                    {
+                        "file":  "create_comment.php",
+                        "status":  401,
+                        "fatal":  false
+                    },
+                    {
+                        "file":  "create_event.php",
+                        "status":  401,
+                        "fatal":  false
+                    },
+                    {
+                        "file":  "create_poll.php",
+                        "status":  401,
+                        "fatal":  false
+                    },
+                    {
+                        "file":  "create_post.php",
+                        "status":  401,
+                        "fatal":  false
+                    },
+                    {
+                        "file":  "end_poll.php",
+                        "status":  401,
+                        "fatal":  false
+                    },
+                    {
+                        "file":  "events.php",
+                        "status":  401,
+                        "fatal":  false
+                    },
+                    {
+                        "file":  "export_data.php",
+                        "status":  401,
+                        "fatal":  false
+                    },
+                    {
+                        "file":  "generate_token.php",
+                        "status":  401,
+                        "fatal":  false
+                    },
+                    {
+                        "file":  "get_active_streams.php",
+                        "status":  200,
+                        "fatal":  false
+                    },
+                    {
+                        "file":  "get_applicants.php",
+                        "status":  401,
+                        "fatal":  false
+                    },
+                    {
+                        "file":  "get_badges.php",
+                        "status":  401,
+                        "fatal":  false
+                    },
+                    {
+                        "file":  "get_comments.php",
+                        "status":  200,
+                        "fatal":  false
+                    },
+                    {
+                        "file":  "get_events.php",
+                        "status":  200,
+                        "fatal":  false
+                    },
+                    {
+                        "file":  "get_event_attendees.php",
+                        "status":  400,
+                        "fatal":  false
+                    },
+                    {
+                        "file":  "get_feed.php",
+                        "status":  401,
+                        "fatal":  false
+                    },
+                    {
+                        "file":  "get_inbox.php",
+                        "status":  401,
+                        "fatal":  false
+                    },
+                    {
+                        "file":  "get_jobs.php",
+                        "status":  200,
+                        "fatal":  false
+                    },
+                    {
+                        "file":  "get_messages.php",
+                        "status":  401,
+                        "fatal":  false
+                    },
+                    {
+                        "file":  "get_notifications.php",
+                        "status":  401,
+                        "fatal":  false
+                    },
+                    {
+                        "file":  "get_reports.php",
+                        "status":  401,
+                        "fatal":  false
+                    },
+                    {
+                        "file":  "get_upcoming_events.php",
+                        "status":  401,
+                        "fatal":  false
+                    },
+                    {
+                        "file":  "get_user_profile.php",
+                        "status":  401,
+                        "fatal":  false
+                    },
+                    {
+                        "file":  "join_event.php",
+                        "status":  401,
+                        "fatal":  false
+                    },
+                    {
+                        "file":  "kick_user.php",
+                        "status":  401,
+                        "fatal":  false
+                    },
+                    {
+                        "file":  "login.php",
+                        "status":  400,
+                        "fatal":  false
+                    },
+                    {
+                        "file":  "manage-post.php",
+                        "status":  401,
+                        "fatal":  false
+                    },
+                    {
+                        "file":  "mark_notif_read.php",
+                        "status":  401,
+                        "fatal":  false
+                    },
+                    {
+                        "file":  "master_search.php",
+                        "status":  401,
+                        "fatal":  false
+                    },
+                    {
+                        "file":  "me.php",
+                        "status":  401,
+                        "fatal":  false
+                    },
+                    {
+                        "file":  "mentorship.php",
+                        "status":  401,
+                        "fatal":  false
+                    },
+                    {
+                        "file":  "moderate_post.php",
+                        "status":  401,
+                        "fatal":  false
+                    },
+                    {
+                        "file":  "pin_post.php",
+                        "status":  401,
+                        "fatal":  false
+                    },
+                    {
+                        "file":  "post_job.php",
+                        "status":  401,
+                        "fatal":  false
+                    },
+                    {
+                        "file":  "process_fake_report.php",
+                        "status":  401,
+                        "fatal":  false
+                    },
+                    {
+                        "file":  "public_feed.php",
+                        "status":  200,
+                        "fatal":  false
+                    },
+                    {
+                        "file":  "react_to_post.php",
+                        "status":  401,
+                        "fatal":  false
+                    },
+                    {
+                        "file":  "register.php",
+                        "status":  400,
+                        "fatal":  false
+                    },
+                    {
+                        "file":  "register_alumni.php",
+                        "status":  200,
+                        "fatal":  false
+                    },
+                    {
+                        "file":  "register_faculty.php",
+                        "status":  200,
+                        "fatal":  false
+                    },
+                    {
+                        "file":  "register_student.php",
+                        "status":  400,
+                        "fatal":  false
+                    },
+                    {
+                        "file":  "report_content.php",
+                        "status":  401,
+                        "fatal":  false
+                    },
+                    {
+                        "file":  "request_reset.php",
+                        "status":  200,
+                        "fatal":  false
+                    },
+                    {
+                        "file":  "reset_password.php",
+                        "status":  200,
+                        "fatal":  false
+                    },
+                    {
+                        "file":  "resources.php",
+                        "status":  401,
+                        "fatal":  false
+                    },
+                    {
+                        "file":  "restore_content.php",
+                        "status":  401,
+                        "fatal":  false
+                    },
+                    {
+                        "file":  "rsvp_event.php",
+                        "status":  401,
+                        "fatal":  false
+                    },
+                    {
+                        "file":  "schedule_post.php",
+                        "status":  401,
+                        "fatal":  false
+                    },
+                    {
+                        "file":  "search_alumni.php",
+                        "status":  200,
+                        "fatal":  false
+                    },
+                    {
+                        "file":  "search_directory.php",
+                        "status":  401,
+                        "fatal":  false
+                    },
+                    {
+                        "file":  "search_posts.php",
+                        "status":  401,
+                        "fatal":  false
+                    },
+                    {
+                        "file":  "send_message.php",
+                        "status":  401,
+                        "fatal":  false
+                    },
+                    {
+                        "file":  "success_stories.php",
+                        "status":  401,
+                        "fatal":  false
+                    },
+                    {
+                        "file":  "test.php",
+                        "status":  401,
+                        "fatal":  false
+                    },
+                    {
+                        "file":  "test_minimal.php",
+                        "status":  200,
+                        "fatal":  false
+                    },
+                    {
+                        "file":  "toggle_stream.php",
+                        "status":  401,
+                        "fatal":  false
+                    },
+                    {
+                        "file":  "unpin_post.php",
+                        "status":  401,
+                        "fatal":  false
+                    },
+                    {
+                        "file":  "update_privacy.php",
+                        "status":  401,
+                        "fatal":  false
+                    },
+                    {
+                        "file":  "update_profile.php",
+                        "status":  401,
+                        "fatal":  false
+                    },
+                    {
+                        "file":  "upload.php",
+                        "status":  401,
+                        "fatal":  false
+                    },
+                    {
+                        "file":  "upload_avatar.php",
+                        "status":  401,
+                        "fatal":  false
+                    },
+                    {
+                        "file":  "upload_file.php",
+                        "status":  401,
+                        "fatal":  false
+                    },
+                    {
+                        "file":  "upload_verification.php",
+                        "status":  401,
+                        "fatal":  false
+                    },
+                    {
+                        "file":  "view_logs.php",
+                        "status":  401,
+                        "fatal":  false
+                    },
+                    {
+                        "file":  "vote_poll.php",
+                        "status":  401,
+                        "fatal":  false
+                    }
+                ]
+}
