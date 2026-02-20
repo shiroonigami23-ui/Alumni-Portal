@@ -1,12 +1,6 @@
 <?php
-// Check authentication and admin role
-require_once '../includes/auth-check.js';
-
-// Check if user is admin
-$userData = json_decode(localStorage.getItem('user_data') || '{}', true);
-if ($userData.role !== 'admin') {
-    header('Location: ../dashboard.php');
-    exit();
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
 }
 ?>
 <!DOCTYPE html>
@@ -15,8 +9,14 @@ if ($userData.role !== 'admin') {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Admin Dashboard - RJIT Alumni Portal</title>
-    
-    <?php include '../includes/header.php'; ?>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Roboto+Slab:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="../assets/css/variety-ui.css">
+    <script src="../includes/auth-check.js"></script>
+    <script src="../assets/js/variety-ui.js" defer></script>
     
     <style>
         .admin-card {
@@ -63,6 +63,19 @@ if ($userData.role !== 'admin') {
     </style>
 </head>
 <body class="bg-gray-50">
+    <script>
+        (function () {
+            const token = localStorage.getItem('jwt_token');
+            const user = JSON.parse(localStorage.getItem('user_data') || '{}');
+            if (!token) {
+                window.location.href = '../login.php';
+                return;
+            }
+            if (user.role !== 'admin') {
+                window.location.href = '../dashboard.php';
+            }
+        })();
+    </script>
     <?php include '../includes/header.php'; ?>
     <?php include '../includes/sidebar.php'; ?>
     

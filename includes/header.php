@@ -3,6 +3,8 @@
 if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
+$isAdminPath = strpos($_SERVER['PHP_SELF'], '/admin/') !== false;
+$basePrefix = $isAdminPath ? '../' : '';
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -22,6 +24,8 @@ if (session_status() === PHP_SESSION_NONE) {
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Roboto+Slab:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="<?php echo $basePrefix; ?>assets/css/variety-ui.css">
+    <script src="<?php echo $basePrefix; ?>assets/js/variety-ui.js" defer></script>
 
     <!-- Custom Styles -->
     <style>
@@ -67,7 +71,7 @@ if (session_status() === PHP_SESSION_NONE) {
     </style>
 
     <!-- Auth Check Script -->
-    <script src="includes/auth-check.js"></script>
+    <script src="<?php echo $basePrefix; ?>includes/auth-check.js"></script>
 </head>
 
 <body class="bg-gray-50">
@@ -81,7 +85,7 @@ if (session_status() === PHP_SESSION_NONE) {
     </div>
 
     <!-- Main Navigation -->
-    <nav class="bg-white shadow-md">
+    <nav class="bg-white shadow-md portal-topbar">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="flex justify-between h-16">
                 <!-- Logo and Brand -->
@@ -107,6 +111,9 @@ if (session_status() === PHP_SESSION_NONE) {
 
                 <!-- Right Side Navigation -->
                 <div class="flex items-center space-x-4">
+                    <button id="themeModeBtn" class="vu-theme-toggle" type="button">
+                        <i data-lucide="palette" class="h-4 w-4"></i>
+                    </button>
                     <!-- Notifications -->
                     <div class="relative">
                         <button id="notificationBtn" class="p-2 rounded-full hover:bg-gray-100">
@@ -136,10 +143,10 @@ if (session_status() === PHP_SESSION_NONE) {
 
                         <div id="userDropdown" class="hidden absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 z-50">
                             <div class="py-2">
-                                <a href="profile.php" class="flex items-center px-4 py-2 text-gray-700 hover:bg-gray-100">
+                                <a href="<?php echo $basePrefix; ?>profile.php" class="flex items-center px-4 py-2 text-gray-700 hover:bg-gray-100">
                                     <i data-lucide="user" class="h-4 w-4 mr-3"></i> My Profile
                                 </a>
-                                <a href="settings.php" class="flex items-center px-4 py-2 text-gray-700 hover:bg-gray-100">
+                                <a href="<?php echo $basePrefix; ?>settings.php" class="flex items-center px-4 py-2 text-gray-700 hover:bg-gray-100">
                                     <i data-lucide="settings" class="h-4 w-4 mr-3"></i> Settings
                                 </a>
                                 <div class="border-t border-gray-100 my-1"></div>
@@ -155,6 +162,7 @@ if (session_status() === PHP_SESSION_NONE) {
     </nav>
 
     <script>
+        window.PORTAL_BASE_PREFIX = "<?php echo $basePrefix; ?>";
         // Initialize Lucide icons
         lucide.createIcons();
 
@@ -177,7 +185,7 @@ if (session_status() === PHP_SESSION_NONE) {
             if (searchInput) {
                 searchInput.addEventListener('keypress', function(e) {
                     if (e.key === 'Enter' && this.value.trim()) {
-                        window.location.href = `discovery.php?search=${encodeURIComponent(this.value.trim())}`;
+                        window.location.href = `${window.PORTAL_BASE_PREFIX}discovery.php?search=${encodeURIComponent(this.value.trim())}`;
                     }
                 });
             }
@@ -209,7 +217,7 @@ if (session_status() === PHP_SESSION_NONE) {
 
             // Check for live streams
             checkLiveStreams();
-            setInterval(checkLiveStreams, 30000); // Check every 30 seconds
+            setInterval(checkLiveStreams, 30000);
         });
 
         async function loadNotifications() {
@@ -267,18 +275,18 @@ if (session_status() === PHP_SESSION_NONE) {
             if (userData) {
                 const user = JSON.parse(userData);
                 if (user.role === 'admin') {
-                    window.location.href = 'admin/dashboard.php';
+                    window.location.href = `${window.PORTAL_BASE_PREFIX}admin/dashboard.php`;
                 } else {
-                    window.location.href = 'dashboard.php';
+                    window.location.href = `${window.PORTAL_BASE_PREFIX}dashboard.php`;
                 }
             } else {
-                window.location.href = 'dashboard.php';
+                window.location.href = `${window.PORTAL_BASE_PREFIX}dashboard.php`;
             }
         }
 
         async function checkLiveStreams() {
             try {
-                const response = await fetch('api/get_active_streams.php');
+                const response = await fetch(`${window.PORTAL_BASE_PREFIX}api/get_active_streams.php`);
                 const result = await response.json();
 
                 const container = document.getElementById('live-indicator-container');
@@ -287,7 +295,7 @@ if (session_status() === PHP_SESSION_NONE) {
                     container.innerHTML = `
                 <div class="live-badge-card" style="background: #ff0000; color: white; padding: 10px; border-radius: 5px; margin-bottom: 20px;">
                     <strong>🔴 LIVE NOW:</strong> ${stream.title} by ${stream.full_name}
-                    <a href="live.php?id=${stream.stream_id}" style="color: yellow; margin-left: 15px; font-weight: bold;">WATCH NOW</a>
+                    <a href="${window.PORTAL_BASE_PREFIX}live.php?id=${stream.stream_id}" style="color: yellow; margin-left: 15px; font-weight: bold;">WATCH NOW</a>
                 </div>
             `;
                 } else {

@@ -22,7 +22,7 @@ if (!empty($data->post_id) && !empty($data->content)) {
     file_put_contents($dir . $filename, $data->content);
     $file_path = "storage/comments/" . $filename;
 
-    $query = "INSERT INTO comments (post_id, user_id, file_path) VALUES (:pid, :uid, :path)";
+    $query = "INSERT INTO comments (post_id, user_id, content_file_path) VALUES (:pid, :uid, :path)";
     $stmt = $db->prepare($query);
     
     if ($stmt->execute(['pid' => $data->post_id, 'uid' => $user_id, 'path' => $file_path])) {

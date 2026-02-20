@@ -1,28 +1,32 @@
+<?php
+$isAdminPath = strpos($_SERVER['PHP_SELF'], '/admin/') !== false;
+$basePrefix = $isAdminPath ? '../' : '';
+?>
 <!-- Sidebar Navigation -->
 <div class="hidden md:flex md:w-64 md:flex-col md:fixed md:inset-y-0 md:pt-16">
     <div class="flex-1 flex flex-col min-h-0 border-r border-gray-200 bg-white">
         <div class="flex-1 flex flex-col pt-5 pb-4 overflow-y-auto">
             <nav class="flex-1 px-4 space-y-1">
                 <!-- Dashboard -->
-                <a href="dashboard.php" class="sidebar-link group flex items-center px-3 py-3 text-sm font-medium rounded-lg <?php echo basename($_SERVER['PHP_SELF']) == 'dashboard.php' ? 'bg-blue-50 text-blue-700' : 'text-gray-700 hover:bg-gray-50 hover:text-gray-900'; ?>">
+                <a href="<?php echo $basePrefix; ?>dashboard.php" class="sidebar-link group flex items-center px-3 py-3 text-sm font-medium rounded-lg <?php echo basename($_SERVER['PHP_SELF']) == 'dashboard.php' ? 'bg-blue-50 text-blue-700' : 'text-gray-700 hover:bg-gray-50 hover:text-gray-900'; ?>">
                     <i data-lucide="layout-dashboard" class="h-5 w-5 mr-3"></i>
                     Dashboard
                 </a>
                 
                 <!-- Feed -->
-                <a href="feed.php" class="sidebar-link group flex items-center px-3 py-3 text-sm font-medium rounded-lg <?php echo basename($_SERVER['PHP_SELF']) == 'feed.php' ? 'bg-blue-50 text-blue-700' : 'text-gray-700 hover:bg-gray-50 hover:text-gray-900'; ?>">
+                <a href="<?php echo $basePrefix; ?>feed.php" class="sidebar-link group flex items-center px-3 py-3 text-sm font-medium rounded-lg <?php echo basename($_SERVER['PHP_SELF']) == 'feed.php' ? 'bg-blue-50 text-blue-700' : 'text-gray-700 hover:bg-gray-50 hover:text-gray-900'; ?>">
                     <i data-lucide="newspaper" class="h-5 w-5 mr-3"></i>
                     Feed
                 </a>
                 
                 <!-- Discovery -->
-                <a href="discovery.php" class="sidebar-link group flex items-center px-3 py-3 text-sm font-medium rounded-lg <?php echo basename($_SERVER['PHP_SELF']) == 'discovery.php' ? 'bg-blue-50 text-blue-700' : 'text-gray-700 hover:bg-gray-50 hover:text-gray-900'; ?>">
+                <a href="<?php echo $basePrefix; ?>discovery.php" class="sidebar-link group flex items-center px-3 py-3 text-sm font-medium rounded-lg <?php echo basename($_SERVER['PHP_SELF']) == 'discovery.php' ? 'bg-blue-50 text-blue-700' : 'text-gray-700 hover:bg-gray-50 hover:text-gray-900'; ?>">
                     <i data-lucide="search" class="h-5 w-5 mr-3"></i>
                     Discovery
                 </a>
                 
                 <!-- Events -->
-                <a href="events.php" class="sidebar-link group flex items-center px-3 py-3 text-sm font-medium rounded-lg <?php echo basename($_SERVER['PHP_SELF']) == 'events.php' ? 'bg-blue-50 text-blue-700' : 'text-gray-700 hover:bg-gray-50 hover:text-gray-900'; ?>">
+                <a href="<?php echo $basePrefix; ?>events.php" class="sidebar-link group flex items-center px-3 py-3 text-sm font-medium rounded-lg <?php echo basename($_SERVER['PHP_SELF']) == 'events.php' ? 'bg-blue-50 text-blue-700' : 'text-gray-700 hover:bg-gray-50 hover:text-gray-900'; ?>">
                     <i data-lucide="calendar" class="h-5 w-5 mr-3"></i>
                     Events
                     <span id="liveEventsBadge" class="ml-auto hidden">
@@ -32,19 +36,19 @@
                 </a>
                 
                 <!-- Jobs -->
-                <a href="jobs.php" class="sidebar-link group flex items-center px-3 py-3 text-sm font-medium rounded-lg <?php echo basename($_SERVER['PHP_SELF']) == 'jobs.php' ? 'bg-blue-50 text-blue-700' : 'text-gray-700 hover:bg-gray-50 hover:text-gray-900'; ?>">
+                <a href="<?php echo $basePrefix; ?>jobs.php" class="sidebar-link group flex items-center px-3 py-3 text-sm font-medium rounded-lg <?php echo basename($_SERVER['PHP_SELF']) == 'jobs.php' ? 'bg-blue-50 text-blue-700' : 'text-gray-700 hover:bg-gray-50 hover:text-gray-900'; ?>">
                     <i data-lucide="briefcase" class="h-5 w-5 mr-3"></i>
                     Jobs
                 </a>
                 
                 <!-- Mentorship -->
-                <a href="mentorship.php" class="sidebar-link group flex items-center px-3 py-3 text-sm font-medium rounded-lg <?php echo basename($_SERVER['PHP_SELF']) == 'mentorship.php' ? 'bg-blue-50 text-blue-700' : 'text-gray-700 hover:bg-gray-50 hover:text-gray-900'; ?>">
+                <a href="<?php echo $basePrefix; ?>mentorship.php" class="sidebar-link group flex items-center px-3 py-3 text-sm font-medium rounded-lg <?php echo basename($_SERVER['PHP_SELF']) == 'mentorship.php' ? 'bg-blue-50 text-blue-700' : 'text-gray-700 hover:bg-gray-50 hover:text-gray-900'; ?>">
                     <i data-lucide="users" class="h-5 w-5 mr-3"></i>
                     Mentorship
                 </a>
                 
                 <!-- Messages -->
-                <a href="messages.php" class="sidebar-link group flex items-center px-3 py-3 text-sm font-medium rounded-lg <?php echo basename($_SERVER['PHP_SELF']) == 'messages.php' ? 'bg-blue-50 text-blue-700' : 'text-gray-700 hover:bg-gray-50 hover:text-gray-900'; ?>">
+                <a href="<?php echo $basePrefix; ?>messages.php" class="sidebar-link group flex items-center px-3 py-3 text-sm font-medium rounded-lg <?php echo basename($_SERVER['PHP_SELF']) == 'messages.php' ? 'bg-blue-50 text-blue-700' : 'text-gray-700 hover:bg-gray-50 hover:text-gray-900'; ?>">
                     <i data-lucide="message-square" class="h-5 w-5 mr-3"></i>
                     Messages
                     <span id="unreadMessagesBadge" class="ml-auto hidden bg-blue-100 text-blue-800 text-xs px-2 py-0.5 rounded-full">0</span>
@@ -55,7 +59,7 @@
                     <div class="px-3 pt-6 pb-2">
                         <h3 class="text-xs font-semibold text-amber-600 uppercase tracking-wider">Admin</h3>
                     </div>
-                    <a href="admin/dashboard.php" class="sidebar-link group flex items-center px-3 py-3 text-sm font-medium rounded-lg <?php echo basename($_SERVER['PHP_SELF']) == 'dashboard.php' && strpos($_SERVER['REQUEST_URI'], 'admin') !== false ? 'bg-amber-50 text-amber-700 border-l-4 border-amber-500' : 'text-gray-700 hover:bg-gray-50 hover:text-gray-900'; ?>">
+                    <a href="<?php echo $basePrefix; ?>admin/dashboard.php" class="sidebar-link group flex items-center px-3 py-3 text-sm font-medium rounded-lg <?php echo basename($_SERVER['PHP_SELF']) == 'dashboard.php' && strpos($_SERVER['REQUEST_URI'], 'admin') !== false ? 'bg-amber-50 text-amber-700 border-l-4 border-amber-500' : 'text-gray-700 hover:bg-gray-50 hover:text-gray-900'; ?>">
                         <i data-lucide="shield" class="h-5 w-5 mr-3"></i>
                         Admin Panel
                     </a>
@@ -95,24 +99,24 @@
 <!-- Mobile Sidebar (Bottom Navigation) -->
 <div class="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200">
     <div class="flex justify-around items-center h-16">
-        <a href="dashboard.php" class="flex flex-col items-center justify-center p-2">
+        <a href="<?php echo $basePrefix; ?>dashboard.php" class="flex flex-col items-center justify-center p-2">
             <i data-lucide="layout-dashboard" class="h-5 w-5"></i>
             <span class="text-xs mt-1">Home</span>
         </a>
-        <a href="feed.php" class="flex flex-col items-center justify-center p-2">
+        <a href="<?php echo $basePrefix; ?>feed.php" class="flex flex-col items-center justify-center p-2">
             <i data-lucide="newspaper" class="h-5 w-5"></i>
             <span class="text-xs mt-1">Feed</span>
         </a>
-        <a href="discovery.php" class="flex flex-col items-center justify-center p-2">
+        <a href="<?php echo $basePrefix; ?>discovery.php" class="flex flex-col items-center justify-center p-2">
             <i data-lucide="search" class="h-5 w-5"></i>
             <span class="text-xs mt-1">Discover</span>
         </a>
-        <a href="messages.php" class="flex flex-col items-center justify-center p-2 relative">
+        <a href="<?php echo $basePrefix; ?>messages.php" class="flex flex-col items-center justify-center p-2 relative">
             <i data-lucide="message-square" class="h-5 w-5"></i>
             <span class="text-xs mt-1">Messages</span>
             <span id="mobileUnreadBadge" class="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-4 w-4 flex items-center justify-center hidden">0</span>
         </a>
-        <a href="profile.php" class="flex flex-col items-center justify-center p-2">
+        <a href="<?php echo $basePrefix; ?>profile.php" class="flex flex-col items-center justify-center p-2">
             <i data-lucide="user" class="h-5 w-5"></i>
             <span class="text-xs mt-1">Profile</span>
         </a>
@@ -120,6 +124,7 @@
 </div>
 
 <script>
+    window.PORTAL_BASE_PREFIX = "<?php echo $basePrefix; ?>";
     // Sidebar functionality
     document.addEventListener('DOMContentLoaded', function() {
         // Load user data into sidebar

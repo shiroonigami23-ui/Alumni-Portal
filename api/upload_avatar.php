@@ -31,6 +31,9 @@ if (isset($_FILES['avatar'])) {
     // 2. Setup paths
     $filename = "avatar_" . $user_id . "_" . bin2hex(random_bytes(4)) . "_" . time() . "." . $extension;
     $upload_dir = dirname(__DIR__) . DIRECTORY_SEPARATOR . "storage" . DIRECTORY_SEPARATOR . "profiles" . DIRECTORY_SEPARATOR;
+    if (!file_exists($upload_dir)) {
+        mkdir($upload_dir, 0777, true);
+    }
     $upload_path = $upload_dir . $filename;
     $db_url = "storage/profiles/" . $filename;
 

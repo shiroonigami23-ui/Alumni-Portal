@@ -78,7 +78,7 @@ try {
     }
     
     // Check if user already applied
-    $stmt = $pdo->prepare("SELECT application_id FROM job_applications WHERE job_id = :job_id AND user_id = :user_id");
+    $stmt = $pdo->prepare("SELECT application_id FROM job_applications WHERE job_id = :job_id AND applicant_id = :user_id");
     $stmt->execute([
         ':job_id' => $job_id,
         ':user_id' => $user['user_id']
@@ -141,9 +141,9 @@ try {
     
     $stmt = $pdo->prepare("
         INSERT INTO job_applications 
-        (job_id, user_id, resume_file_path, cover_letter, status, applied_at)
+        (job_id, applicant_id, resume_path, cover_letter, status)
         VALUES 
-        (:job_id, :user_id, :resume_path, :cover_letter, 'pending', CURRENT_TIMESTAMP)
+        (:job_id, :user_id, :resume_path, :cover_letter, 'pending')
         RETURNING application_id
     ");
     
@@ -158,7 +158,7 @@ try {
     $application_id = $result['application_id'];
     
     // Create notification for job poster
-    $job_poster_query = $pdo->prepare("SELECT posted_by FROM jobs WHERE job_id = :job_id");
+    $job_poster_query = $pdo->prepare("SELECT poster_id FROM jobs WHERE job_id = :job_id");
     $job_poster_query->execute([':job_id' => $job_id]);
     $poster = $job_poster_query->fetch(PDO::FETCH_ASSOC);
     
@@ -171,7 +171,7 @@ try {
         ");
         
         $notif_stmt->execute([
-            ':user_id' => $poster['posted_by'],
+            ':user_id' => $poster['poster_id'],
             ':content' => 'New application received for your job posting',
             ':applicant_id' => $user['user_id']
         ]);

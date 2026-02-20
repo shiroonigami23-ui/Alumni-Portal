@@ -42,8 +42,20 @@ switch ($data->action) {
             echo json_encode(["message" => "Edit window expired (24h limit)."]);
             exit();
         }
-        $upd = $db->prepare("UPDATE posts SET title = :title, content = :content, updated_at = NOW() WHERE post_id = :pid");
-        $upd->execute(['title' => $data->title, 'content' => $data->content, 'pid' => $data->post_id]);
+
+        // Update post content in its backing file (3.5NF storage design)
+        $path_stmt = $db->prepare("SELECT content_file_path FROM posts WHERE post_id = :pid");
+        $path_stmt->execute(['pid' => $data->post_id]);
+        $content_file_path = $path_stmt->fetchColumn();
+        if ($content_file_path && isset($data->content)) {
+            $abs_path = dirname(__DIR__) . DIRECTORY_SEPARATOR . str_replace('/', DIRECTORY_SEPARATOR, $content_file_path);
+            if (file_exists($abs_path)) {
+                file_put_contents($abs_path, $data->content);
+            }
+        }
+
+        $upd = $db->prepare("UPDATE posts SET title = :title, updated_at = NOW() WHERE post_id = :pid");
+        $upd->execute(['title' => $data->title, 'pid' => $data->post_id]);
         echo json_encode(["message" => "Post updated successfully."]);
         break;
 

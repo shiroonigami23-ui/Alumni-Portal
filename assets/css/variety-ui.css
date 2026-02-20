@@ -1,0 +1,192 @@
+/* Variety-inspired UI theme for Alumni Portal (XAMPP + AWS friendly) */
+
+:root {
+  --bg-page: radial-gradient(
+      1200px 700px at 10% -5%,
+      #c7e8ff 0%,
+      transparent 55%
+    ),
+    radial-gradient(900px 500px at 90% -10%, #d7f4ff 0%, transparent 45%),
+    linear-gradient(180deg, #eef5ff 0%, #f8fbff 100%);
+  --surface: rgba(255, 255, 255, 0.78);
+  --surface-strong: rgba(255, 255, 255, 0.92);
+  --surface-border: rgba(255, 255, 255, 0.65);
+  --text-main: #0f172a;
+  --text-muted: #475569;
+  --brand-1: #0284c7;
+  --brand-2: #0ea5e9;
+  --brand-3: #38bdf8;
+  --ring: rgba(14, 165, 233, 0.18);
+  --shadow-soft: 0 10px 35px rgba(2, 132, 199, 0.12);
+  --shadow-strong: 0 18px 45px rgba(2, 132, 199, 0.2);
+}
+
+[data-theme="dark"] {
+  --bg-page: radial-gradient(
+      1100px 600px at 12% -8%,
+      rgba(14, 165, 233, 0.22) 0%,
+      transparent 52%
+    ),
+    radial-gradient(
+      900px 500px at 88% -10%,
+      rgba(3, 105, 161, 0.24) 0%,
+      transparent 48%
+    ),
+    linear-gradient(180deg, #020617 0%, #0b1220 100%);
+  --surface: rgba(15, 23, 42, 0.72);
+  --surface-strong: rgba(15, 23, 42, 0.88);
+  --surface-border: rgba(56, 189, 248, 0.25);
+  --text-main: #e2e8f0;
+  --text-muted: #94a3b8;
+  --brand-1: #38bdf8;
+  --brand-2: #0ea5e9;
+  --brand-3: #7dd3fc;
+  --ring: rgba(56, 189, 248, 0.3);
+  --shadow-soft: 0 12px 35px rgba(3, 105, 161, 0.25);
+  --shadow-strong: 0 22px 45px rgba(2, 132, 199, 0.35);
+}
+
+[data-theme="light"] {
+  --bg-page: linear-gradient(180deg, #f8fafc 0%, #f1f5f9 100%);
+  --surface: #ffffff;
+  --surface-strong: #ffffff;
+  --surface-border: #e2e8f0;
+  --text-main: #0f172a;
+  --text-muted: #475569;
+  --brand-1: #2563eb;
+  --brand-2: #3b82f6;
+  --brand-3: #60a5fa;
+  --ring: rgba(59, 130, 246, 0.18);
+  --shadow-soft: 0 8px 20px rgba(2, 6, 23, 0.08);
+  --shadow-strong: 0 14px 35px rgba(2, 6, 23, 0.12);
+}
+
+html,
+body {
+  min-height: 100%;
+}
+
+body {
+  background: var(--bg-page) !important;
+  color: var(--text-main);
+}
+
+/* Make core cards feel premium without rewriting each page */
+.bg-white,
+.card,
+.rounded-xl {
+  border-color: var(--surface-border) !important;
+}
+
+.bg-white {
+  background: var(--surface) !important;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  box-shadow: var(--shadow-soft) !important;
+}
+
+.shadow-sm {
+  box-shadow: var(--shadow-soft) !important;
+}
+
+.shadow-md,
+.shadow-lg {
+  box-shadow: var(--shadow-strong) !important;
+}
+
+.text-gray-900 {
+  color: var(--text-main) !important;
+}
+
+.text-gray-700,
+.text-gray-600,
+.text-gray-500 {
+  color: var(--text-muted) !important;
+}
+
+.bg-gray-50 {
+  background: transparent !important;
+}
+
+/* Buttons */
+.bg-blue-600,
+button.bg-blue-600,
+a.bg-blue-600 {
+  background: linear-gradient(
+    135deg,
+    var(--brand-1) 0%,
+    var(--brand-2) 55%,
+    var(--brand-3) 100%
+  ) !important;
+  border: 0 !important;
+  box-shadow: 0 10px 22px rgba(14, 165, 233, 0.25) !important;
+}
+
+.hover\:bg-blue-700:hover {
+  filter: brightness(0.95);
+}
+
+/* Inputs */
+input,
+select,
+textarea {
+  border-color: color-mix(in srgb, var(--surface-border) 75%, transparent) !important;
+  background: color-mix(in srgb, var(--surface) 92%, transparent) !important;
+}
+
+input:focus,
+select:focus,
+textarea:focus {
+  box-shadow: 0 0 0 4px var(--ring) !important;
+}
+
+/* Topbar polish */
+nav.bg-white.shadow-md {
+  background: var(--surface-strong) !important;
+  border-bottom: 1px solid var(--surface-border);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+}
+
+/* Subtle hover lift */
+.card-hover,
+.hover\:shadow-md:hover,
+.post-card:hover,
+.alumni-card:hover {
+  transform: translateY(-3px);
+}
+
+/* Dynamic reveal */
+.vu-reveal {
+  opacity: 0;
+  transform: translateY(12px);
+  transition:
+    opacity 0.45s ease,
+    transform 0.45s ease;
+}
+
+.vu-reveal.vu-in {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* Theme button */
+.vu-theme-toggle {
+  border: 1px solid var(--surface-border);
+  background: color-mix(in srgb, var(--surface) 88%, transparent);
+  color: var(--text-main);
+  border-radius: 999px;
+  padding: 8px 10px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Keep mobile bottom nav readable */
+@media (max-width: 767px) {
+  .md\:hidden.fixed.bottom-0 {
+    background: var(--surface-strong) !important;
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+  }
+}

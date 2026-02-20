@@ -77,7 +77,7 @@ class Job
     // Helper to get file content if needed for a specific job
     public function getDescription($path)
     {
-        $realPath = str_replace('/', DIRECTORY_SEPARATOR, $path);
+        $realPath = dirname(__DIR__) . DIRECTORY_SEPARATOR . str_replace('/', DIRECTORY_SEPARATOR, $path);
         if (file_exists($realPath)) {
             return file_get_contents($realPath);
         }

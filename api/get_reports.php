@@ -21,10 +21,10 @@ if ($u_stmt->fetchColumn() !== 'admin') {
 }
 
 // Fetch reports with post titles and reporter emails
-$query = "SELECT r.report_id, r.post_id, p.title as post_title, r.reason, u.email as reporter_email, r.reporter_id 
+$query = "SELECT r.report_id, r.reported_post_id as post_id, p.title as post_title, r.reason, u.email as reporter_email, r.reporter_user_id as reporter_id 
           FROM reports r
-          JOIN posts p ON r.post_id = p.post_id
-          JOIN users u ON r.reporter_id = u.user_id
+          JOIN posts p ON r.reported_post_id = p.post_id
+          JOIN users u ON r.reporter_user_id = u.user_id
           ORDER BY r.created_at DESC";
 
 $stmt = $db->prepare($query);

@@ -25,22 +25,36 @@ class SuccessStory
         file_put_contents($storage_dir . $filename, $content);
         $relative_path = "storage/stories/" . $filename;
 
-        $query = "INSERT INTO " . $this->table . " 
-                  (user_id, title, content_file_path, category, featured_image, status) 
-                  VALUES (:user_id, :title, :path, :category, :image, 'pending')
-                  RETURNING story_id";
+        // category is accepted by API but this schema version has no category/status columns.
+        try {
+            $query = "INSERT INTO " . $this->table . " 
+                      (alumni_user_id, title, story_content_file_path, featured_image_url, featured_by_admin_id, is_featured) 
+                      VALUES (:user_id, :title, :path, :image, :featured_by, false)
+                      ON CONFLICT (alumni_user_id)
+                      DO UPDATE SET
+                          title = EXCLUDED.title,
+                          story_content_file_path = EXCLUDED.story_content_file_path,
+                          featured_image_url = EXCLUDED.featured_image_url,
+                          featured_by_admin_id = EXCLUDED.featured_by_admin_id,
+                          is_featured = false,
+                          updated_at = CURRENT_TIMESTAMP
+                      RETURNING story_id";
 
-        $stmt = $this->conn->prepare($query);
-        $stmt->execute([
-            'user_id' => $user_id,
-            'title' => $title,
-            'path' => $relative_path,
-            'category' => $category,
-            'image' => $featured_image
-        ]);
+            $stmt = $this->conn->prepare($query);
+            $stmt->execute([
+                'user_id' => $user_id,
+                'title' => $title,
+                'path' => $relative_path,
+                'image' => $featured_image,
+                'featured_by' => $user_id
+            ]);
 
-        $result = $stmt->fetch(PDO::FETCH_ASSOC);
-        return $result['story_id'] ?? false;
+            $result = $stmt->fetch(PDO::FETCH_ASSOC);
+            return $result['story_id'] ?? false;
+        } catch (PDOException $e) {
+            error_log("SuccessStory create error: " . $e->getMessage());
+            return false;
+        }
     }
 
     /**
@@ -48,28 +62,27 @@ class SuccessStory
      */
     public function getAll($limit = 20, $offset = 0, $category = null)
     {
-        $where = "WHERE s.status = 'approved'";
-
-        if ($category) {
-            $where .= " AND s.category = :category";
-        }
-
-        $query = "SELECT s.*, p.full_name, p.profile_picture_url, u.role
+        $query = "SELECT s.story_id,
+                         s.alumni_user_id as user_id,
+                         s.title,
+                         s.story_content_file_path as content_file_path,
+                         s.featured_image_url as featured_image,
+                         s.is_featured,
+                         s.display_order,
+                         s.view_count,
+                         s.created_at,
+                         p.full_name,
+                         p.profile_picture_url,
+                         u.role
                   FROM " . $this->table . " s
-                  JOIN users u ON s.user_id = u.user_id
+                  JOIN users u ON s.alumni_user_id = u.user_id
                   JOIN profiles p ON u.user_id = p.user_id
-                  $where
                   ORDER BY s.created_at DESC
                   LIMIT :limit OFFSET :offset";
 
         $stmt = $this->conn->prepare($query);
 
-        $params = ['limit' => $limit, 'offset' => $offset];
-        if ($category) {
-            $params['category'] = $category;
-        }
-
-        $stmt->execute($params);
+        $stmt->execute(['limit' => $limit, 'offset' => $offset]);
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 
@@ -78,7 +91,7 @@ class SuccessStory
      */
     public function getContent($path)
     {
-        $realPath = str_replace('/', DIRECTORY_SEPARATOR, $path);
+        $realPath = dirname(__DIR__) . DIRECTORY_SEPARATOR . str_replace('/', DIRECTORY_SEPARATOR, $path);
         if (file_exists($realPath)) {
             return file_get_contents($realPath);
         }
@@ -90,7 +103,7 @@ class SuccessStory
      */
     public function approve($story_id)
     {
-        $query = "UPDATE " . $this->table . " SET status = 'approved' WHERE story_id = :id";
+        $query = "UPDATE " . $this->table . " SET is_featured = true WHERE story_id = :id";
         $stmt = $this->conn->prepare($query);
         return $stmt->execute(['id' => $story_id]);
     }

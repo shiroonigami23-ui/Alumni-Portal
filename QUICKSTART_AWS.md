@@ -1,69 +1,111 @@
-# Quick Start - AWS Deployment
+# AWS Quickstart (Copy-Paste Friendly)
 
-## Prerequisites
-- AWS Account
-- AWS CLI configured
-- Docker installed
-- Terraform installed
+Use this when you want the fastest working deploy.
 
-## Deploy in 5 Steps
+## 0. Tools required
 
-### 1. Configure Terraform
+- AWS CLI configured (`aws configure`)
+- Terraform
+- Docker
+- Git
+- PostgreSQL client (`psql`, `pg_dump`, `pg_restore`)
+
+## 1. Clone repo and go to project
+
+```bash
+git clone https://github.com/shiroonigami23-ui/Alumni-Portal.git
+cd Alumni-Portal
+```
+
+## 2. Configure Terraform variables
+
 ```bash
 cd terraform
 cp terraform.tfvars.example terraform.tfvars
-# Edit terraform.tfvars and set db_password
 ```
 
-### 2. Deploy Infrastructure
+Edit `terraform.tfvars` and set at least:
+
+- `db_password`
+- `aws_region`
+- desired sizes/counts for dev or prod
+
+## 3. Deploy infrastructure
+
 ```bash
 terraform init
+terraform plan
 terraform apply
 ```
 
-### 3. Build & Push Docker Image
+Save outputs:
+
 ```bash
-# Get ECR URL
-ECR_REPO=$(terraform output -raw ecr_repository_url)
-
-# Login to ECR
-aws ecr get-login-password --region us-east-1 | \
-  docker login --username AWS --password-stdin $ECR_REPO
-
-# Build and push
-docker build -t alumni-portal .
-docker tag alumni-portal:latest $ECR_REPO:latest
-docker push $ECR_REPO:latest
+terraform output
 ```
 
-### 4. Migrate Database
+## 4. Build and push Docker image
+
 ```bash
 cd ..
-chmod +x deployment/migrate-to-rds.sh
-./deployment/migrate-to-rds.sh
-```
-
-### 5. Access Application
-```bash
-# Get ALB DNS
-ALB_DNS=$(cd terraform && terraform output -raw alb_dns_name)
-echo "Application: http://$ALB_DNS"
-```
-
-## Automated Deployment
-```bash
-chmod +x deployment/deploy-aws.sh
 ./deployment/deploy-aws.sh
 ```
 
-## CI/CD Setup
-1. Add GitHub secrets: `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`
-2. Push to main branch
-3. Automatic deployment!
+If script prompts options, choose full deploy or app-only as needed.
 
-## Cost
-- Dev: ~$35/month
-- Production: ~$215/month
+## 5. Migrate database to RDS
 
-## Support
-See [AWS_DEPLOYMENT.md](AWS_DEPLOYMENT.md) for detailed guide.
+```bash
+./deployment/migrate-to-rds.sh
+```
+
+## 6. Run required SQL migrations on RDS
+
+```bash
+psql -h <RDS_ENDPOINT> -U admin -d alumni_portal -f deployment/sql/2026_02_20_create_mentorship_requests.sql
+```
+
+## 7. Set runtime environment variables in ECS task/service
+
+Required:
+
+- `DB_HOST`
+- `DB_PORT=5432`
+- `DB_NAME=alumni_portal`
+- `DB_USER`
+- `DB_PASSWORD`
+- `AWS_REGION`
+- `AWS_BUCKET`
+
+Optional app env:
+
+- `APP_ENV=production`
+- `APP_DEBUG=false`
+
+## 8. Get application URL
+
+```bash
+cd terraform
+terraform output -raw alb_dns_name
+```
+
+Open:
+
+- `http://<alb_dns_name>/`
+
+## 9. Verify health
+
+```bash
+curl http://<alb_dns_name>/live.php
+```
+
+Expected: healthy response.
+
+## 10. If deployment fails
+
+- Check ECS task logs (CloudWatch)
+- Check DB security group (5432)
+- Check ALB health check path
+- Check DB env vars in ECS
+
+For full details: `AWS_DEPLOYMENT.md`

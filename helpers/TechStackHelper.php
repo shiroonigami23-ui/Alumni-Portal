@@ -19,11 +19,10 @@ class TechStackHelper {
      */
     public function getUserTechStack($user_id) {
         try {
-            $query = "SELECT ts.skill_name 
+            $query = "SELECT us.skill_name
                      FROM user_tech_stats us
-                     JOIN tech_skills ts ON us.skill_id = ts.skill_id
                      WHERE us.user_id = :user_id
-                     ORDER BY ts.skill_name ASC";
+                     ORDER BY us.skill_name ASC";
             
             $stmt = $this->conn->prepare($query);
             $stmt->execute(['user_id' => $user_id]);
@@ -46,11 +45,10 @@ class TechStackHelper {
      */
     public function getUserTechStackArray($user_id) {
         try {
-            $query = "SELECT ts.skill_name 
+            $query = "SELECT us.skill_name
                      FROM user_tech_stats us
-                     JOIN tech_skills ts ON us.skill_id = ts.skill_id
                      WHERE us.user_id = :user_id
-                     ORDER BY ts.skill_name ASC";
+                     ORDER BY us.skill_name ASC";
             
             $stmt = $this->conn->prepare($query);
             $stmt->execute(['user_id' => $user_id]);
@@ -98,21 +96,15 @@ class TechStackHelper {
             foreach ($skills as $skill_name) {
                 $skill_name = trim($skill_name);
                 if (empty($skill_name)) continue;
-                
-                // Get or create skill
-                $skill_id = $this->getOrCreateSkill($skill_name);
-                
-                if ($skill_id) {
-                    // Add to user_tech_stats
-                    $insert_query = "INSERT INTO user_tech_stats (user_id, skill_id) 
-                                   VALUES (:user_id, :skill_id)
-                                   ON CONFLICT DO NOTHING";
-                    $insert_stmt = $this->conn->prepare($insert_query);
-                    $insert_stmt->execute([
-                        'user_id' => $user_id,
-                        'skill_id' => $skill_id
-                    ]);
-                }
+
+                $insert_query = "INSERT INTO user_tech_stats (user_id, skill_name) 
+                               VALUES (:user_id, :skill_name)
+                               ON CONFLICT (user_id, skill_name) DO NOTHING";
+                $insert_stmt = $this->conn->prepare($insert_query);
+                $insert_stmt->execute([
+                    'user_id' => $user_id,
+                    'skill_name' => $skill_name
+                ]);
             }
             
             $this->conn->commit();
@@ -170,20 +162,14 @@ class TechStackHelper {
      */
     public function addSkill($user_id, $skill_name) {
         try {
-            $skill_id = $this->getOrCreateSkill($skill_name);
-            
-            if (!$skill_id) {
-                return false;
-            }
-            
-            $query = "INSERT INTO user_tech_stats (user_id, skill_id) 
-                     VALUES (:user_id, :skill_id)
-                     ON CONFLICT DO NOTHING";
+            $query = "INSERT INTO user_tech_stats (user_id, skill_name) 
+                     VALUES (:user_id, :skill_name)
+                     ON CONFLICT (user_id, skill_name) DO NOTHING";
             
             $stmt = $this->conn->prepare($query);
             return $stmt->execute([
                 'user_id' => $user_id,
-                'skill_id' => $skill_id
+                'skill_name' => trim($skill_name)
             ]);
             
         } catch (PDOException $e) {
@@ -203,7 +189,7 @@ class TechStackHelper {
         try {
             $query = "DELETE FROM user_tech_stats 
                      WHERE user_id = :user_id 
-                     AND skill_id = (SELECT skill_id FROM tech_skills WHERE LOWER(skill_name) = LOWER(:skill_name))";
+                     AND LOWER(skill_name) = LOWER(:skill_name)";
             
             $stmt = $this->conn->prepare($query);
             return $stmt->execute([
@@ -227,8 +213,7 @@ class TechStackHelper {
         try {
             $query = "SELECT DISTINCT us.user_id 
                      FROM user_tech_stats us
-                     JOIN tech_skills ts ON us.skill_id = ts.skill_id
-                     WHERE LOWER(ts.skill_name) LIKE LOWER(:skill_name)";
+                     WHERE LOWER(us.skill_name) LIKE LOWER(:skill_name)";
             
             $stmt = $this->conn->prepare($query);
             $stmt->execute(['skill_name' => '%' . $skill_name . '%']);
@@ -269,11 +254,10 @@ class TechStackHelper {
      */
     public function getPopularSkills($limit = 20) {
         try {
-            $query = "SELECT ts.skill_name, COUNT(us.user_id) as user_count
-                     FROM tech_skills ts
-                     LEFT JOIN user_tech_stats us ON ts.skill_id = us.skill_id
-                     GROUP BY ts.skill_id, ts.skill_name
-                     ORDER BY user_count DESC, ts.skill_name ASC
+            $query = "SELECT us.skill_name, COUNT(us.user_id) as user_count
+                     FROM user_tech_stats us
+                     GROUP BY us.skill_name
+                     ORDER BY user_count DESC, us.skill_name ASC
                      LIMIT :limit";
             
             $stmt = $this->conn->prepare($query);

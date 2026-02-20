@@ -1,433 +1,111 @@
-# 🎓 Alumni Portal - AWS Deployment Template
+# Alumni Portal (XAMPP + PostgreSQL + AWS Ready)
 
-[![AWS](https://img.shields.io/badge/AWS-Ready-orange?logo=amazon-aws)](https://aws.amazon.com)
-[![Docker](https://img.shields.io/badge/Docker-Enabled-blue?logo=docker)](https://www.docker.com)
-[![Terraform](https://img.shields.io/badge/Terraform-IaC-purple?logo=terraform)](https://www.terraform.io)
-[![PHP](https://img.shields.io/badge/PHP-8.2-777BB4?logo=php)](https://www.php.net)
-[![PostgreSQL](https://img.shields.io/badge/PostgreSQL-15-336791?logo=postgresql)](https://www.postgresql.org)
+This project runs in two modes:
 
-A production-ready, AWS-deployable alumni portal template with complete infrastructure as code, containerization, and CI/CD pipeline.
+1. Local mode (XAMPP + PostgreSQL) for fast development/testing.
+2. AWS mode (Terraform + ECS + RDS + S3) for production hosting.
 
-## ✨ Features
+The repo already includes:
 
-- 🚀 **Full AWS Deployment** - Complete Terraform infrastructure
-- 🐳 **Dockerized** - Containerized PHP application
-- 🗄️ **PostgreSQL** - RDS Multi-AZ database
-- 📦 **S3 Storage** - File uploads with CloudFront CDN
-- 🔒 **Secure** - VPC, Secrets Manager, encryption at rest
-- 📊 **Monitored** - CloudWatch logs and metrics
-- 🔄 **CI/CD** - GitHub Actions automated deployment
-- 📈 **Scalable** - ECS Fargate with auto-scaling
-- 💰 **Cost-Optimized** - ~$35/month dev, ~$215/month production
+- 77 API endpoints in `api/`
+- Models in `models/`
+- Cron jobs in `cron/`
+- AWS infra in `terraform/`
+- Deployment scripts in `deployment/`
+- Full local verification script: `verify_feature_matrix.ps1`
 
-## 🏗️ Architecture
+## 1. Local Setup (Windows + XAMPP + PostgreSQL)
 
-```
-Internet → Route 53 → CloudFront (CDN)
-                   ↓
-         Application Load Balancer
-                   ↓
-         ECS Fargate (2+ containers)
-                   ↓
-         ┌─────────┴─────────┐
-         ↓                   ↓
-    RDS PostgreSQL      S3 Bucket
-    (Multi-AZ)          (Uploads)
-```
+### Step 1: Start services
 
-## 📋 Prerequisites
+- Start Apache (XAMPP)
+- Start PostgreSQL (port `5432`)
 
-- AWS Account with appropriate permissions
-- [AWS CLI](https://aws.amazon.com/cli/) configured
-- [Docker](https://www.docker.com/) installed
-- [Terraform](https://www.terraform.io/) >= 1.0
-- [Git](https://git-scm.com/)
-- [Composer](https://getcomposer.org/) (for PHP dependencies)
-- PostgreSQL client (for migrations)
-
-## 🚀 Quick Start
-
-### 1. Clone and Configure
-
-```bash
-# Clone this repository
-git clone https://github.com/YOUR_USERNAME/alumni-portal-aws.git
-cd alumni-portal-aws
-
-# Install dependencies
-composer install --no-dev
-
-# Copy environment template
-cp .env.example .env
-# Edit .env with your local settings
-```
-
-### 2. Local Development
-
-```bash
-# Start with Docker Compose
-docker-compose up -d
-
-# Access at http://localhost:8080
-```
-
-### 3. Deploy to AWS
-
-```bash
-# Configure Terraform
-cd terraform
-cp terraform.tfvars.example terraform.tfvars
-# Edit terraform.tfvars and set db_password
-
-# Deploy infrastructure
-terraform init
-terraform apply
-
-# Build and push Docker image
-cd ..
-./deployment/deploy-aws.sh
-```
-
-See [QUICKSTART_AWS.md](QUICKSTART_AWS.md) for detailed instructions.
-
-## 📁 Project Structure
-
-```
-alumni_portal/
-├── api/                    # API endpoints (77+ endpoints)
-├── config/                 # Configuration files
-│   ├── AWS.php            # AWS SDK setup
-│   └── Database.php       # PostgreSQL connection
-├── deployment/            # Deployment scripts
-│   ├── apache/           # Apache configuration
-│   ├── deploy-aws.sh     # Automated deployment
-│   └── migrate-to-rds.sh # Database migration
-├── helpers/              # Helper classes
-│   └── S3Helper.php     # S3 file management
-├── includes/            # Shared includes
-├── models/              # Data models
-├── terraform/           # Infrastructure as Code
-│   ├── main.tf         # Terraform configuration
-│   ├── vpc.tf          # VPC setup
-│   ├── rds.tf          # PostgreSQL database
-│   ├── s3.tf           # S3 + CloudFront
-│   ├── ecs.tf          # ECS Fargate
-│   └── alb.tf          # Load balancer
-├── .github/
-│   └── workflows/
-│       └── deploy.yml  # CI/CD pipeline
-├── Dockerfile          # Container definition
-├── docker-compose.yml  # Local development
-└── README.md          # This file
-```
-
-## 🔧 Configuration
-
-### Environment Variables
-
-Create `.env` file (never commit this):
-
-```bash
-# Database
-DB_HOST=localhost
-DB_PORT=5432
-DB_NAME=alumni_portal
-DB_USER=postgres
-DB_PASSWORD=your_password
-
-# AWS (for production)
-AWS_ACCESS_KEY_ID=your_key
-AWS_SECRET_ACCESS_KEY=your_secret
-AWS_REGION=us-east-1
-AWS_BUCKET=alumni-portal-uploads
-```
-
-### Terraform Variables
-
-Edit `terraform/terraform.tfvars`:
-
-```hcl
-environment     = "production"
-aws_region      = "us-east-1"
-db_password     = "CHANGE_THIS_SECURE_PASSWORD"
-db_instance_class = "db.t3.medium"
-ecs_desired_count = 2
-```
-
-## 🐳 Docker
-
-### Local Development
-
-```bash
-# Start all services
-docker-compose up -d
-
-# View logs
-docker-compose logs -f
-
-# Stop services
-docker-compose down
-```
-
-### Build Production Image
-
-```bash
-docker build -t alumni-portal:latest .
-```
-
-## ☁️ AWS Deployment
-
-### Infrastructure Components
-
-- **VPC**: Isolated network with public/private subnets
-- **RDS**: PostgreSQL 15.4 (Multi-AZ, encrypted)
-- **ECS**: Fargate serverless containers
-- **ALB**: Application Load Balancer
-- **S3**: File storage with versioning
-- **CloudFront**: Global CDN
-- **Secrets Manager**: Secure credential storage
-- **CloudWatch**: Logging and monitoring
-
-### Deployment Steps
-
-1. **Deploy Infrastructure**
-   ```bash
-   cd terraform
-   terraform init
-   terraform apply
-   ```
-
-2. **Build & Push Image**
-   ```bash
-   ./deployment/deploy-aws.sh
-   ```
-
-3. **Migrate Database**
-   ```bash
-   ./deployment/migrate-to-rds.sh
-   ```
-
-4. **Access Application**
-   ```bash
-   # Get ALB DNS from Terraform output
-   terraform output alb_dns_name
-   ```
-
-See [AWS_DEPLOYMENT.md](AWS_DEPLOYMENT.md) for comprehensive guide.
-
-## 🔄 CI/CD
-
-### GitHub Actions
-
-Automated deployment on push to `main` branch.
-
-**Setup:**
-1. Add GitHub secrets:
-   - `AWS_ACCESS_KEY_ID`
-   - `AWS_SECRET_ACCESS_KEY`
-
-2. Push to main:
-   ```bash
-   git push origin main
-   ```
-
-3. Deployment runs automatically!
-
-## 💰 Cost Estimation
-
-### Development Environment
-- RDS (db.t3.micro): ~$15/month
-- ECS Fargate (1 task): ~$15/month
-- S3 + CloudFront: ~$2/month
-- **Total: ~$35/month**
-
-### Production Environment
-- RDS (db.t3.medium, Multi-AZ): ~$120/month
-- ECS Fargate (2 tasks): ~$60/month
-- ALB: ~$20/month
-- S3 + CloudFront: ~$15/month
-- **Total: ~$215/month**
-
-## 📊 Monitoring
-
-### CloudWatch Logs
-
-```bash
-# View application logs
-aws logs tail /aws/alumni-portal --follow
-```
-
-### Metrics
-
-## Local Fallback (XAMPP + PostgreSQL)
-
-Use this when AWS is not available, so you can keep development and testing unblocked:
-
-1. Start Apache from XAMPP.
-2. Start PostgreSQL (port `5432`).
-3. Confirm DB:
-   - `C:\xampp\php\php.exe db_test.php`
-4. Open app:
-   - `http://localhost/alumni_portal`
-
-Auto-start fallback added:
-
-- Startup script: `C:\Users\shiro\AppData\Roaming\Microsoft\Windows\Start Menu\Programs\Startup\start_xampp_postgres.bat`
-- Behavior: checks `127.0.0.1:5432`; starts PostgreSQL only if it is down.
-
-## Local Verification Command
-
-Run:
+### Step 2: Set DB environment variables (PowerShell)
 
 ```powershell
-powershell -ExecutionPolicy Bypass -File .\verify_local.ps1
+$env:DB_HOST="127.0.0.1"
+$env:DB_PORT="5432"
+$env:DB_NAME="alumni_portal"
+$env:DB_USER="postgres"
+$env:DB_PASSWORD="postgres"
 ```
 
-Optional authenticated checks:
+If your postgres password is different, set that value.
+
+### Step 3: Verify DB connection
 
 ```powershell
-$env:TEST_EMAIL="your_user@domain.com"
-$env:TEST_PASSWORD="your_password"
-powershell -ExecutionPolicy Bypass -File .\verify_local.ps1
+C:\xampp\php\php.exe .\db_test.php
 ```
 
-Access CloudWatch dashboard for:
-- ECS service metrics
-- ALB request metrics
-- RDS database metrics
-- Custom application metrics
+Expected: connection success message.
 
-## 🔒 Security
+### Step 4: Open app
 
-- ✅ Database in private subnets
-- ✅ Encryption at rest (RDS, S3)
-- ✅ Secrets Manager for credentials
-- ✅ Security groups with least privilege
-- ✅ VPC isolation
-- ✅ HTTPS ready (SSL certificate setup)
-- ✅ CloudWatch audit logs
+- `http://localhost/alumni_portal`
 
-## 📈 Scaling
+## 2. Full Local Verification
 
-### Horizontal Scaling
-```bash
-# Scale to 4 containers
-aws ecs update-service \
-  --cluster alumni-portal-cluster \
-  --service alumni-portal-service \
-  --desired-count 4
+Run this to test major features end-to-end with placeholder data:
+
+```powershell
+$env:PGPASSWORD="postgres"
+powershell -ExecutionPolicy Bypass -File .\verify_feature_matrix.ps1
 ```
 
-### Vertical Scaling
-Edit `terraform/terraform.tfvars`:
-```hcl
-ecs_task_cpu    = "1024"  # 1 vCPU
-ecs_task_memory = "2048"  # 2 GB
-```
+It validates:
 
-## 🛠️ Development
+- Auth and profile update
+- Feed/posts/comments/reactions
+- Messaging and inbox
+- Events and RSVP
+- Jobs and applications
+- Mentorship flow
+- Resources and success stories
+- Notifications read flow
+- Upload endpoints
+- Search endpoints
+- Live stream lifecycle
 
-### Local Setup
+## 3. PostgreSQL Setup Guide
 
-1. Install dependencies:
-   ```bash
-   composer install
-   ```
+See detailed DB guide:
 
-2. Set up database:
-   ```bash
-   createdb alumni_portal
-   psql alumni_portal < database/schema.sql
-   ```
+- `POSTGRES_SETUP.md`
 
-3. Start development server:
-   ```bash
-   docker-compose up
-   ```
+This includes:
 
-### Running Tests
+- Local DB creation
+- Backup and restore commands
+- RDS migration commands
 
-```bash
-# Run PHP tests
-./vendor/bin/phpunit
+## 4. AWS Deployment
 
-# Test API endpoints
-./test_all_features.ps1
-```
+If you want copy-paste production deployment, follow:
 
-## 🤝 Contributing
+1. `QUICKSTART_AWS.md` (fast path)
+2. `AWS_DEPLOYMENT.md` (complete details)
 
-This is a template repository. To use it:
+## 5. Important Files
 
-1. Click "Use this template" on GitHub
-2. Clone your new repository
-3. Customize for your institution
-4. Deploy to AWS!
+- `deployment/deploy-aws.sh` - build/push image and redeploy ECS
+- `deployment/migrate-to-rds.sh` - local PostgreSQL to AWS RDS migration
+- `deployment/sql/2026_02_20_create_mentorship_requests.sql` - required migration for mentorship
+- `verify_local.ps1` - lightweight local health checks
+- `verify_feature_matrix.ps1` - full feature matrix
 
-## 📝 Customization
+## 6. Notes for Production
 
-### Branding
-- Update `includes/header.php` with your logo
-- Modify color scheme in Tailwind classes
-- Change institution name throughout
+- Never commit `.env` files.
+- Keep DB credentials in AWS Secrets Manager / ECS env vars.
+- Use RDS for DB and S3 for uploads in production.
+- Run SQL migrations on RDS before first production traffic.
 
-### Features
-- Add/remove API endpoints in `api/`
-- Customize pages in root directory
-- Modify database schema in `database/`
+## 7. Current Status
 
-## 🐛 Troubleshooting
+Latest local verification result:
 
-### Database Connection Issues
-```bash
-# Test RDS connectivity
-nc -zv <rds-endpoint> 5432
-```
-
-### ECS Tasks Not Starting
-```bash
-# Check task logs
-aws ecs describe-tasks --cluster alumni-portal-cluster --tasks <task-id>
-```
-
-### ALB Health Checks Failing
-```bash
-# Verify health endpoint
-curl http://<alb-dns>/live.php
-```
-
-See [AWS_DEPLOYMENT.md](AWS_DEPLOYMENT.md) for more troubleshooting.
-
-## 📚 Documentation
-
-- [Quick Start Guide](QUICKSTART_AWS.md)
-- [AWS Deployment Guide](AWS_DEPLOYMENT.md)
-- [Original Deployment Guide](DEPLOYMENT.md)
-
-## 🔗 Useful Links
-
-- [AWS Documentation](https://docs.aws.amazon.com/)
-- [Terraform AWS Provider](https://registry.terraform.io/providers/hashicorp/aws/latest/docs)
-- [Docker Documentation](https://docs.docker.com/)
-- [PostgreSQL Documentation](https://www.postgresql.org/docs/)
-
-## 📄 License
-
-This is a template project. Feel free to use it for your institution's alumni portal.
-
-## 🙏 Acknowledgments
-
-Built for RJIT (Rajiv Gandhi Institute of Technology) Alumni Portal.
-
-## 📧 Support
-
-For issues or questions:
-- Open an issue on GitHub
-- Check documentation in `AWS_DEPLOYMENT.md`
-- Review CloudWatch logs for errors
-
----
-
-**Made with ❤️ for educational institutions worldwide**
-
-🌟 **Star this repo if you find it useful!**
+- API/model/cron lint: pass
+- API runtime fatal sweep: pass
+- Full feature matrix: pass

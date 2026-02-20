@@ -1,5 +1,6 @@
 // Authentication and API helper functions
-const API_BASE = 'api'; // Adjust based on your setup
+const IS_ADMIN_ROUTE = window.location.pathname.includes('/admin/');
+const API_BASE = IS_ADMIN_ROUTE ? '../api' : 'api';
 
 // Check authentication on page load
 function checkAuth() {
@@ -15,8 +16,7 @@ function checkAuth() {
 async function makeApiCall(endpoint, method = 'GET', body = null) {
     const token = localStorage.getItem('jwt_token');
     const headers = {
-        'Authorization': `Bearer ${token}`,
-        'Content-Type': 'application/json'
+        'Authorization': `Bearer ${token}`
     };
 
     const config = {
@@ -24,8 +24,13 @@ async function makeApiCall(endpoint, method = 'GET', body = null) {
         headers: headers
     };
 
-    if (body && (method === 'POST' || method === 'PUT')) {
-        config.body = JSON.stringify(body);
+    if (body && (method === 'POST' || method === 'PUT' || method === 'PATCH' || method === 'DELETE')) {
+        if (body instanceof FormData) {
+            config.body = body;
+        } else {
+            headers['Content-Type'] = 'application/json';
+            config.body = JSON.stringify(body);
+        }
     }
 
     try {

@@ -78,7 +78,7 @@ class Event {
                 'visibility' => $visibility,
                 'rsvp_limit' => $rsvp_limit,
                 'banner_url' => $banner_url,
-                'has_live_stream' => !empty($live_stream_url),
+                'has_live_stream' => !empty($live_stream_url) ? 'true' : 'false',
                 'live_stream_url' => $live_stream_url,
                 'status' => $status
             ]);

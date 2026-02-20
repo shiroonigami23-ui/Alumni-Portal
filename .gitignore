@@ -24,6 +24,7 @@ credentials
 *.bak
 deployment/db-backups/
 *.backup
+!deployment/sql/*.sql
 
 # Logs
 *.log
@@ -60,6 +61,18 @@ storage/uploads/
 storage/avatars/
 storage/documents/
 storage/profile_pictures/
+storage/comments/comm_*.txt
+storage/messages/msg_*.txt
+storage/jobs/job_desc_*.txt
+storage/posts/post_body_*.txt
+storage/posts/file_*.pdf
+storage/resumes/cv_*.pdf
+storage/stories/story_*.txt
+storage/profiles/avatar_*.jpg
+storage/profiles/avatar_*.jpeg
+storage/profiles/avatar_*.png
+docs/feature_matrix_report.json
+docs/full_system_audit.json
 
 # Test files
 test_*.php
