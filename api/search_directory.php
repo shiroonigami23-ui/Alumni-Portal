@@ -36,7 +36,51 @@ $graduation_year = $_GET['year'] ?? null;
 $company = $_GET['company'] ?? null;
 $tech = $_GET['tech'] ?? null;
 $location = $_GET['location'] ?? null;
-$search = $_GET['search'] ?? null; // General search term
+$search = $_GET['search'] ?? null;
+$branch = $_GET['branch'] ?? null;
+$sort = $_GET['sort'] ?? 'name_asc';
+$page = max(1, (int)($_GET['page'] ?? 1));
+$limit = max(1, min(50, (int)($_GET['limit'] ?? 12)));
+$offset = ($page - 1) * $limit;
+
+function branchAliases(string $branchFilter): array
+{
+    $normalized = strtolower(trim($branchFilter));
+    if ($normalized === '') {
+        return [];
+    }
+
+    $map = [
+        'cs' => ['cs', 'cse', 'computer science', 'computer science & engineering', 'department of computer science & engineering'],
+        'cse' => ['cs', 'cse', 'computer science', 'computer science & engineering', 'department of computer science & engineering'],
+        'it' => ['it', 'information technology', 'department of information technology'],
+        'ce' => ['ce', 'civil engineering', 'department of civil engineering'],
+        'ee' => ['ee', 'electrical engineering', 'department of electrical engineering'],
+        'ece' => ['ece', 'electronics & communication', 'electronics & communications', 'department of electronics & communications'],
+        'me' => ['me', 'mechanical engineering', 'department of mechanical engineering'],
+        'au' => ['au', 'automobile engineering', 'department of automobile engineering'],
+    ];
+
+    if (isset($map[$normalized])) {
+        return $map[$normalized];
+    }
+
+    return [$normalized];
+}
+
+function deriveJoinedYear(?string $rollNumber): ?int
+{
+    if (!$rollNumber) {
+        return null;
+    }
+
+    if (preg_match('/^\d{4}[A-Za-z]{2,4}(\d{2})\d+$/', strtoupper(trim($rollNumber)), $m) !== 1) {
+        return null;
+    }
+
+    $yy = (int)$m[1];
+    return 2000 + $yy;
+}
 
 try {
     // Re-using $pdo from above
@@ -50,7 +94,88 @@ try {
         exit;
     }
 
-    // Base query - join users, profiles, and aggregate tech skills
+    $baseQuery = "
+        FROM users u
+        JOIN profiles p ON u.user_id = p.user_id
+        WHERE u.status = 'active'
+    ";
+
+    $where = "";
+    $params = [];
+
+    // Filter by role
+    if ($role) {
+        $where .= " AND u.role = :role";
+        $params[':role'] = $role;
+    }
+
+    if ($graduation_year) {
+        $where .= " AND p.graduation_year = :graduation_year";
+        $params[':graduation_year'] = (int)$graduation_year;
+    }
+
+    if ($branch) {
+        $aliases = branchAliases((string)$branch);
+        if (!empty($aliases)) {
+            $branchParams = [];
+            foreach ($aliases as $idx => $alias) {
+                $ph = ':branch_' . $idx;
+                $branchParams[] = $ph;
+                $params[$ph] = strtolower($alias);
+            }
+            $inClause = implode(', ', $branchParams);
+            $where .= " AND (
+                LOWER(COALESCE(p.branch, '')) IN ($inClause)
+                OR LOWER(COALESCE(p.department, '')) IN ($inClause)
+            )";
+        }
+    }
+
+    if ($company) {
+        $where .= " AND LOWER(COALESCE(p.current_company, '')) LIKE LOWER(:company)";
+        $params[':company'] = '%' . $company . '%';
+    }
+
+    if ($location) {
+        $where .= " AND (LOWER(COALESCE(p.location_city, '')) LIKE LOWER(:location) OR LOWER(COALESCE(p.location_country, '')) LIKE LOWER(:location))";
+        $params[':location'] = '%' . $location . '%';
+    }
+
+    if ($tech) {
+        $where .= " AND EXISTS (
+            SELECT 1 
+            FROM user_skills us
+            JOIN tech_skills ts ON us.skill_id = ts.skill_id
+            WHERE us.user_id = u.user_id 
+            AND LOWER(ts.skill_name) LIKE LOWER(:tech)
+        )";
+        $params[':tech'] = '%' . $tech . '%';
+    }
+
+    if ($search) {
+        $where .= " AND (
+            LOWER(COALESCE(p.full_name, '')) LIKE LOWER(:search)
+            OR LOWER(COALESCE(p.bio, '')) LIKE LOWER(:search)
+            OR LOWER(COALESCE(p.current_company, '')) LIKE LOWER(:search)
+            OR LOWER(COALESCE(p.location_city, '')) LIKE LOWER(:search)
+            OR LOWER(COALESCE(p.department, '')) LIKE LOWER(:search)
+        )";
+        $params[':search'] = '%' . $search . '%';
+    }
+
+    if ($currentUserRole !== 'admin') {
+        $where .= " AND COALESCE(p.is_private, false) = FALSE";
+    }
+
+    $orderBy = " ORDER BY p.full_name ASC";
+    if ($sort === 'name_desc') {
+        $orderBy = " ORDER BY p.full_name DESC";
+    } elseif ($sort === 'year_desc') {
+        $orderBy = " ORDER BY p.graduation_year DESC NULLS LAST, p.full_name ASC";
+    } elseif ($sort === 'year_asc') {
+        $orderBy = " ORDER BY p.graduation_year ASC NULLS LAST, p.full_name ASC";
+    }
+
     $query = "
         SELECT DISTINCT
             u.user_id,
@@ -63,6 +188,7 @@ try {
             p.location_country,
             p.branch,
             p.department,
+            p.roll_number,
             p.designation,
             p.profile_picture_url,
             p.bio,
@@ -77,76 +203,90 @@ try {
                 ), 
                 ''
             ) AS tech_stack
-        FROM users u
-        JOIN profiles p ON u.user_id = p.user_id
-        WHERE u.status = 'active'
+        $baseQuery
+        $where
+        $orderBy
+        LIMIT :limit OFFSET :offset
     ";
 
-    $params = [];
-
-    // Filter by role
-    if ($role) {
-        $query .= " AND u.role = :role";
-        $params[':role'] = $role;
-    }
-
-    // Filter by graduation year
-    if ($graduation_year) {
-        $query .= " AND p.graduation_year = :graduation_year";
-        $params[':graduation_year'] = (int)$graduation_year;
-    }
-
-    // Filter by company
-    if ($company) {
-        $query .= " AND LOWER(p.current_company) LIKE LOWER(:company)";
-        $params[':company'] = '%' . $company . '%';
-    }
-
-    // Filter by location
-    if ($location) {
-        $query .= " AND (LOWER(p.location_city) LIKE LOWER(:location) OR LOWER(p.location_country) LIKE LOWER(:location))";
-        $params[':location'] = '%' . $location . '%';
-    }
-
-    // Filter by tech stack (search in user_skills)
-    if ($tech) {
-        $query .= " AND EXISTS (
-            SELECT 1 
-            FROM user_skills us
-            JOIN tech_skills ts ON us.skill_id = ts.skill_id
-            WHERE us.user_id = u.user_id 
-            AND LOWER(ts.skill_name) LIKE LOWER(:tech)
-        )";
-        $params[':tech'] = '%' . $tech . '%';
-    }
-
-    // General search (name, bio, company, location)
-    if ($search) {
-        $query .= " AND (
-            LOWER(p.full_name) LIKE LOWER(:search)
-            OR LOWER(p.bio) LIKE LOWER(:search)
-            OR LOWER(p.current_company) LIKE LOWER(:search)
-            OR LOWER(p.location_city) LIKE LOWER(:search)
-            OR LOWER(p.department) LIKE LOWER(:search)
-        )";
-        $params[':search'] = '%' . $search . '%';
-    }
-
-    // Exclude private profiles (unless admin)
-    if ($currentUserRole !== 'admin') {
-        $query .= " AND p.is_private = FALSE";
-    }
-
-    // Order by name
-    $query .= " ORDER BY p.full_name ASC";
-
     $stmt = $pdo->prepare($query);
-    $stmt->execute($params);
+    $countStmt = $pdo->prepare("SELECT COUNT(DISTINCT u.user_id) $baseQuery $where");
+    $countStmt->execute($params);
+    $total = (int)$countStmt->fetchColumn();
+
+    foreach ($params as $key => $value) {
+        $stmt->bindValue($key, $value);
+    }
+    $stmt->bindValue(':limit', $limit, PDO::PARAM_INT);
+    $stmt->bindValue(':offset', $offset, PDO::PARAM_INT);
+    $stmt->execute();
 
     $results = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    $mapped = array_map(static function (array $row): array {
+        $location = trim(implode(', ', array_filter([$row['location_city'] ?? '', $row['location_country'] ?? ''])));
+        $skills = array_values(array_filter(array_map('trim', explode(',', (string)($row['tech_stack'] ?? '')))));
+        $role = (string)($row['role'] ?? '');
+        $graduationYear = $row['graduation_year'] ? (int)$row['graduation_year'] : null;
+        $joinedYear = null;
+        if ($role === 'student') {
+            $joinedYear = deriveJoinedYear($row['roll_number'] ?? null);
+        }
+
+        $yearDisplay = null;
+        if ($role === 'student' && $joinedYear) {
+            $yearDisplay = "Joined in " . $joinedYear;
+        } elseif ($role === 'alumni' && $graduationYear) {
+            $startYear = $graduationYear - 4;
+            $yearDisplay = $startYear . "-" . $graduationYear;
+        } elseif ($graduationYear) {
+            $yearDisplay = (string)$graduationYear;
+        }
+
+        return [
+            'id' => (int)$row['user_id'],
+            'role' => $role,
+            'name' => (string)($row['full_name'] ?: 'RJIT Member'),
+            'graduation_year' => $graduationYear,
+            'joined_year' => $joinedYear,
+            'year_display' => $yearDisplay,
+            'current_company' => $row['current_company'] ?? null,
+            'current_position' => $row['job_role'] ?? $row['designation'] ?? null,
+            'location' => $location ?: null,
+            'branch' => $row['branch'] ?? null,
+            'department' => $row['department'] ?? null,
+            'roll_number' => $row['roll_number'] ?? null,
+            'avatar' => $row['profile_picture_url'] ? str_replace('\\', '/', (string)$row['profile_picture_url']) : null,
+            'bio' => $row['bio'] ?? null,
+            'skills' => $skills,
+            'is_private' => false
+        ];
+    }, $results);
+
+    $topCompaniesStmt = $pdo->prepare("
+        SELECT p.current_company AS company, COUNT(*)::int AS count
+        FROM users u
+        JOIN profiles p ON p.user_id = u.user_id
+        WHERE u.status = 'active'
+          AND COALESCE(p.current_company, '') <> ''
+        GROUP BY p.current_company
+        ORDER BY COUNT(*) DESC, p.current_company ASC
+        LIMIT 6
+    ");
+    $topCompaniesStmt->execute();
+    $topCompanies = array_map(static function (array $r): array {
+        return ['name' => (string)$r['company'], 'count' => (int)$r['count']];
+    }, $topCompaniesStmt->fetchAll(PDO::FETCH_ASSOC));
 
     echo json_encode([
-        'Count' => count($results),
+        'success' => true,
+        'status' => 'success',
+        'total' => $total,
+        'page' => $page,
+        'per_page' => $limit,
+        'data' => $mapped,
+        'top_companies' => $topCompanies,
+        // Legacy keys for compatibility
+        'Count' => $total,
         'value' => $results
     ]);
 } catch (PDOException $e) {

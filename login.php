@@ -103,15 +103,12 @@ if (isset($_COOKIE['jwt_token']) || (isset($_SESSION) && isset($_SESSION['jwt_to
         <!-- Register Links -->
         <div class="text-center space-y-3">
             <p class="text-gray-600">Don't have an account?</p>
-            <div class="grid grid-cols-3 gap-3">
+            <div class="grid grid-cols-2 gap-3">
                 <a href="register.php?type=student" class="block bg-gray-100 hover:bg-gray-200 text-gray-800 py-2 px-4 rounded-lg text-sm font-medium transition duration-300">
                     Student
                 </a>
                 <a href="register.php?type=alumni" class="block bg-blue-50 hover:bg-blue-100 text-blue-700 py-2 px-4 rounded-lg text-sm font-medium transition duration-300">
                     Alumni
-                </a>
-                <a href="register.php?type=faculty" class="block bg-blue-100 hover:bg-blue-200 text-blue-800 py-2 px-4 rounded-lg text-sm font-medium transition duration-300">
-                    Faculty
                 </a>
             </div>
         </div>
@@ -163,7 +160,13 @@ if (isset($_COOKIE['jwt_token']) || (isset($_SESSION) && isset($_SESSION['jwt_to
                 });
                 
                 console.log('2. Login response status:', response.status);
-                const data = await response.json();
+                const loginResponseText = await response.text();
+                let data;
+                try {
+                    data = JSON.parse(loginResponseText);
+                } catch (parseError) {
+                    throw new Error('Login API returned non-JSON response. Check server/PHP logs.');
+                }
                 console.log('3. Login response data:', data);
                 
                 if (data.success) {

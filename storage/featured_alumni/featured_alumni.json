@@ -1,0 +1,85 @@
+[
+  {
+    "id": "shalini-dubey-2015-2019",
+    "name": "Ms. Shalini Dubey",
+    "position": "Entrepreneur",
+    "branch": "Automobile",
+    "graduation_year": 2019,
+    "company": "Germany",
+    "visit_date": "2026-02-11",
+    "summary": "Shared insights on startup culture, engineering career pathways, and global opportunities.",
+    "images": [
+      "assets/images/featured_alumni/alumni_visits_shalini1.jpeg",
+      "assets/images/featured_alumni/alumni_visits_shalini2.jpeg"
+    ]
+  },
+  {
+    "id": "saurabh-sikarwar-1999-2003",
+    "name": "Mr. Saurabh Sikarwar",
+    "position": "Country Head Sales",
+    "branch": "Automobile",
+    "graduation_year": 2003,
+    "company": "Wipro Hydraulics",
+    "visit_date": "2026-02-10",
+    "summary": "Discussed leadership growth, industry expectations, and career acceleration for graduates.",
+    "images": [
+      "assets/images/featured_alumni/alumni_visits_saurabh1.jpeg",
+      "assets/images/featured_alumni/alumni_visits_saurabh2.jpeg"
+    ]
+  },
+  {
+    "id": "sandhya-singh-2003-2007",
+    "name": "Ms. Sandhya Singh",
+    "position": "Delivery Manager",
+    "branch": "Automobile",
+    "graduation_year": 2007,
+    "company": "Volvo Sweden (Online Session)",
+    "visit_date": "2026-02-07",
+    "summary": "Mentored students remotely on project execution and automotive technology trends.",
+    "images": [
+      "assets/images/featured_alumni/alumni_visits_sandhya1.jpeg",
+      "assets/images/featured_alumni/alumni_visits_sandhya2.jpeg"
+    ]
+  },
+  {
+    "id": "ayush-chandel-2011-2015",
+    "name": "Mr. Ayush Chandel",
+    "position": "Supply Chain Manager",
+    "branch": "Automobile",
+    "graduation_year": 2015,
+    "company": "Pernod Ricard France",
+    "visit_date": "2026-02-04",
+    "summary": "Guided students on career preparation, domain depth, and communication in global roles.",
+    "images": [
+      "assets/images/featured_alumni/alumni_visits_ayush1.jpeg",
+      "assets/images/featured_alumni/alumni_visits_ayush2.jpeg"
+    ]
+  },
+  {
+    "id": "anand-rathore-1999-2003",
+    "name": "Mr. Anand Rathore",
+    "position": "Industry Leader",
+    "branch": "Electronics & Communication",
+    "graduation_year": 2003,
+    "company": "Nokia, Sydney",
+    "visit_date": "2026-01-02",
+    "summary": "Spoke about practical learning, consistency, and building long-term technical careers.",
+    "images": [
+      "assets/images/featured_alumni/alumni_visits_anant.jpeg",
+      "assets/images/featured_alumni/alumni_visits_anant2.jpeg"
+    ]
+  },
+  {
+    "id": "divyanshu-purohit-2010-2014",
+    "name": "Mr. Divyanshu Purohit",
+    "position": "Alumni Mentor",
+    "branch": "Automobile",
+    "graduation_year": 2014,
+    "company": "RJIT Alumni Network",
+    "visit_date": "2025-11-26",
+    "summary": "Interacted with students on higher studies planning and structured career growth.",
+    "images": [
+      "assets/images/featured_alumni/alumni_visits_divP2.jpeg"
+    ]
+  }
+]

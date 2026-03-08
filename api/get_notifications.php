@@ -29,8 +29,26 @@ foreach($notifications as $n) {
     if (is_null($n['read_at'])) $unread_count++;
 }
 
+$data = array_map(function ($n) {
+    $icon = 'bell';
+    if (($n['notification_type'] ?? '') === 'new_comment') $icon = 'message-square';
+    if (($n['notification_type'] ?? '') === 'new_like') $icon = 'heart';
+    if (($n['notification_type'] ?? '') === 'new_message') $icon = 'mail';
+    if (($n['notification_type'] ?? '') === 'connection_request') $icon = 'user-plus';
+    return [
+        'notification_id' => $n['notification_id'] ?? null,
+        'message' => $n['content'] ?? 'New notification',
+        'icon' => $icon,
+        'created_at' => $n['created_at'] ?? null,
+        'read_at' => $n['read_at'] ?? null
+    ];
+}, $notifications);
+
 echo json_encode([
+    "success" => true,
+    "status" => "success",
     "unread_count" => $unread_count,
-    "notifications" => $notifications
+    "data" => $data,
+    "notifications" => $data
 ]);
 ?>

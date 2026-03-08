@@ -7,6 +7,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#0f172a">
+    <link rel="manifest" href="manifest.webmanifest">
+    <link rel="icon" type="image/png" sizes="192x192" href="assets/icons/app-icon-192.png">
+    <link rel="apple-touch-icon" href="assets/icons/app-icon-192.png">
     <title>Feed - RJIT Alumni Portal</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
@@ -16,6 +20,7 @@
     <link rel="stylesheet" href="assets/css/variety-ui.css">
     <script src="includes/auth-check.js"></script>
     <script src="assets/js/variety-ui.js" defer></script>
+    <script src="assets/js/pwa.js" defer></script>
     
     <style>
         .post-card {
@@ -39,7 +44,11 @@
         }
         
         .comment-box.open {
-            max-height: 500px;
+            max-height: 2200px;
+        }
+
+        .comment-thread-indent {
+            border-left: 2px solid #e5e7eb;
         }
     </style>
 </head>
@@ -57,73 +66,51 @@
             </div>
 
             <!-- Create Post Section -->
-            <div id="createPostSection" class="bg-white rounded-xl shadow-sm p-6 mb-8 hidden">
-                <div class="flex items-start mb-4">
-                    <div class="flex-shrink-0">
-                        <img id="userFeedAvatar" 
-                             src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='48' height='48' viewBox='0 0 48 48'%3E%3Crect width='48' height='48' fill='%23dbeafe'/%3E%3Ctext x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' font-family='Arial' font-size='14' fill='%233b82f6'%3EU%3C/text%3E%3C/svg%3E" 
-                             alt="Profile" 
-                             class="h-12 w-12 rounded-full">
-                    </div>
-                    <div class="ml-4 flex-1">
-                        <h3 class="font-medium text-gray-900" id="userFeedName">Share your thoughts</h3>
-                        <form id="createPostForm" class="mt-4">
+            <div id="createPostSection" class="bg-white rounded-xl shadow-sm p-4 mb-8 hidden">
+                <div class="flex items-start mb-2">
+                    <img id="userFeedAvatar" 
+                         src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='48' height='48' viewBox='0 0 48 48'%3E%3Crect width='48' height='48' fill='%23dbeafe'/%3E%3Ctext x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' font-family='Arial' font-size='14' fill='%233b82f6'%3EU%3C/text%3E%3C/svg%3E" 
+                         alt="Profile" 
+                         class="h-11 w-11 rounded-full">
+                    <div class="ml-3 flex-1">
+                        <h3 class="font-medium text-gray-900 text-sm" id="userFeedName">Share your thoughts</h3>
+                        <form id="createPostForm" class="mt-2">
                             <textarea id="postContent" 
-                                      rows="4"
-                                      class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
-                                      placeholder="What's on your mind?"></textarea>
-                            
-                            <!-- File Uploads -->
-                            <div class="mt-4 space-y-4">
-                                <div>
-                                    <label class="block text-sm font-medium text-gray-700 mb-2">Add Images (Optional)</label>
-                                    <div class="flex items-center space-x-4">
-                                        <label for="postImages" class="cursor-pointer">
-                                            <div class="h-20 w-20 border-2 border-dashed border-gray-300 rounded-lg flex items-center justify-center hover:border-blue-400 hover:bg-blue-50">
-                                                <i data-lucide="image" class="h-6 w-6 text-gray-400"></i>
-                                            </div>
-                                            <input type="file" id="postImages" name="images[]" accept="image/*" multiple class="hidden">
-                                        </label>
-                                        <div id="imagePreviews" class="flex space-x-2"></div>
+                                      rows="3"
+                                      class="w-full px-3 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
+                                      placeholder="What's happening?"></textarea>
+
+                            <div id="postMediaPanel" class="hidden mt-3 border border-dashed border-gray-300 rounded-xl p-3">
+                                <div class="grid sm:grid-cols-2 gap-3">
+                                    <div>
+                                        <label class="text-xs text-gray-600">Images</label>
+                                        <input type="file" id="postImages" name="images[]" accept="image/*" multiple class="block mt-1 text-xs">
+                                        <div id="imagePreviews" class="flex flex-wrap gap-2 mt-2"></div>
+                                    </div>
+                                    <div>
+                                        <label class="text-xs text-gray-600">Files</label>
+                                        <input type="file" id="postFiles" name="files[]" multiple class="block mt-1 text-xs">
+                                        <div id="filePreviews" class="flex flex-wrap gap-2 mt-2"></div>
                                     </div>
                                 </div>
-                                
-                                <div>
-                                    <label class="block text-sm font-medium text-gray-700 mb-2">Add Files (Optional)</label>
-                                    <div class="flex items-center space-x-4">
-                                        <label for="postFiles" class="cursor-pointer">
-                                            <div class="h-20 w-20 border-2 border-dashed border-gray-300 rounded-lg flex items-center justify-center hover:border-blue-400 hover:bg-blue-50">
-                                                <i data-lucide="paperclip" class="h-6 w-6 text-gray-400"></i>
-                                            </div>
-                                            <input type="file" id="postFiles" name="files[]" multiple class="hidden">
-                                        </label>
-                                        <div id="filePreviews" class="flex space-x-2"></div>
-                                    </div>
+                                <div class="mt-3">
+                                    <label class="text-xs text-gray-600">GIF URL (optional)</label>
+                                    <input type="url" id="postGifUrl" class="w-full mt-1 px-2 py-1 border border-gray-300 rounded text-xs" placeholder="https://media.giphy.com/...">
                                 </div>
                             </div>
-                            
-                            <!-- Post Options -->
-                            <div class="mt-6 flex items-center justify-between">
-                                <div class="flex items-center space-x-6">
-                                    <div class="flex items-center">
-                                        <input type="checkbox" id="allowComments" name="allow_comments" checked class="h-4 w-4 text-blue-600 rounded">
-                                        <label for="allowComments" class="ml-2 text-sm text-gray-700">Allow comments</label>
-                                    </div>
-                                    
-                                    <div class="flex items-center">
-                                        <input type="checkbox" id="pinPost" name="pin_post" class="h-4 w-4 text-amber-600 rounded">
-                                        <label for="pinPost" class="ml-2 text-sm text-gray-700">Pin to profile</label>
-                                    </div>
+
+                            <div class="mt-3 flex items-center justify-between gap-2">
+                                <div class="flex items-center gap-2">
+                                    <button id="togglePostMediaBtn" type="button" class="p-2 rounded-full hover:bg-blue-50 text-blue-600" title="Media & files">
+                                        <i data-lucide="image-plus" class="h-4 w-4"></i>
+                                    </button>
+                                    <input type="checkbox" id="allowComments" name="allow_comments" checked class="h-4 w-4 text-blue-600 rounded">
+                                    <label for="allowComments" class="text-xs text-gray-700">Allow comments</label>
                                 </div>
-                                
-                                <div class="flex items-center space-x-4">
-                                    <button type="button" onclick="clearPostForm()" class="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 font-medium">
-                                        Clear
-                                    </button>
-                                    <button type="submit" 
-                                            class="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 font-medium">
-                                        Post
-                                    </button>
+
+                                <div class="flex items-center gap-2">
+                                    <button type="button" onclick="clearPostForm()" class="px-3 py-1.5 border border-gray-300 rounded-full text-sm text-gray-700 hover:bg-gray-50 font-medium">Clear</button>
+                                    <button type="submit" class="bg-blue-600 text-white px-5 py-1.5 rounded-full hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 font-medium">Post</button>
                                 </div>
                             </div>
                         </form>
@@ -164,17 +151,6 @@
                 </div>
             </div>
 
-            <!-- Pinned Posts Section -->
-            <div id="pinnedPostsSection" class="mb-8 hidden">
-                <h2 class="text-lg font-semibold text-gray-900 mb-4 flex items-center">
-                    <i data-lucide="pin" class="h-5 w-5 text-amber-500 mr-2"></i>
-                    Pinned Posts
-                </h2>
-                <div id="pinnedPosts" class="space-y-4">
-                    <!-- Pinned posts will be loaded here -->
-                </div>
-            </div>
-
             <!-- Main Feed -->
             <div id="feedContainer">
                 <div class="space-y-6">
@@ -209,6 +185,13 @@
                         <textarea class="comment-input w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none" 
                                   rows="2" 
                                   placeholder="Write a comment..."></textarea>
+                        <div class="mt-2 flex items-center gap-2">
+                            <input type="file" class="comment-image hidden" accept="image/*">
+                            <input type="file" class="comment-file hidden">
+                            <button type="button" class="comment-add-image p-1.5 rounded-full hover:bg-blue-50 text-blue-600" title="Add image"><i data-lucide="image" class="h-4 w-4"></i></button>
+                            <button type="button" class="comment-add-file p-1.5 rounded-full hover:bg-blue-50 text-blue-600" title="Add file"><i data-lucide="paperclip" class="h-4 w-4"></i></button>
+                            <input type="url" class="comment-gif-url flex-1 max-w-xs px-2 py-1 border border-gray-300 rounded text-xs" placeholder="GIF URL (optional)">
+                        </div>
                         <div class="mt-2 flex justify-end">
                             <button type="button" class="post-comment-btn bg-blue-600 text-white px-4 py-1.5 rounded-lg text-sm hover:bg-blue-700">
                                 Post Comment
@@ -233,12 +216,40 @@
         let hasMorePosts = true;
         let currentFilter = 'all';
         let currentSort = 'newest';
+        let currentUserId = 0;
+        let currentUserRole = '';
+        let feedRefreshTimer = null;
+        const openCommentPosts = new Set();
+        const commentRefreshTimers = new Map();
+        const commentRenderState = new Map();
+        const viewedPostIds = new Set();
+        let postViewObserver = null;
+        let pendingSharedPostId = 0;
+        let pendingOpenCommentsPostId = 0;
+        const postStateCache = new Map();
         
         // Load feed data
         document.addEventListener('DOMContentLoaded', async function() {
             await loadUserProfile();
+            await processSharedLinkOpen();
+            processOpenCommentsParam();
             await loadFeed();
             setupEventListeners();
+            startFeedAutoRefresh();
+            focusSharedPostIfAny();
+            openCommentsIfRequested();
+        });
+
+        window.addEventListener('beforeunload', () => {
+            if (feedRefreshTimer) clearInterval(feedRefreshTimer);
+            for (const timer of commentRefreshTimers.values()) {
+                clearInterval(timer);
+            }
+            commentRefreshTimers.clear();
+            if (postViewObserver) {
+                postViewObserver.disconnect();
+                postViewObserver = null;
+            }
         });
         
         async function loadUserProfile() {
@@ -246,16 +257,36 @@
                 const userData = localStorage.getItem('user_data');
                 if (userData) {
                     const user = JSON.parse(userData);
+                    currentUserId = parseInt(user.user_id || user.id || 0, 10) || 0;
+                    currentUserRole = String(user.role || '').toLowerCase();
                     
                     // Update user info in create post section
-                    document.getElementById('userFeedName').textContent = user.name || 'Share your thoughts';
+                    document.getElementById('userFeedName').textContent = user.full_name || user.name || user.email || 'Share your thoughts';
                     
-                    if (user.profile_pic) {
-                        document.getElementById('userFeedAvatar').src = user.profile_pic;
+                    if (user.profile_picture || user.profile_picture_url || user.profile_pic) {
+                        document.getElementById('userFeedAvatar').src = user.profile_picture || user.profile_picture_url || user.profile_pic;
                     }
                     
                     // Show create post section if user can post
-                    if (user.can_post) {
+                    const canPost = (user.role === 'admin' || user.role === 'faculty' || user.role === 'alumni' || !!user.can_post);
+                    if (canPost) {
+                        document.getElementById('createPostSection').classList.remove('hidden');
+                    }
+                }
+
+                // Refresh from authoritative API and sync local cache
+                const me = await makeApiCall('me.php');
+                if (me && me.success && me.data) {
+                    localStorage.setItem('user_data', JSON.stringify(me.data));
+                    const user = me.data;
+                    currentUserId = parseInt(user.user_id || user.id || 0, 10) || 0;
+                    currentUserRole = String(user.role || '').toLowerCase();
+                    document.getElementById('userFeedName').textContent = user.full_name || user.name || user.email || 'Share your thoughts';
+                    if (user.profile_picture || user.profile_picture_url || user.profile_pic) {
+                        document.getElementById('userFeedAvatar').src = user.profile_picture || user.profile_picture_url || user.profile_pic;
+                    }
+                    const canPost = (user.role === 'admin' || user.role === 'faculty' || user.role === 'alumni' || !!user.can_post);
+                    if (canPost) {
                         document.getElementById('createPostSection').classList.remove('hidden');
                     }
                 }
@@ -275,28 +306,22 @@
                 const response = await makeApiCall(`get_feed.php?page=${currentPage}&filter=${currentFilter}&sort=${currentSort}`);
                 
                 if (response && (response.success || response.status === 'success')) {
-                    const posts = response.data || [];
+                    let posts = response.data || [];
+                    posts = posts.map((p) => ({ ...p, ...(postStateCache.get(Number(p.id)) || {}) }));
                     const totalPosts = response.total || 0;
                     
                     if (currentPage === 1) {
                         feedContainer.innerHTML = '';
-                        
-                        // Check for pinned posts
-                        const pinnedPosts = posts.filter(post => post.is_pinned);
-                        if (pinnedPosts.length > 0) {
-                            await loadPinnedPosts(pinnedPosts);
-                        }
-                        
-                        // Filter out pinned posts from regular feed
-                        const regularPosts = posts.filter(post => !post.is_pinned);
-                        
-                        if (regularPosts.length === 0 && pinnedPosts.length === 0) {
+
+                        if (posts.length === 0) {
                             showNoPostsMessage();
-                        } else if (regularPosts.length > 0) {
-                            await renderPosts(regularPosts);
+                        } else {
+                            await renderPosts(posts);
+                            openCommentsIfRequested();
                         }
                     } else {
                         await renderPosts(posts);
+                        openCommentsIfRequested();
                     }
                     
                     // Check if there are more posts to load
@@ -309,30 +334,13 @@
                         loadMoreContainer.classList.add('hidden');
                     }
                 } else {
-                    showNoPostsMessage();
+                    showErrorMessage(response?.message || 'Unable to load posts');
                 }
             } catch (error) {
                 console.error('Error loading feed:', error);
                 showErrorMessage();
             } finally {
                 isLoading = false;
-            }
-        }
-        
-        async function loadPinnedPosts(pinnedPosts) {
-            const pinnedSection = document.getElementById('pinnedPostsSection');
-            const pinnedContainer = document.getElementById('pinnedPosts');
-            
-            if (pinnedPosts.length > 0) {
-                pinnedSection.classList.remove('hidden');
-                pinnedContainer.innerHTML = '';
-                
-                for (const post of pinnedPosts) {
-                    const postElement = await createPostElement(post, true);
-                    pinnedContainer.appendChild(postElement);
-                }
-            } else {
-                pinnedSection.classList.add('hidden');
             }
         }
         
@@ -350,6 +358,7 @@
                 const postElement = await createPostElement(post);
                 postsContainer.appendChild(postElement);
             }
+            setupPostViewObserver(postsContainer);
             
             // Re-initialize icons
             lucide.createIcons();
@@ -359,6 +368,7 @@
             const postElement = document.createElement('div');
             postElement.className = `post-card bg-white rounded-xl shadow-sm overflow-hidden ${isPinned ? 'pinned-post' : ''}`;
             postElement.dataset.postId = post.id;
+            postElement.id = `post-${post.id}`;
             
             // Fetch content from file
             let content = '';
@@ -376,6 +386,7 @@
             
             // Check if user has liked the post
             const hasLiked = post.user_has_liked || false;
+            const hasReposted = post.user_has_reposted || false;
             
             // Check if comments are allowed
             const commentsAllowed = post.allow_comments !== false;
@@ -387,14 +398,14 @@
                         <div class="flex items-start space-x-3">
                             <div class="flex-shrink-0">
                                 ${post.author_avatar ? 
-                                    `<img src="${post.author_avatar}" alt="${post.author_name}" class="h-10 w-10 rounded-full">` : 
+                                    `<img src="${post.author_avatar}" alt="${post.author_name}" class="h-10 w-10 rounded-full cursor-pointer" onclick="goToProfile(${Number(post.user_id || 0)})">` : 
                                     `<div class="h-10 w-10 bg-blue-100 rounded-full flex items-center justify-center">
                                         <i data-lucide="user" class="h-5 w-5 text-blue-600"></i>
                                     </div>`}
                             </div>
                             <div>
                                 <div class="flex items-center space-x-2">
-                                    <h3 class="font-semibold text-gray-900">${post.author_name}</h3>
+                                    <h3 class="font-semibold text-gray-900 cursor-pointer hover:underline" onclick="goToProfile(${Number(post.user_id || 0)})">${post.author_name}</h3>
                                     ${post.author_role === 'admin' ? 
                                         '<span class="px-2 py-0.5 bg-amber-100 text-amber-800 text-xs rounded-full">ADMIN</span>' : 
                                         post.author_role === 'faculty' ? 
@@ -439,7 +450,7 @@
                         <div class="mb-4">
                             <div class="grid grid-cols-2 md:grid-cols-3 gap-2">
                                 ${post.attachments.map(attachment => `
-                                    ${attachment.type === 'image' ? 
+                                    ${(attachment.type === 'image' || attachment.type === 'gif') ? 
                                         `<img src="${attachment.url}" alt="Attachment" class="w-full h-32 object-cover rounded-lg cursor-pointer hover:opacity-90" onclick="viewImage('${attachment.url}')">` : 
                                         `<a href="${attachment.url}" target="_blank" class="flex items-center p-3 border border-gray-200 rounded-lg hover:bg-gray-50">
                                             <i data-lucide="file" class="h-5 w-5 text-gray-400 mr-3"></i>
@@ -450,42 +461,32 @@
                         </div>
                     ` : ''}
                     
-                    <!-- Post Stats -->
-                    <div class="flex items-center justify-between text-sm text-gray-500 pt-4 border-t border-gray-100">
-                        <div class="flex items-center space-x-4">
-                            <span class="flex items-center">
-                                <i data-lucide="heart" class="h-4 w-4 mr-1"></i>
-                                <span class="like-count">${post.likes_count || 0}</span>
-                            </span>
-                            <span class="flex items-center">
-                                <i data-lucide="message-square" class="h-4 w-4 mr-1"></i>
-                                <span class="comment-count">${post.comments_count || 0}</span>
-                            </span>
-                            <span class="flex items-center">
-                                <i data-lucide="share-2" class="h-4 w-4 mr-1"></i>
-                                ${post.shares_count || 0}
-                            </span>
-                        </div>
-                        
-                        <span>${post.view_count || 0} views</span>
-                    </div>
-                    
-                    <!-- Post Actions -->
-                    <div class="mt-4 flex border-t border-gray-100 pt-4">
-                        <button class="like-btn flex-1 flex items-center justify-center py-2 rounded-lg hover:bg-gray-50 ${hasLiked ? 'text-red-600' : 'text-gray-600'}">
+                    <!-- Post Actions (X-style compact counters) -->
+                    <div class="mt-4 flex items-center justify-between border-t border-gray-100 pt-3 text-sm">
+                        <button class="like-btn flex items-center py-2 px-2 rounded-lg hover:bg-red-50 ${hasLiked ? 'text-red-600' : 'text-gray-600'}">
                             <i data-lucide="heart" class="h-5 w-5 mr-2 ${hasLiked ? 'fill-current' : ''}"></i>
-                            ${hasLiked ? 'Liked' : 'Like'}
+                            <span class="like-count">${post.likes_count || 0}</span>
                         </button>
                         
-                        <button class="comment-toggle-btn flex-1 flex items-center justify-center py-2 rounded-lg hover:bg-gray-50 text-gray-600 ${!commentsAllowed ? 'opacity-50 cursor-not-allowed' : ''}" 
+                        <button class="comment-toggle-btn flex items-center py-2 px-2 rounded-lg hover:bg-blue-50 text-gray-600 ${!commentsAllowed ? 'opacity-50 cursor-not-allowed' : ''}" 
                                 ${!commentsAllowed ? 'disabled' : ''}>
                             <i data-lucide="message-square" class="h-5 w-5 mr-2"></i>
-                            Comment
+                            <span class="comment-count">${post.comments_count || 0}</span>
+                        </button>
+
+                        <button class="repost-btn flex items-center py-2 px-2 rounded-lg hover:bg-emerald-50 ${hasReposted ? 'text-emerald-600' : 'text-gray-600'}">
+                            <i data-lucide="repeat-2" class="h-5 w-5 mr-2"></i>
+                            <span class="repost-count">${post.reposts_count || 0}</span>
                         </button>
                         
-                        <button class="share-btn flex-1 flex items-center justify-center py-2 rounded-lg hover:bg-gray-50 text-gray-600">
+                        <button class="share-btn flex items-center py-2 px-2 rounded-lg hover:bg-green-50 text-gray-600">
                             <i data-lucide="share-2" class="h-5 w-5 mr-2"></i>
-                            Share
+                            <span class="share-count">${post.shares_count || 0}</span>
+                        </button>
+
+                        <button class="flex items-center py-2 px-2 rounded-lg text-gray-500 cursor-default">
+                            <i data-lucide="bar-chart-2" class="h-5 w-5 mr-2"></i>
+                            <span class="view-count">${post.view_count || 0}</span>
                         </button>
                     </div>
                 </div>
@@ -505,6 +506,13 @@
             likeBtn.addEventListener('click', async () => {
                 await handleLike(post.id, likeBtn, postElement.querySelector('.like-count'));
             });
+
+            const repostBtn = postElement.querySelector('.repost-btn');
+            if (repostBtn) {
+                repostBtn.addEventListener('click', async () => {
+                    await handleRepost(post.id, repostBtn, postElement.querySelector('.repost-count'));
+                });
+            }
             
             // Comment toggle button
             const commentToggleBtn = postElement.querySelector('.comment-toggle-btn');
@@ -535,6 +543,147 @@
                     await togglePinPost(post.id, post.is_pinned);
                 });
             }
+
+            const editBtn = postElement.querySelector('.edit-post-btn');
+            if (editBtn) {
+                editBtn.addEventListener('click', async () => {
+                    menu.classList.add('hidden');
+                    await handleEditPost(postElement, post.id);
+                });
+            }
+
+            const deleteBtn = postElement.querySelector('.delete-post-btn');
+            if (deleteBtn) {
+                deleteBtn.addEventListener('click', async () => {
+                    menu.classList.add('hidden');
+                    await handleDeletePost(postElement, post.id);
+                });
+            }
+
+            const reportPostBtn = postElement.querySelector('.report-post-btn');
+            if (reportPostBtn) {
+                reportPostBtn.addEventListener('click', async () => {
+                    menu.classList.add('hidden');
+                    await handleReportPost(post.id);
+                });
+            }
+
+            const shareBtn = postElement.querySelector('.share-btn');
+            if (shareBtn) {
+                shareBtn.addEventListener('click', async () => {
+                    try {
+                        const shareRes = await makeApiCall('create_share_link.php', 'POST', { post_id: post.id });
+                        if (!(shareRes && (shareRes.success || shareRes.status === 'success'))) {
+                            throw new Error(shareRes?.message || 'Unable to create share link');
+                        }
+                        const url = `${window.location.origin}/${shareRes.share_path}`.replace(/([^:]\/)\/+/g, '$1');
+                        if (navigator.clipboard && navigator.clipboard.writeText) {
+                            await navigator.clipboard.writeText(url);
+                        }
+                        shareBtn.classList.add('text-green-600');
+                        const shareCountEl = shareBtn.querySelector('.share-count');
+                        if (shareCountEl) {
+                            const current = Number(shareCountEl.textContent || 0);
+                            postStateCache.set(Number(post.id), {
+                                ...(postStateCache.get(Number(post.id)) || {}),
+                                shares_count: Number.isFinite(current) ? current : 0
+                            });
+                        }
+                    } catch (e) {
+                        console.error('Share failed', e);
+                    }
+                });
+            }
+        }
+
+        function setupPostViewObserver(postsContainer) {
+            if (!postsContainer) return;
+            if (!postViewObserver) {
+                postViewObserver = new IntersectionObserver(async (entries) => {
+                    for (const entry of entries) {
+                        if (!entry.isIntersecting || entry.intersectionRatio < 0.55) continue;
+                        const card = entry.target;
+                        const postId = Number(card.dataset.postId || 0);
+                        if (!postId || viewedPostIds.has(postId)) continue;
+                        viewedPostIds.add(postId);
+                        try {
+                            const res = await makeApiCall('track_post_view.php', 'POST', { post_id: postId });
+                            if (res && (res.success || res.status === 'success')) {
+                                const viewEl = card.querySelector('.view-count');
+                                if (viewEl && typeof res.view_count !== 'undefined') {
+                                    viewEl.textContent = res.view_count;
+                                }
+                                postStateCache.set(postId, {
+                                    ...(postStateCache.get(postId) || {}),
+                                    view_count: Number(res.view_count || 0)
+                                });
+                            }
+                        } catch (err) {
+                            console.error('Failed to track post view:', err);
+                        } finally {
+                            postViewObserver.unobserve(card);
+                        }
+                    }
+                }, { threshold: [0.55] });
+            }
+
+            postsContainer.querySelectorAll('.post-card').forEach((card) => {
+                const postId = Number(card.dataset.postId || 0);
+                if (postId && !viewedPostIds.has(postId)) {
+                    postViewObserver.observe(card);
+                }
+            });
+        }
+
+        async function processSharedLinkOpen() {
+            const params = new URLSearchParams(window.location.search);
+            const sharedPost = Number(params.get('shared_post') || 0);
+            const shareToken = (params.get('share_token') || '').trim();
+            if (!sharedPost || !shareToken) return;
+            pendingSharedPostId = sharedPost;
+            try {
+                const res = await makeApiCall('track_share_open.php', 'POST', {
+                    post_id: sharedPost,
+                    share_token: shareToken
+                });
+                if (res && (res.success || res.status === 'success')) {
+                    postStateCache.set(sharedPost, {
+                        ...(postStateCache.get(sharedPost) || {}),
+                        shares_count: Number(res.shares_count || 0)
+                    });
+                    const countEl = document.querySelector(`#post-${sharedPost} .share-count`);
+                    if (countEl && typeof res.shares_count !== 'undefined') {
+                        countEl.textContent = res.shares_count;
+                    }
+                }
+            } catch (e) {
+                console.error('Failed to process shared link open:', e);
+            }
+        }
+
+        function focusSharedPostIfAny() {
+            if (!pendingSharedPostId) return;
+            const postEl = document.getElementById(`post-${pendingSharedPostId}`);
+            if (!postEl) return;
+            postEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            postEl.classList.add('ring-2', 'ring-blue-300');
+            setTimeout(() => postEl.classList.remove('ring-2', 'ring-blue-300'), 2200);
+        }
+
+        function processOpenCommentsParam() {
+            const params = new URLSearchParams(window.location.search);
+            const openComments = Number(params.get('open_comments') || 0);
+            if (openComments > 0) pendingOpenCommentsPostId = openComments;
+        }
+
+        function openCommentsIfRequested() {
+            if (!pendingOpenCommentsPostId) return;
+            const postElement = document.getElementById(`post-${pendingOpenCommentsPostId}`);
+            if (!postElement) return;
+            const btn = postElement.querySelector('.comment-toggle-btn');
+            if (btn && !btn.disabled) {
+                btn.click();
+            }
         }
         
         async function handleLike(postId, likeBtn, likeCountElement) {
@@ -545,25 +694,87 @@
                 });
                 
                 if (response && (response.success || response.status === 'success')) {
-                    const currentLikes = parseInt(likeCountElement.textContent);
-                    const hasLiked = likeBtn.classList.contains('text-red-600');
-                    
-                    if (hasLiked) {
-                        likeBtn.classList.remove('text-red-600');
-                        likeBtn.querySelector('i').classList.remove('fill-current');
-                        likeBtn.innerHTML = '<i data-lucide="heart" class="h-5 w-5 mr-2"></i>Like';
-                        likeCountElement.textContent = currentLikes - 1;
-                    } else {
+                    const liked = typeof response.liked === 'boolean'
+                        ? response.liked
+                        : !likeBtn.classList.contains('text-red-600');
+
+                    if (liked) {
                         likeBtn.classList.add('text-red-600');
                         likeBtn.querySelector('i').classList.add('fill-current');
-                        likeBtn.innerHTML = '<i data-lucide="heart" class="h-5 w-5 mr-2 fill-current"></i>Liked';
-                        likeCountElement.textContent = currentLikes + 1;
+                    } else {
+                        likeBtn.classList.remove('text-red-600');
+                        likeBtn.querySelector('i').classList.remove('fill-current');
                     }
-                    
-                    lucide.createIcons();
+
+                    if (typeof response.likes_count !== 'undefined') {
+                        likeCountElement.textContent = response.likes_count;
+                    }
+                    postStateCache.set(Number(postId), {
+                        ...(postStateCache.get(Number(postId)) || {}),
+                        user_has_liked: liked,
+                        likes_count: Number(response.likes_count || likeCountElement.textContent || 0)
+                    });
                 }
             } catch (error) {
                 console.error('Error liking post:', error);
+            }
+        }
+
+        async function handleRepost(postId, repostBtn, repostCountElement) {
+            try {
+                const response = await makeApiCall('toggle_repost.php', 'POST', { post_id: postId });
+                if (response && (response.success || response.status === 'success')) {
+                    const reposted = !!response.reposted;
+                    if (reposted) {
+                        repostBtn.classList.add('text-emerald-600');
+                        repostBtn.classList.remove('text-gray-600');
+                    } else {
+                        repostBtn.classList.remove('text-emerald-600');
+                        repostBtn.classList.add('text-gray-600');
+                    }
+                    if (typeof response.reposts_count !== 'undefined' && repostCountElement) {
+                        repostCountElement.textContent = response.reposts_count;
+                    }
+                    postStateCache.set(Number(postId), {
+                        ...(postStateCache.get(Number(postId)) || {}),
+                        user_has_reposted: reposted,
+                        reposts_count: Number(response.reposts_count || repostCountElement?.textContent || 0)
+                    });
+                }
+            } catch (error) {
+                console.error('Error reposting:', error);
+            }
+        }
+
+        async function handleEditPost(postElement, postId) {
+            const contentEl = postElement.querySelector('.mb-4 p');
+            if (!contentEl) return;
+            const currentContent = contentEl.textContent || '';
+            const edited = prompt('Edit your post:', currentContent);
+            if (edited === null) return;
+            if (!edited.trim()) {
+                alert('Post content cannot be empty.');
+                return;
+            }
+
+            const response = await makeApiCall('edit_post.php', 'POST', {
+                post_id: postId,
+                content: edited.trim()
+            });
+            if (response && (response.success || response.status === 'success')) {
+                contentEl.textContent = edited.trim();
+            } else {
+                alert(response?.message || 'Failed to edit post.');
+            }
+        }
+
+        async function handleDeletePost(postElement, postId) {
+            if (!confirm('Delete this post?')) return;
+            const response = await makeApiCall('delete_post.php', 'POST', { post_id: postId });
+            if (response && (response.success || response.status === 'success')) {
+                postElement.remove();
+            } else {
+                alert(response?.message || 'Failed to delete post.');
             }
         }
         
@@ -573,6 +784,18 @@
             if (commentBox) {
                 // Toggle existing comment box
                 commentBox.classList.toggle('open');
+                if (commentBox.classList.contains('open')) {
+                    openCommentPosts.add(postId);
+                    const cached = commentRenderState.get(postId);
+                    if (cached && Array.isArray(cached.comments)) {
+                        renderCommentsTree(postId, commentBox.querySelector('.comments-list'), commentBox, cached.comments);
+                    }
+                    await loadComments(postId, commentBox.querySelector('.comments-list'), commentBox);
+                    startCommentsAutoRefresh(postId, commentBox);
+                } else {
+                    openCommentPosts.delete(postId);
+                    stopCommentsAutoRefresh(postId);
+                }
             } else {
                 // Create new comment box
                 const template = document.getElementById('commentTemplate').content.cloneNode(true);
@@ -583,90 +806,428 @@
                 postElement.querySelector('.p-6').appendChild(commentBox);
                 
                 // Load comments
-                await loadComments(postId, commentBox.querySelector('.comments-list'));
+                openCommentPosts.add(postId);
+                const cached = commentRenderState.get(postId);
+                if (cached && Array.isArray(cached.comments)) {
+                    renderCommentsTree(postId, commentBox.querySelector('.comments-list'), commentBox, cached.comments);
+                }
+                await loadComments(postId, commentBox.querySelector('.comments-list'), commentBox);
+                startCommentsAutoRefresh(postId, commentBox);
                 
                 // Setup comment submission
                 const commentInput = commentBox.querySelector('.comment-input');
                 const postCommentBtn = commentBox.querySelector('.post-comment-btn');
+                const imageInput = commentBox.querySelector('.comment-image');
+                const fileInput = commentBox.querySelector('.comment-file');
+                const gifInput = commentBox.querySelector('.comment-gif-url');
+                const imageBtn = commentBox.querySelector('.comment-add-image');
+                const fileBtn = commentBox.querySelector('.comment-add-file');
+
+                if (imageBtn && imageInput) imageBtn.addEventListener('click', () => imageInput.click());
+                if (fileBtn && fileInput) fileBtn.addEventListener('click', () => fileInput.click());
+                if (currentUserRole === 'student') {
+                    if (imageBtn) imageBtn.classList.add('hidden');
+                    if (fileBtn) fileBtn.classList.add('hidden');
+                    if (imageInput) imageInput.value = '';
+                    if (fileInput) fileInput.value = '';
+                }
                 
                 postCommentBtn.addEventListener('click', async () => {
-                    await postComment(postId, commentInput.value.trim(), commentBox);
+                    await postComment(postId, commentInput.value.trim(), commentBox, imageInput?.files?.[0] || null, fileInput?.files?.[0] || null, gifInput?.value?.trim() || '', null);
                 });
                 
                 commentInput.addEventListener('keypress', async (e) => {
                     if (e.key === 'Enter' && !e.shiftKey) {
                         e.preventDefault();
-                        await postComment(postId, commentInput.value.trim(), commentBox);
+                        await postComment(postId, commentInput.value.trim(), commentBox, imageInput?.files?.[0] || null, fileInput?.files?.[0] || null, gifInput?.value?.trim() || '', null);
                     }
                 });
             }
         }
         
-        async function loadComments(postId, commentsContainer) {
+        async function loadComments(postId, commentsContainer, commentBox = null, force = false) {
             try {
                 const response = await makeApiCall(`get_comments.php?post_id=${postId}`);
-                
-                if (response && (response.success || response.status === 'success') && response.data) {
-                    commentsContainer.innerHTML = '';
-                    
-                    for (const comment of response.data) {
-                        const commentElement = document.createElement('div');
-                        commentElement.className = 'flex items-start';
-                        
-                        commentElement.innerHTML = `
-                            <div class="flex-shrink-0">
-                                ${comment.author_avatar ? 
-                                    `<img src="${comment.author_avatar}" alt="${comment.author_name}" class="h-8 w-8 rounded-full">` : 
-                                    `<div class="h-8 w-8 bg-gray-100 rounded-full flex items-center justify-center">
-                                        <i data-lucide="user" class="h-4 w-4 text-gray-400"></i>
-                                    </div>`}
-                            </div>
-                            <div class="ml-3 flex-1">
-                                <div class="bg-white rounded-lg p-3">
-                                    <div class="flex items-center justify-between">
-                                        <h4 class="font-medium text-gray-900 text-sm">${comment.author_name}</h4>
-                                        <span class="text-xs text-gray-500">${formatDate(comment.created_at)}</span>
-                                    </div>
-                                    <p class="text-gray-700 text-sm mt-1">${comment.content}</p>
-                                </div>
-                            </div>
-                        `;
-                        
-                        commentsContainer.appendChild(commentElement);
-                    }
-                    
-                    lucide.createIcons();
+                if (!(response && (response.success || response.status === 'success') && response.data)) {
+                    return;
+                }
+                const comments = Array.isArray(response.data) ? response.data : [];
+                const signature = comments
+                    .map((c) => `${c.id}:${c.updated_at || c.created_at}:${c.likes_count || 0}:${c.parent_comment_id || 0}`)
+                    .join('|');
+
+                const prev = commentRenderState.get(postId);
+                if (!force && prev && prev.signature === signature) {
+                    return;
+                }
+                commentRenderState.set(postId, { signature, comments });
+                renderCommentsTree(postId, commentsContainer, commentBox, comments);
+                const postElement = commentsContainer.closest('.post-card');
+                const countEl = postElement?.querySelector('.comment-count');
+                if (countEl) {
+                    countEl.textContent = comments.length;
                 }
             } catch (error) {
                 console.error('Error loading comments:', error);
             }
         }
         
-        async function postComment(postId, content, commentBox) {
-            if (!content.trim()) return;
+        async function postComment(postId, content, commentBox, imageFile = null, fileAttachment = null, gifUrl = '', parentCommentId = null) {
+            if (currentUserRole === 'student') {
+                imageFile = null;
+                fileAttachment = null;
+            }
+            if (!content.trim() && !imageFile && !fileAttachment && !gifUrl) return;
             
             try {
-                const response = await makeApiCall('create_comment.php', 'POST', {
-                    post_id: postId,
-                    content: content
+                const formData = new FormData();
+                formData.append('post_id', String(postId));
+                formData.append('content', content || '');
+                if (parentCommentId) formData.append('parent_comment_id', String(parentCommentId));
+                if (imageFile) formData.append('image', imageFile);
+                if (fileAttachment) formData.append('file', fileAttachment);
+                if (gifUrl) formData.append('gif_url', gifUrl);
+                const token = localStorage.getItem('jwt_token');
+                const responseRaw = await fetch(API_BASE + '/create_comment.php', {
+                    method: 'POST',
+                    headers: { 'Authorization': 'Bearer ' + token },
+                    body: formData
                 });
+                const responseText = await responseRaw.text();
+                let response = {};
+                try {
+                    response = responseText ? JSON.parse(responseText) : {};
+                } catch (_error) {
+                    response = { success: false, status: 'error', message: responseText || 'Invalid server response' };
+                }
                 
                 if (response && (response.success || response.status === 'success')) {
                     // Clear input
                     commentBox.querySelector('.comment-input').value = '';
+                    const img = commentBox.querySelector('.comment-image');
+                    const file = commentBox.querySelector('.comment-file');
+                    const gif = commentBox.querySelector('.comment-gif-url');
+                    if (img) img.value = '';
+                    if (file) file.value = '';
+                    if (gif) gif.value = '';
                     
-                    // Reload comments
-                    await loadComments(postId, commentBox.querySelector('.comments-list'));
-                    
-                    // Update comment count
+                    await loadComments(postId, commentBox.querySelector('.comments-list'), commentBox, true);
                     const postElement = commentBox.closest('.post-card');
                     const commentCount = postElement.querySelector('.comment-count');
-                    const currentCount = parseInt(commentCount.textContent);
-                    commentCount.textContent = currentCount + 1;
+                    const latest = commentRenderState.get(postId)?.comments?.length || 0;
+                    commentCount.textContent = latest;
                 }
             } catch (error) {
                 console.error('Error posting comment:', error);
             }
+        }
+
+        function renderCommentsTree(postId, commentsContainer, commentBox, comments) {
+            commentsContainer.innerHTML = '';
+            if (!comments.length) {
+                commentsContainer.innerHTML = `<p class="text-xs text-gray-500">No comments yet.</p>`;
+                return;
+            }
+
+            const byId = new Map();
+            const roots = [];
+            for (const c of comments) {
+                byId.set(Number(c.id), { ...c, children: [] });
+            }
+            for (const c of byId.values()) {
+                if (c.parent_comment_id && byId.has(Number(c.parent_comment_id))) {
+                    byId.get(Number(c.parent_comment_id)).children.push(c);
+                } else {
+                    roots.push(c);
+                }
+            }
+
+            const dateValue = (v) => new Date(v || 0).getTime();
+            roots.sort((a, b) => {
+                const ownA = Number(a.author_id) === Number(currentUserId) ? 1 : 0;
+                const ownB = Number(b.author_id) === Number(currentUserId) ? 1 : 0;
+                if (ownA !== ownB) return ownB - ownA;
+                return dateValue(b.created_at) - dateValue(a.created_at);
+            });
+
+            const sortChildren = (arr) => {
+                arr.sort((a, b) => dateValue(a.created_at) - dateValue(b.created_at));
+                arr.forEach((c) => sortChildren(c.children));
+            };
+            roots.forEach((r) => sortChildren(r.children));
+
+            for (const root of roots) {
+                commentsContainer.appendChild(renderCommentBranch(root, postId, commentBox, 0));
+            }
+            lucide.createIcons();
+        }
+
+        function renderCommentBranch(comment, postId, commentBox, level) {
+            const fragment = document.createDocumentFragment();
+            fragment.appendChild(renderCommentElement(comment, postId, commentBox, level));
+            for (const child of (comment.children || [])) {
+                fragment.appendChild(renderCommentBranch(child, postId, commentBox, level + 1));
+            }
+            return fragment;
+        }
+
+        function renderCommentElement(comment, postId, commentBox, level = 0) {
+            const depth = Math.min(parseInt(comment.depth_level || 0, 10), 5);
+            const wrapper = document.createElement('div');
+            wrapper.className = `comment-item flex items-start ${Math.max(depth, level) > 0 ? 'comment-thread-indent pl-2' : ''}`;
+            wrapper.dataset.commentId = String(comment.id);
+            if (Math.max(depth, level) > 0) {
+                wrapper.style.marginLeft = `${Math.max(depth, level) * 16}px`;
+            }
+
+            wrapper.innerHTML = `
+                <div class="flex-shrink-0">
+                    ${comment.author_avatar ?
+                        `<img src="${comment.author_avatar}" alt="${comment.author_name}" class="h-8 w-8 rounded-full cursor-pointer" onclick="goToProfile(${Number(comment.author_id || 0)})">` :
+                        `<div class="h-8 w-8 bg-gray-100 rounded-full flex items-center justify-center">
+                            <i data-lucide="user" class="h-4 w-4 text-gray-400"></i>
+                        </div>`}
+                </div>
+                <div class="ml-3 flex-1">
+                    <div class="bg-white rounded-lg p-3 border border-gray-100">
+                        <div class="flex items-center justify-between">
+                            <h4 class="font-medium text-gray-900 text-sm cursor-pointer hover:underline" onclick="goToProfile(${Number(comment.author_id || 0)})">${comment.author_name}</h4>
+                            <span class="text-xs text-gray-500">${formatDate(comment.created_at)} ${comment.is_edited ? '<span class="ml-1">(edited)</span>' : ''}</span>
+                        </div>
+                        <p class="text-gray-700 text-sm mt-1 whitespace-pre-line">${comment.content || ''}</p>
+                        <div class="comment-edit-box hidden mt-2">
+                            <textarea class="comment-edit-input w-full px-2 py-1 border border-gray-300 rounded text-sm resize-none" rows="2">${(comment.content || '').replace(/</g, '&lt;')}</textarea>
+                            <div class="mt-2 flex items-center gap-2 justify-end">
+                                <button type="button" class="comment-edit-cancel px-3 py-1 text-xs border border-gray-300 rounded hover:bg-gray-50">Cancel</button>
+                                <button type="button" class="comment-edit-save px-3 py-1 text-xs bg-blue-600 text-white rounded hover:bg-blue-700">Save</button>
+                            </div>
+                        </div>
+                        ${comment.attachments && comment.attachments.length ? `
+                            <div class="mt-2 flex flex-wrap gap-2">
+                                ${comment.attachments.map(a => {
+                                    if (a.type === 'image' || a.type === 'gif') {
+                                        return `<img src="${a.url}" alt="${a.name || 'attachment'}" class="h-20 w-20 object-cover rounded border border-gray-200 cursor-pointer" onclick="viewImage('${a.url}')">`;
+                                    }
+                                    return `<a href="${a.url}" target="_blank" class="text-xs text-blue-600 underline">${a.name || 'Attachment'}</a>`;
+                                }).join('')}
+                            </div>
+                        ` : ''}
+                        <div class="mt-2 flex items-center gap-3">
+                            <button type="button" class="comment-like-btn text-xs ${comment.user_has_liked ? 'text-red-600' : 'text-gray-600'} hover:text-red-600">
+                                ${comment.user_has_liked ? 'Unlike' : 'Like'} <span class="comment-like-count">${comment.likes_count || 0}</span>
+                            </button>
+                            <button type="button" class="reply-toggle-btn text-xs text-blue-600 hover:text-blue-800">Reply</button>
+                            ${comment.can_edit ? '<button type="button" class="comment-edit-btn text-xs text-gray-700 hover:text-gray-900">Edit</button>' : ''}
+                            ${comment.can_delete ? '<button type="button" class="comment-delete-btn text-xs text-red-600 hover:text-red-700">Delete</button>' : ''}
+                            <button type="button" class="comment-report-btn text-xs text-amber-700 hover:text-amber-800">Report</button>
+                        </div>
+                        <div class="reply-composer hidden mt-2">
+                            <textarea class="reply-input w-full px-2 py-1 border border-gray-300 rounded text-sm resize-none" rows="2" placeholder="Write a reply..."></textarea>
+                            <div class="mt-2 flex items-center gap-2">
+                                <input type="file" class="reply-image hidden" accept="image/*">
+                                <input type="file" class="reply-file hidden">
+                                <button type="button" class="reply-add-image p-1 rounded-full hover:bg-blue-50 text-blue-600" title="Add image"><i data-lucide="image" class="h-4 w-4"></i></button>
+                                <button type="button" class="reply-add-file p-1 rounded-full hover:bg-blue-50 text-blue-600" title="Add file"><i data-lucide="paperclip" class="h-4 w-4"></i></button>
+                                <input type="url" class="reply-gif-url flex-1 px-2 py-1 border border-gray-300 rounded text-xs" placeholder="GIF URL (optional)">
+                                <button type="button" class="post-reply-btn bg-blue-600 text-white px-3 py-1 rounded text-xs hover:bg-blue-700">Reply</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            const toggleBtn = wrapper.querySelector('.reply-toggle-btn');
+            const replyComposer = wrapper.querySelector('.reply-composer');
+            const replyImage = wrapper.querySelector('.reply-image');
+            const replyFile = wrapper.querySelector('.reply-file');
+            const replyAddImage = wrapper.querySelector('.reply-add-image');
+            const replyAddFile = wrapper.querySelector('.reply-add-file');
+            const postReplyBtn = wrapper.querySelector('.post-reply-btn');
+            const replyInput = wrapper.querySelector('.reply-input');
+            const replyGif = wrapper.querySelector('.reply-gif-url');
+            const likeBtn = wrapper.querySelector('.comment-like-btn');
+            const deleteBtn = wrapper.querySelector('.comment-delete-btn');
+            const editBtn = wrapper.querySelector('.comment-edit-btn');
+            const reportBtn = wrapper.querySelector('.comment-report-btn');
+            const editBox = wrapper.querySelector('.comment-edit-box');
+            const editInput = wrapper.querySelector('.comment-edit-input');
+            const editSaveBtn = wrapper.querySelector('.comment-edit-save');
+            const editCancelBtn = wrapper.querySelector('.comment-edit-cancel');
+
+            if (toggleBtn && replyComposer) {
+                toggleBtn.addEventListener('click', () => replyComposer.classList.toggle('hidden'));
+            }
+            if (replyAddImage && replyImage) replyAddImage.addEventListener('click', () => replyImage.click());
+            if (replyAddFile && replyFile) replyAddFile.addEventListener('click', () => replyFile.click());
+            if (currentUserRole === 'student') {
+                if (replyAddImage) replyAddImage.classList.add('hidden');
+                if (replyAddFile) replyAddFile.classList.add('hidden');
+                if (replyImage) replyImage.value = '';
+                if (replyFile) replyFile.value = '';
+            }
+
+            if (postReplyBtn) {
+                postReplyBtn.addEventListener('click', async () => {
+                    await postComment(
+                        postId,
+                        replyInput?.value?.trim() || '',
+                        commentBox,
+                        replyImage?.files?.[0] || null,
+                        replyFile?.files?.[0] || null,
+                        replyGif?.value?.trim() || '',
+                        comment.id
+                    );
+                    if (replyInput) replyInput.value = '';
+                    if (replyGif) replyGif.value = '';
+                    if (replyImage) replyImage.value = '';
+                    if (replyFile) replyFile.value = '';
+                    if (replyComposer) replyComposer.classList.add('hidden');
+                });
+            }
+
+            if (likeBtn) {
+                likeBtn.addEventListener('click', async () => {
+                    await handleCommentLike(postId, comment.id, commentBox);
+                });
+            }
+            if (deleteBtn) {
+                deleteBtn.addEventListener('click', async () => {
+                    await handleDeleteComment(postId, comment.id, commentBox);
+                });
+            }
+            if (editBtn && editBox) {
+                editBtn.addEventListener('click', () => {
+                    editBox.classList.toggle('hidden');
+                    if (!editBox.classList.contains('hidden') && editInput) {
+                        editInput.focus();
+                        editInput.selectionStart = editInput.value.length;
+                        editInput.selectionEnd = editInput.value.length;
+                    }
+                });
+            }
+            if (editCancelBtn && editBox) {
+                editCancelBtn.addEventListener('click', () => {
+                    editBox.classList.add('hidden');
+                    if (editInput) editInput.value = comment.content || '';
+                });
+            }
+            if (editSaveBtn && editInput) {
+                editSaveBtn.addEventListener('click', async () => {
+                    await handleEditComment(postId, comment.id, editInput.value.trim(), commentBox);
+                });
+            }
+            if (reportBtn) {
+                reportBtn.addEventListener('click', async () => {
+                    await handleReportComment(comment.id);
+                });
+            }
+
+            return wrapper;
+        }
+
+        async function handleCommentLike(postId, commentId, commentBox) {
+            const res = await makeApiCall('react_to_comment.php', 'POST', { comment_id: commentId, reaction: 'like' });
+            if (res && (res.success || res.status === 'success')) {
+                await loadComments(postId, commentBox.querySelector('.comments-list'), commentBox, true);
+            }
+        }
+
+        async function handleDeleteComment(postId, commentId, commentBox) {
+            if (!confirm('Delete this comment?')) return;
+            const res = await makeApiCall('delete_comment.php', 'POST', { comment_id: commentId });
+            if (res && (res.success || res.status === 'success')) {
+                await loadComments(postId, commentBox.querySelector('.comments-list'), commentBox, true);
+                const postElement = commentBox.closest('.post-card');
+                const commentCount = postElement.querySelector('.comment-count');
+                const latest = commentRenderState.get(postId)?.comments?.length || 0;
+                commentCount.textContent = latest;
+            } else {
+                alert(res?.message || 'Failed to delete comment.');
+            }
+        }
+
+        async function handleEditComment(postId, commentId, content, commentBox) {
+            if (!content) {
+                alert('Comment cannot be empty.');
+                return;
+            }
+            const res = await makeApiCall('edit_comment.php', 'POST', { comment_id: commentId, content });
+            if (res && (res.success || res.status === 'success')) {
+                await loadComments(postId, commentBox.querySelector('.comments-list'), commentBox, true);
+            } else {
+                alert(res?.message || 'Failed to edit comment.');
+            }
+        }
+
+        async function handleReportPost(postId) {
+            if (!confirm('Report this post?')) return;
+            const res = await makeApiCall('report_content.php', 'POST', { post_id: postId, reason: 'spam' });
+            if (res && (res.success || res.status === 'success' || res.message)) {
+                alert(res.message || 'Post reported.');
+            } else {
+                alert(res?.message || 'Failed to report post.');
+            }
+        }
+
+        async function handleReportComment(commentId) {
+            if (!confirm('Report this comment/reply?')) return;
+            const res = await makeApiCall('report_content.php', 'POST', { comment_id: commentId, reason: 'spam' });
+            if (res && (res.success || res.status === 'success' || res.message)) {
+                alert(res.message || 'Comment reported.');
+            } else {
+                alert(res?.message || 'Failed to report comment.');
+            }
+        }
+
+        function startCommentsAutoRefresh(postId, commentBox) {
+            stopCommentsAutoRefresh(postId);
+            const commentsContainer = commentBox?.querySelector('.comments-list');
+            if (!commentsContainer) return;
+            const timer = setInterval(async () => {
+                if (!openCommentPosts.has(postId)) return;
+                await loadComments(postId, commentsContainer, commentBox, false);
+            }, 8000);
+            commentRefreshTimers.set(postId, timer);
+        }
+
+        function stopCommentsAutoRefresh(postId) {
+            const existing = commentRefreshTimers.get(postId);
+            if (existing) {
+                clearInterval(existing);
+                commentRefreshTimers.delete(postId);
+            }
+        }
+
+        async function prependNewlyCreatedPost(postId) {
+            const response = await makeApiCall(`get_feed.php?page=1&filter=all&sort=newest`);
+            if (!response || !(response.success || response.status === 'success') || !Array.isArray(response.data)) {
+                await reloadFeed();
+                return;
+            }
+
+            const created = response.data.find((p) => Number(p.id) === Number(postId));
+            if (!created) {
+                await reloadFeed();
+                return;
+            }
+
+            const isVisibleInCurrentFilter =
+                currentFilter === 'all' ||
+                (currentFilter === 'announcements' && created.post_type === 'announcement');
+
+            if (!isVisibleInCurrentFilter) {
+                return;
+            }
+
+            const postElement = await createPostElement(created, false);
+            const feedContainer = document.getElementById('feedContainer');
+            let postsContainer = feedContainer.querySelector('.space-y-6');
+            if (!postsContainer) {
+                feedContainer.innerHTML = '<div class="space-y-6"></div>';
+                postsContainer = feedContainer.querySelector('.space-y-6');
+            }
+            postsContainer.prepend(postElement);
+            lucide.createIcons();
         }
         
         async function togglePinPost(postId, isCurrentlyPinned) {
@@ -677,8 +1238,7 @@
                 });
                 
                 if (response && (response.success || response.status === 'success')) {
-                    alert(`Post ${isCurrentlyPinned ? 'unpinned' : 'pinned'} successfully!`);
-                    location.reload(); // Reload to update pinned posts
+                    await reloadFeed();
                 }
             } catch (error) {
                 console.error('Error toggling pin:', error);
@@ -730,6 +1290,13 @@
             document.getElementById('postFiles').addEventListener('change', function() {
                 previewFiles(this, 'filePreviews');
             });
+
+            const toggleMediaBtn = document.getElementById('togglePostMediaBtn');
+            const mediaPanel = document.getElementById('postMediaPanel');
+            if (toggleMediaBtn && mediaPanel) {
+                toggleMediaBtn.addEventListener('click', () => mediaPanel.classList.toggle('hidden'));
+            }
+
         }
         
         function changeFilter(filter) {
@@ -738,7 +1305,8 @@
             
             // Update active button
             document.querySelectorAll('[id="allPosts"], [id="announcements"], [id="following"]').forEach(btn => {
-                if (btn.id === filter) {
+                const mappedId = filter === 'all' ? 'allPosts' : filter;
+                if (btn.id === mappedId) {
                     btn.className = 'px-4 py-2 rounded-lg bg-blue-100 text-blue-700 font-medium';
                 } else {
                     btn.className = 'px-4 py-2 rounded-lg text-gray-600 hover:bg-gray-100 font-medium';
@@ -750,6 +1318,11 @@
         
         function reloadFeed() {
             currentPage = 1;
+            openCommentPosts.clear();
+            for (const timer of commentRefreshTimers.values()) {
+                clearInterval(timer);
+            }
+            commentRefreshTimers.clear();
             document.getElementById('feedContainer').innerHTML = `
                 <div class="space-y-6">
                     <div class="text-center py-12">
@@ -758,7 +1331,44 @@
                     </div>
                 </div>
             `;
-            loadFeed();
+            return loadFeed();
+        }
+
+        function startFeedAutoRefresh() {
+            if (feedRefreshTimer) clearInterval(feedRefreshTimer);
+            feedRefreshTimer = setInterval(async () => {
+                await silentlyRefreshFeed();
+            }, 8000);
+        }
+
+        async function silentlyRefreshFeed() {
+            if (isLoading) return;
+            const response = await makeApiCall(`get_feed.php?page=1&filter=${currentFilter}&sort=${currentSort}`);
+            if (!(response && (response.success || response.status === 'success') && Array.isArray(response.data))) {
+                return;
+            }
+
+            const freshPosts = response.data;
+            if (!freshPosts.length) return;
+
+            const existingIds = new Set(
+                Array.from(document.querySelectorAll('.post-card')).map((el) => Number(el.dataset.postId))
+            );
+            const newOnes = freshPosts.filter((p) => !existingIds.has(Number(p.id)));
+            if (!newOnes.length) return;
+
+            const feedContainer = document.getElementById('feedContainer');
+            let postsContainer = feedContainer.querySelector('.space-y-6');
+            if (!postsContainer) {
+                feedContainer.innerHTML = '<div class="space-y-6"></div>';
+                postsContainer = feedContainer.querySelector('.space-y-6');
+            }
+
+            for (const post of newOnes.reverse()) {
+                const postElement = await createPostElement(post);
+                postsContainer.prepend(postElement);
+            }
+            lucide.createIcons();
         }
         
         async function searchPosts(query) {
@@ -796,19 +1406,18 @@
         async function createPost() {
             const content = document.getElementById('postContent').value.trim();
             const allowComments = document.getElementById('allowComments').checked;
-            const pinPost = document.getElementById('pinPost').checked;
+            const gifUrl = document.getElementById('postGifUrl').value.trim();
             
-            if (!content) {
-                alert('Please enter some content for your post');
+            if (!content && !gifUrl && document.getElementById('postImages').files.length === 0 && document.getElementById('postFiles').files.length === 0) {
+                alert('Please add content or media for your post');
                 return;
             }
             
             const formData = new FormData();
             formData.append('content', content);
             formData.append('allow_comments', allowComments ? '1' : '0');
-            
-            if (pinPost) {
-                formData.append('pin_post', '1');
+            if (gifUrl) {
+                formData.append('gif_url', gifUrl);
             }
             
             // Add images
@@ -830,12 +1439,17 @@
                 headers: { 'Authorization': 'Bearer ' + token }, // Allow browser to set Content-Type for FormData
                 body: formData
             });
-            const response = await responseRaw.json();
+            const responseText = await responseRaw.text();
+            let response = {};
+            try {
+                response = responseText ? JSON.parse(responseText) : {};
+            } catch (_error) {
+                response = { success: false, status: 'error', message: responseText || 'Invalid server response' };
+            }
                 
                 if (response && (response.success || response.status === 'success')) {
-                    alert('Post created successfully!');
                     clearPostForm();
-                    reloadFeed();
+                    await prependNewlyCreatedPost(response.post_id);
                 } else {
                     alert(response.message || 'Failed to create post');
                 }
@@ -847,12 +1461,14 @@
         
         function clearPostForm() {
             document.getElementById('postContent').value = '';
+            document.getElementById('postGifUrl').value = '';
             document.getElementById('allowComments').checked = true;
-            document.getElementById('pinPost').checked = false;
             document.getElementById('imagePreviews').innerHTML = '';
             document.getElementById('filePreviews').innerHTML = '';
             document.getElementById('postImages').value = '';
             document.getElementById('postFiles').value = '';
+            const mediaPanel = document.getElementById('postMediaPanel');
+            if (mediaPanel) mediaPanel.classList.add('hidden');
         }
         
         function previewImages(input, previewContainerId) {
@@ -910,6 +1526,12 @@
         function viewImage(url) {
             window.open(url, '_blank');
         }
+
+        function goToProfile(userId) {
+            const uid = Number(userId || 0);
+            if (!uid) return;
+            window.location.href = `profile.php?id=${uid}`;
+        }
         
         function showNoPostsMessage() {
             const feedContainer = document.getElementById('feedContainer');
@@ -922,12 +1544,12 @@
             `;
         }
         
-        function showErrorMessage() {
+        function showErrorMessage(message = 'Unable to load posts') {
             const feedContainer = document.getElementById('feedContainer');
             feedContainer.innerHTML = `
                 <div class="text-center py-12">
                     <i data-lucide="alert-circle" class="h-12 w-12 text-red-300 mx-auto mb-4"></i>
-                    <p class="text-gray-500">Unable to load posts</p>
+                    <p class="text-gray-500">${message}</p>
                     <button onclick="reloadFeed()" class="mt-4 text-blue-600 hover:text-blue-800">
                         Try Again
                     </button>

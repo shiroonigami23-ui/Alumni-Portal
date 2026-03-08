@@ -1,9 +1,9 @@
 (function () {
   var THEME_KEY = "alumni_portal_theme";
-  var THEMES = ["ocean", "dark", "light"];
+  var THEMES = ["dark", "light", "ocean"];
 
   function normalizeTheme(value) {
-    return THEMES.indexOf(value) >= 0 ? value : "ocean";
+    return THEMES.indexOf(value) >= 0 ? value : "dark";
   }
 
   function applyTheme(theme) {
@@ -62,7 +62,7 @@
   }
 
   function init() {
-    var saved = normalizeTheme(localStorage.getItem(THEME_KEY) || "ocean");
+    var saved = normalizeTheme(localStorage.getItem(THEME_KEY) || "dark");
     applyTheme(saved);
     bindThemeToggle();
     revealAnimation();

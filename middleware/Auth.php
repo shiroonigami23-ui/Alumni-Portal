@@ -1,5 +1,5 @@
 <?php
-include_once '../models/Session.php';
+require_once __DIR__ . '/../models/Session.php';
 
 class Auth {
     private $db;
@@ -11,6 +11,12 @@ class Auth {
     }
 
     public function validateRequest() {
+        if (!$this->db) {
+            http_response_code(503);
+            echo json_encode(array("message" => "Database unavailable."));
+            exit();
+        }
+
         // 1. Get Headers
         $headers = null;
         if (function_exists('apache_request_headers')) {

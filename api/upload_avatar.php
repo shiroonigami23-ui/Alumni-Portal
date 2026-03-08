@@ -19,7 +19,13 @@ if (isset($_FILES['avatar'])) {
 
     if (!in_array($extension, $allowed)) {
         http_response_code(400);
-        echo json_encode(["message" => "Invalid format."]);
+        echo json_encode(["success" => false, "status" => "error", "message" => "Invalid format."]);
+        exit();
+    }
+
+    if (($file['size'] ?? 0) > (2 * 1024 * 1024)) {
+        http_response_code(400);
+        echo json_encode(["success" => false, "status" => "error", "message" => "File too large. Max 2MB."]);
         exit();
     }
 
@@ -48,10 +54,32 @@ if (isset($_FILES['avatar'])) {
         }
 
         // 4. Update DB
-        $update = $db->prepare("UPDATE profiles SET profile_picture_url = :url WHERE user_id = :uid");
-        $update->execute(['url' => $db_url, 'uid' => $user_id]);
+        $insertOrUpdate = $db->prepare("
+            INSERT INTO profiles (user_id, full_name, profile_picture_url)
+            VALUES (:uid, :full_name, :url)
+            ON CONFLICT (user_id) DO UPDATE
+            SET profile_picture_url = EXCLUDED.profile_picture_url,
+                updated_at = CURRENT_TIMESTAMP
+        ");
+        $insertOrUpdate->execute([
+            'uid' => $user_id,
+            'full_name' => 'User ' . $user_id,
+            'url' => $db_url
+        ]);
 
-        echo json_encode(["message" => "Avatar updated. Old file purged.", "url" => $db_url]);
+        echo json_encode([
+            "success" => true,
+            "status" => "success",
+            "message" => "Avatar updated.",
+            "url" => $db_url,
+            "avatar_url" => $db_url
+        ]);
+    } else {
+        http_response_code(500);
+        echo json_encode(["success" => false, "status" => "error", "message" => "Upload failed."]);
     }
+} else {
+    http_response_code(400);
+    echo json_encode(["success" => false, "status" => "error", "message" => "No avatar file received."]);
 }
 ?>

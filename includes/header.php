@@ -12,6 +12,13 @@ $basePrefix = $isAdminPath ? '../' : '';
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#0f172a">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="RJIT Portal">
+    <link rel="manifest" href="<?php echo $basePrefix; ?>manifest.webmanifest">
+    <link rel="icon" type="image/png" sizes="192x192" href="<?php echo $basePrefix; ?>assets/icons/app-icon-192.png">
+    <link rel="apple-touch-icon" href="<?php echo $basePrefix; ?>assets/icons/app-icon-192.png">
     <title>RJIT Alumni Portal</title>
 
     <!-- Tailwind CSS CDN -->
@@ -72,6 +79,7 @@ $basePrefix = $isAdminPath ? '../' : '';
 
     <!-- Auth Check Script -->
     <script src="<?php echo $basePrefix; ?>includes/auth-check.js"></script>
+    <script src="<?php echo $basePrefix; ?>assets/js/pwa.js" defer></script>
 </head>
 
 <body class="bg-gray-50">
@@ -85,7 +93,7 @@ $basePrefix = $isAdminPath ? '../' : '';
     </div>
 
     <!-- Main Navigation -->
-    <nav class="bg-white shadow-md portal-topbar">
+    <nav class="bg-white shadow-md portal-topbar relative z-[80]">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="flex justify-between h-16">
                 <!-- Logo and Brand -->
@@ -111,8 +119,14 @@ $basePrefix = $isAdminPath ? '../' : '';
 
                 <!-- Right Side Navigation -->
                 <div class="flex items-center space-x-4">
+                    <button id="mobileSidebarToggle" class="md:hidden p-2 rounded-full hover:bg-gray-100" type="button" aria-label="Open navigation menu">
+                        <i data-lucide="menu" class="h-5 w-5 text-gray-700"></i>
+                    </button>
                     <button id="themeModeBtn" class="vu-theme-toggle" type="button">
                         <i data-lucide="palette" class="h-4 w-4"></i>
+                    </button>
+                    <button id="installAppBtn" class="hidden px-3 py-1.5 border border-gray-300 rounded-full text-sm text-gray-700 hover:bg-gray-100">
+                        Install App
                     </button>
                     <!-- Notifications -->
                     <div class="relative">
@@ -120,7 +134,7 @@ $basePrefix = $isAdminPath ? '../' : '';
                             <i data-lucide="bell"></i>
                             <span id="notificationCount" class="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center hidden">0</span>
                         </button>
-                        <div id="notificationDropdown" class="hidden absolute right-0 mt-2 w-80 bg-white rounded-lg shadow-lg border border-gray-200 z-50">
+                        <div id="notificationDropdown" class="hidden absolute right-0 mt-2 w-80 bg-white rounded-lg shadow-lg border border-gray-200 z-[120]">
                             <div class="p-4">
                                 <h3 class="font-semibold text-gray-900 mb-3">Notifications</h3>
                                 <div id="notificationList" class="space-y-3 max-h-64 overflow-y-auto">
@@ -134,14 +148,15 @@ $basePrefix = $isAdminPath ? '../' : '';
                     <!-- User Menu -->
                     <div class="relative">
                         <button id="userMenuBtn" class="flex items-center space-x-2 p-2 rounded-lg hover:bg-gray-100">
-                            <div class="h-8 w-8 bg-blue-100 rounded-full flex items-center justify-center">
-                                <i data-lucide="user"></i>
+                            <div class="h-8 w-8 bg-blue-100 rounded-full flex items-center justify-center overflow-hidden">
+                                <img id="userAvatarImage" src="" alt="Profile" class="h-8 w-8 rounded-full object-cover hidden">
+                                <i id="userAvatarIcon" data-lucide="user"></i>
                             </div>
                             <span id="userName" class="hidden md:inline text-gray-700">Loading...</span>
                             <i data-lucide="chevron-down" class="h-4 w-4 text-gray-500"></i>
                         </button>
 
-                        <div id="userDropdown" class="hidden absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 z-50">
+                        <div id="userDropdown" class="hidden absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 z-[120]">
                             <div class="py-2">
                                 <a href="<?php echo $basePrefix; ?>profile.php" class="flex items-center px-4 py-2 text-gray-700 hover:bg-gray-100">
                                     <i data-lucide="user" class="h-4 w-4 mr-3"></i> My Profile
@@ -165,13 +180,22 @@ $basePrefix = $isAdminPath ? '../' : '';
         window.PORTAL_BASE_PREFIX = "<?php echo $basePrefix; ?>";
         // Initialize Lucide icons
         lucide.createIcons();
+        let __lastNotifKey = '';
 
         // Load user data
         document.addEventListener('DOMContentLoaded', function() {
             const userData = localStorage.getItem('user_data');
             if (userData) {
                 const user = JSON.parse(userData);
-                document.getElementById('userName').textContent = user.name || user.email;
+                document.getElementById('userName').textContent = user.email || user.name || 'Member';
+                const avatar = user.profile_picture || user.profile_picture_url || '';
+                if (avatar) {
+                    const img = document.getElementById('userAvatarImage');
+                    const icon = document.getElementById('userAvatarIcon');
+                    img.src = avatar;
+                    img.classList.remove('hidden');
+                    if (icon) icon.classList.add('hidden');
+                }
 
                 // Add role badge if admin or faculty
                 if (user.role === 'admin') {
@@ -218,18 +242,43 @@ $basePrefix = $isAdminPath ? '../' : '';
             // Check for live streams
             checkLiveStreams();
             setInterval(checkLiveStreams, 30000);
+            loadNotifications();
+            setInterval(loadNotifications, 20000);
+
+            refreshHeaderUser();
         });
+
+        async function refreshHeaderUser() {
+            try {
+                const response = await makeApiCall('me.php');
+                if (!response || !response.success || !response.data) return;
+                const user = response.data;
+                localStorage.setItem('user_data', JSON.stringify(user));
+                document.getElementById('userName').textContent = user.email || user.name || 'Member';
+                const avatar = user.profile_picture || user.profile_picture_url || '';
+                if (avatar) {
+                    const img = document.getElementById('userAvatarImage');
+                    const icon = document.getElementById('userAvatarIcon');
+                    img.src = avatar;
+                    img.classList.remove('hidden');
+                    if (icon) icon.classList.add('hidden');
+                }
+            } catch (e) {
+                console.error('Unable to refresh header user', e);
+            }
+        }
 
         async function loadNotifications() {
             try {
                 const response = await makeApiCall('get_notifications.php');
-                if (response && response.success) {
+                if (response && (response.success || response.status === 'success')) {
                     const notificationList = document.getElementById('notificationList');
                     const countElement = document.getElementById('notificationCount');
+                    const notifications = response.data || response.notifications || [];
 
-                    if (response.data && response.data.length > 0) {
-                        notificationList.innerHTML = response.data.map(notif => `
-                            <div class="p-3 bg-gray-50 rounded-lg">
+                    if (notifications.length > 0) {
+                        notificationList.innerHTML = notifications.map(notif => `
+                            <div class="p-3 bg-gray-50 rounded-lg notification-item cursor-pointer" data-notification-id="${notif.notification_id || ''}">
                                 <div class="flex items-start">
                                     <i data-lucide="${notif.icon || 'bell'}" class="h-4 w-4 mt-1 mr-3 text-blue-600"></i>
                                     <div>
@@ -240,8 +289,10 @@ $basePrefix = $isAdminPath ? '../' : '';
                             </div>
                         `).join('');
 
-                        countElement.textContent = response.data.length;
+                        countElement.textContent = String(response.unread_count ?? notifications.filter(n => !n.read_at).length);
                         countElement.classList.remove('hidden');
+                        bindNotificationReadActions();
+                        notifyDesktopIfNeeded(notifications, response.unread_count ?? notifications.filter(n => !n.read_at).length);
                     } else {
                         notificationList.innerHTML = '<p class="text-gray-500 text-center py-4">No notifications</p>';
                         countElement.classList.add('hidden');
@@ -253,6 +304,37 @@ $basePrefix = $isAdminPath ? '../' : '';
             } catch (error) {
                 console.error('Error loading notifications:', error);
             }
+        }
+
+        function bindNotificationReadActions() {
+            document.querySelectorAll('.notification-item').forEach((item) => {
+                if (item.dataset.bound === '1') return;
+                item.dataset.bound = '1';
+                item.addEventListener('click', async () => {
+                    const id = Number(item.getAttribute('data-notification-id') || 0);
+                    if (!id) return;
+                    await makeApiCall('mark_notif_read.php', 'POST', { notification_id: id });
+                    loadNotifications();
+                });
+            });
+        }
+
+        function notifyDesktopIfNeeded(notifications, unreadCount) {
+            if (!('Notification' in window) || Notification.permission !== 'granted') return;
+            if (!Array.isArray(notifications) || notifications.length === 0) return;
+            const latest = notifications[0];
+            if (!latest || latest.read_at) return;
+            const key = `${latest.notification_id || ''}|${latest.created_at || ''}|${unreadCount}`;
+            if (key === __lastNotifKey) return;
+            __lastNotifKey = key;
+            const n = new Notification('RJIT Alumni Portal', {
+                body: latest.message || 'You have a new notification',
+                icon: `${window.PORTAL_BASE_PREFIX}assets/icons/app-icon-192.png`
+            });
+            n.onclick = () => {
+                window.focus();
+                window.location.href = `${window.PORTAL_BASE_PREFIX}feed.php`;
+            };
         }
 
         async function checkLiveStreams() {
@@ -283,30 +365,4 @@ $basePrefix = $isAdminPath ? '../' : '';
                 window.location.href = `${window.PORTAL_BASE_PREFIX}dashboard.php`;
             }
         }
-
-        async function checkLiveStreams() {
-            try {
-                const response = await fetch(`${window.PORTAL_BASE_PREFIX}api/get_active_streams.php`);
-                const result = await response.json();
-
-                const container = document.getElementById('live-indicator-container');
-                if (result.status === 'success' && result.data.length > 0) {
-                    const stream = result.data[0];
-                    container.innerHTML = `
-                <div class="live-badge-card" style="background: #ff0000; color: white; padding: 10px; border-radius: 5px; margin-bottom: 20px;">
-                    <strong>🔴 LIVE NOW:</strong> ${stream.title} by ${stream.full_name}
-                    <a href="${window.PORTAL_BASE_PREFIX}live.php?id=${stream.stream_id}" style="color: yellow; margin-left: 15px; font-weight: bold;">WATCH NOW</a>
-                </div>
-            `;
-                } else {
-                    container.innerHTML = ''; // Hide if nothing is live
-                }
-            } catch (error) {
-                console.error('Error checking streams:', error);
-            }
-        }
-
-        // Check every 30 seconds
-        checkLiveStreams();
-        setInterval(checkLiveStreams, 30000);
     </script>

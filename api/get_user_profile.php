@@ -42,7 +42,7 @@ try {
                      p.is_private, p.show_email, p.show_contact,
                      p.roll_number, p.year_of_study
               FROM users u
-              JOIN profiles p ON u.user_id = p.user_id
+              LEFT JOIN profiles p ON u.user_id = p.user_id
               WHERE u.user_id = :user_id";
     
     $stmt = $db->prepare($query);
@@ -54,23 +54,100 @@ try {
         echo json_encode(['message' => 'User not found']);
         exit;
     }
-    
-    // Check if profile is private
-    if ($profile['is_private']) {
-        // Only admin can view private profiles
-        if (!$current_user || null !== 'admin') {
-            // Unless it's the user's own profile
-            if (!$current_user || $current_user != $user_id) {
-                http_response_code(403);
-                echo json_encode(['message' => 'This profile is private']);
-                exit;
-            }
+
+    $profile['posts_count'] = 0;
+    $pCount = $db->prepare("SELECT COUNT(*) FROM posts WHERE user_id = :uid AND status = 'published'");
+    $pCount->execute([':uid' => $user_id]);
+    $profile['posts_count'] = (int)$pCount->fetchColumn();
+
+    $profile['connections_count'] = 0;
+    $profile['is_connected'] = false;
+    $connTable = $db->query("SELECT to_regclass('public.connections')")->fetchColumn();
+    if ($connTable) {
+        $cCount = $db->prepare("
+            SELECT COUNT(*)
+            FROM connections c
+            WHERE c.status = 'accepted'
+              AND (c.requester_user_id = :uid OR c.addressee_user_id = :uid)
+        ");
+        $cCount->execute([':uid' => $user_id]);
+        $profile['connections_count'] = (int)$cCount->fetchColumn();
+
+        if ($current_user && (int)$current_user !== (int)$user_id) {
+            $cState = $db->prepare("
+                SELECT 1
+                FROM connections c
+                WHERE c.status = 'accepted'
+                  AND c.requester_user_id = :me
+                  AND c.addressee_user_id = :uid
+                LIMIT 1
+            ");
+            $cState->execute([':me' => $current_user, ':uid' => $user_id]);
+            $profile['is_connected'] = $cState->fetch() ? true : false;
         }
     }
     
+    // Check if profile is private: allow only self for now.
+    if ($profile['is_private'] && (!$current_user || (int)$current_user !== (int)$user_id)) {
+        http_response_code(403);
+        echo json_encode(['success' => false, 'message' => 'This profile is private']);
+        exit;
+    }
+    
+    // Ensure core fields exist even when profile row is missing
+    if (empty($profile['full_name'])) {
+        $profile['full_name'] = explode('@', (string)$profile['email'])[0];
+    }
+    if (!empty($profile['profile_picture_url'])) {
+        $profile['profile_picture_url'] = str_replace('\\', '/', (string)$profile['profile_picture_url']);
+    }
+
+    $avatar = (string)($profile['profile_picture_url'] ?? '');
+    $looksPlaceholder = (
+        $avatar === '' ||
+        stripos($avatar, 'via.placeholder.com') !== false ||
+        stripos($avatar, 'placeholder') !== false ||
+        stripos($avatar, 'data:image/svg+xml') === 0
+    );
+
+    if ($looksPlaceholder && ($profile['role'] ?? '') === 'faculty') {
+        $emailSlug = strtolower((string)$profile['email']);
+        $emailSlug = preg_replace('/[^a-z0-9]+/', '_', $emailSlug);
+        $candidates = [
+            "storage/profiles/faculty_{$emailSlug}.jpg",
+            "storage/profiles/faculty_{$emailSlug}.jpeg",
+            "storage/profiles/faculty_{$emailSlug}.png",
+            "storage/profiles/faculty_{$emailSlug}.JPG",
+        ];
+        foreach ($candidates as $candidate) {
+            $abs = dirname(__DIR__) . DIRECTORY_SEPARATOR . str_replace('/', DIRECTORY_SEPARATOR, $candidate);
+            if (file_exists($abs)) {
+                $profile['profile_picture_url'] = $candidate;
+                break;
+            }
+        }
+    }
+    if (!empty($profile['cover_photo_url'])) {
+        $profile['cover_photo_url'] = str_replace('\\', '/', (string)$profile['cover_photo_url']);
+    }
+    if (!isset($profile['is_private'])) {
+        $profile['is_private'] = false;
+    }
+    if (!isset($profile['show_email'])) {
+        $profile['show_email'] = true;
+    }
+    if (!isset($profile['show_contact'])) {
+        $profile['show_contact'] = false;
+    }
+    
     // Get tech stack
-    if(isset($techHelper)) $profile["tech_stack"] = $techHelper->getUserTechStack($user_id);
-    $profile['tech_skills'] = $techHelper->getUserTechStackArray($user_id);
+    if(isset($techHelper)) {
+        $profile["tech_stack"] = $techHelper->getUserTechStack($user_id);
+        $profile['tech_skills'] = $techHelper->getUserTechStackArray($user_id);
+    } else {
+        $profile["tech_stack"] = '';
+        $profile['tech_skills'] = [];
+    }
     
     // Get badges
     $badge_query = "SELECT badge_type, earned_at FROM badges WHERE user_id = :user_id ORDER BY earned_at DESC";
@@ -114,9 +191,17 @@ try {
         $profile['is_blocked'] = false;
     }
     
-    echo json_encode($profile);
+    echo json_encode([
+        'success' => true,
+        'status' => 'success',
+        'data' => $profile
+    ]);
     
 } catch (PDOException $e) {
     http_response_code(500);
-    echo json_encode(['message' => 'Database error: ' . $e->getMessage()]);
+    echo json_encode([
+        'success' => false,
+        'status' => 'error',
+        'message' => 'Database error: ' . $e->getMessage()
+    ]);
 }

@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 // If user is already logged in, redirect to dashboard
 session_start();
 if (isset($_COOKIE['jwt_token']) || isset($_SESSION['jwt_token'])) {
@@ -346,36 +346,42 @@ if (isset($_COOKIE['jwt_token']) || isset($_SESSION['jwt_token'])) {
         });
 
         async function loadFeaturedAlumni() {
+            const container = document.getElementById('featuredAlumni');
             try {
-                const response = await fetch('api/public_feed.php?type=featured_alumni');
+                const response = await fetch('api/featured_alumni.php?limit=8');
                 const data = await response.json();
-
-                const container = document.getElementById('featuredAlumni');
 
                 if (data && data.success && data.data && data.data.length > 0) {
                     container.innerHTML = '';
 
                     data.data.slice(0, 4).forEach(alumni => {
                         const alumniCard = document.createElement('div');
-                        alumniCard.className = 'bg-white rounded-xl shadow-sm p-6 text-center card-hover';
+                        alumniCard.className = 'bg-white rounded-xl shadow-sm overflow-hidden card-hover';
+
+                        const primaryImage = (alumni.images && alumni.images.length > 0) ? alumni.images[0] : null;
+                        const photosCount = Array.isArray(alumni.images) ? alumni.images.length : 0;
 
                         alumniCard.innerHTML = `
-                            <div class="mb-4">
-                                ${alumni.avatar ? 
-                                    `<img src="${alumni.avatar}" alt="${alumni.name}" class="h-20 w-20 rounded-full object-cover mx-auto">` : 
-                                    `<div class="h-20 w-20 bg-blue-100 rounded-full flex items-center justify-center mx-auto">
-                                        <i data-lucide="user" class="h-10 w-10 text-blue-600"></i>
+                            <div class="aspect-[4/3] bg-gray-100">
+                                ${primaryImage ?
+                                    `<img src="${primaryImage}" alt="${alumni.name}" class="w-full h-full object-cover">` :
+                                    `<div class="w-full h-full flex items-center justify-center">
+                                        <i data-lucide="image-off" class="h-10 w-10 text-gray-400"></i>
                                     </div>`}
                             </div>
-                            <h3 class="font-semibold text-gray-900 mb-1">${alumni.name}</h3>
-                            <p class="text-gray-600 text-sm mb-2">${alumni.position || 'Alumni'}</p>
-                            <p class="text-gray-500 text-xs">
-                                ${alumni.branch ? `${alumni.branch} • ` : ''}Class of ${alumni.graduation_year || '20XX'}
-                            </p>
-                            <div class="mt-4">
-                                <span class="inline-block px-3 py-1 bg-blue-100 text-blue-800 text-xs rounded-full">
-                                    ${alumni.company || 'RJIT Alumni'}
-                                </span>
+                            <div class="p-5 text-left">
+                                <h3 class="font-semibold text-gray-900 mb-1">${alumni.name}</h3>
+                                <p class="text-gray-600 text-sm mb-2">${alumni.position || 'Alumni'}</p>
+                                <p class="text-gray-500 text-xs">
+                                    ${alumni.branch ? `${alumni.branch} &bull; ` : ''}Class of ${alumni.graduation_year || 'N/A'}
+                                </p>
+                                ${alumni.summary ? `<p class="text-sm text-gray-600 mt-3 line-clamp-2">${alumni.summary}</p>` : ''}
+                                <div class="mt-4 flex items-center justify-between gap-2">
+                                    <span class="inline-block px-3 py-1 bg-blue-100 text-blue-800 text-xs rounded-full">
+                                        ${alumni.company || 'RJIT Alumni'}
+                                    </span>
+                                    ${photosCount > 1 ? `<span class="text-xs text-gray-500">${photosCount} photos</span>` : ''}
+                                </div>
                             </div>
                         `;
 
@@ -384,72 +390,23 @@ if (isset($_COOKIE['jwt_token']) || isset($_SESSION['jwt_token'])) {
 
                     lucide.createIcons();
                 } else {
-                    // Show fallback featured alumni
                     container.innerHTML = `
-                        <div class="bg-white rounded-xl shadow-sm p-6 text-center card-hover">
-                            <div class="mb-4">
-                                <div class="h-20 w-20 bg-blue-100 rounded-full flex items-center justify-center mx-auto">
-                                    <i data-lucide="user" class="h-10 w-10 text-blue-600"></i>
-                                </div>
-                            </div>
-                            <h3 class="font-semibold text-gray-900 mb-1">Dr. Rajesh Kumar</h3>
-                            <p class="text-gray-600 text-sm mb-2">Senior Software Engineer</p>
-                            <p class="text-gray-500 text-xs">CSE • Class of 2010</p>
-                            <div class="mt-4">
-                                <span class="inline-block px-3 py-1 bg-blue-100 text-blue-800 text-xs rounded-full">
-                                    Google
-                                </span>
-                            </div>
-                        </div>
-                        <div class="bg-white rounded-xl shadow-sm p-6 text-center card-hover">
-                            <div class="mb-4">
-                                <div class="h-20 w-20 bg-green-100 rounded-full flex items-center justify-center mx-auto">
-                                    <i data-lucide="user" class="h-10 w-10 text-green-600"></i>
-                                </div>
-                            </div>
-                            <h3 class="font-semibold text-gray-900 mb-1">Priya Sharma</h3>
-                            <p class="text-gray-600 text-sm mb-2">Product Manager</p>
-                            <p class="text-gray-500 text-xs">IT • Class of 2015</p>
-                            <div class="mt-4">
-                                <span class="inline-block px-3 py-1 bg-green-100 text-green-800 text-xs rounded-full">
-                                    Microsoft
-                                </span>
-                            </div>
-                        </div>
-                        <div class="bg-white rounded-xl shadow-sm p-6 text-center card-hover">
-                            <div class="mb-4">
-                                <div class="h-20 w-20 bg-purple-100 rounded-full flex items-center justify-center mx-auto">
-                                    <i data-lucide="user" class="h-10 w-10 text-purple-600"></i>
-                                </div>
-                            </div>
-                            <h3 class="font-semibold text-gray-900 mb-1">Amit Patel</h3>
-                            <p class="text-gray-600 text-sm mb-2">Data Scientist</p>
-                            <p class="text-gray-500 text-xs">ECE • Class of 2018</p>
-                            <div class="mt-4">
-                                <span class="inline-block px-3 py-1 bg-purple-100 text-purple-800 text-xs rounded-full">
-                                    Amazon
-                                </span>
-                            </div>
-                        </div>
-                        <div class="bg-white rounded-xl shadow-sm p-6 text-center card-hover">
-                            <div class="mb-4">
-                                <div class="h-20 w-20 bg-amber-100 rounded-full flex items-center justify-center mx-auto">
-                                    <i data-lucide="user" class="h-10 w-10 text-amber-600"></i>
-                                </div>
-                            </div>
-                            <h3 class="font-semibold text-gray-900 mb-1">Prof. Sunita Verma</h3>
-                            <p class="text-gray-600 text-sm mb-2">Faculty - CSE Department</p>
-                            <p class="text-gray-500 text-xs">RJIT Faculty</p>
-                            <div class="mt-4">
-                                <span class="inline-block px-3 py-1 bg-amber-100 text-amber-800 text-xs rounded-full">
-                                    RJIT Faculty
-                                </span>
-                            </div>
+                        <div class="col-span-4 text-center py-10">
+                            <i data-lucide="users" class="h-8 w-8 text-blue-500 mx-auto mb-3"></i>
+                            <p class="text-gray-600">Featured alumni will appear here once records are available.</p>
                         </div>
                     `;
+                    lucide.createIcons();
                 }
             } catch (error) {
                 console.error('Error loading featured alumni:', error);
+                container.innerHTML = `
+                    <div class="col-span-4 text-center py-10">
+                        <i data-lucide="alert-circle" class="h-8 w-8 text-red-400 mx-auto mb-3"></i>
+                        <p class="text-gray-600">Could not load featured alumni right now.</p>
+                    </div>
+                `;
+                lucide.createIcons();
             }
         }
 
@@ -484,7 +441,7 @@ if (isset($_COOKIE['jwt_token']) || isset($_SESSION['jwt_token'])) {
                                 <div>
                                     <h4 class="font-semibold">${post.author_name || 'Alumni'}</h4>
                                     <p class="text-sm text-gray-500">
-                                        ${post.branch || 'RJIT'} • Class of ${post.graduation_year || '20XX'}
+                                        ${post.branch || 'RJIT'} â€¢ Class of ${post.graduation_year || '20XX'}
                                     </p>
                                 </div>
                             </div>
@@ -543,7 +500,7 @@ if (isset($_COOKIE['jwt_token']) || isset($_SESSION['jwt_token'])) {
                             </div>
                             <div>
                                 <h4 class="font-semibold">${post.author_name}</h4>
-                                <p class="text-sm text-gray-500">${post.author_role}</p>
+                                <p class="text-sm text-gray-500">${post.author_role}${post.author_email ? ` | ${post.author_email}` : ``}</p>
                             </div>
                         </div>
                         ${post.image_url ? `<img src="${post.image_url}" alt="Post image" class="w-full rounded-lg mb-4 object-cover" style="max-height: 200px;">` : ''}
@@ -599,3 +556,5 @@ if (isset($_COOKIE['jwt_token']) || isset($_SESSION['jwt_token'])) {
 </body>
 
 </html>
+
+

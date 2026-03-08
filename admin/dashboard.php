@@ -60,6 +60,18 @@ if (session_status() === PHP_SESSION_NONE) {
             background-color: #fee2e2;
             color: #991b1b;
         }
+
+        .section-toggle {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.35rem;
+            font-size: 0.75rem;
+            padding: 0.3rem 0.55rem;
+            border-radius: 0.5rem;
+            border: 1px solid rgba(148, 163, 184, 0.35);
+            color: #475569;
+            background: #fff;
+        }
     </style>
 </head>
 <body class="bg-gray-50">
@@ -114,7 +126,7 @@ if (session_status() === PHP_SESSION_NONE) {
                                 <i data-lucide="trending-up" class="h-4 w-4 inline mr-1"></i>
                                 <span id="usersGrowth">0%</span>
                             </span>
-                            <span class="text-gray-500">This month</span>
+                            <a href="./users.php" class="text-blue-600 hover:text-blue-800">Manage</a>
                         </div>
                     </div>
                 </div>
@@ -135,7 +147,7 @@ if (session_status() === PHP_SESSION_NONE) {
                                 <i data-lucide="alert-circle" class="h-4 w-4 inline mr-1"></i>
                                 Needs attention
                             </span>
-                            <a href="#pendingTable" class="text-blue-600 hover:text-blue-800">View all</a>
+                            <a href="./users.php?status=pending" class="text-blue-600 hover:text-blue-800">View all</a>
                         </div>
                     </div>
                 </div>
@@ -156,7 +168,7 @@ if (session_status() === PHP_SESSION_NONE) {
                                 <i data-lucide="alert-triangle" class="h-4 w-4 inline mr-1"></i>
                                 Action required
                             </span>
-                            <a href="#" class="text-blue-600 hover:text-blue-800">Review</a>
+                            <a href="./reports.php" class="text-blue-600 hover:text-blue-800">Review</a>
                         </div>
                     </div>
                 </div>
@@ -198,10 +210,17 @@ if (session_status() === PHP_SESSION_NONE) {
                                 </div>
                                 <span class="text-gray-300 font-mono text-sm">system_logs.sh</span>
                             </div>
-                            <button onclick="refreshLogs()" class="text-gray-400 hover:text-white">
-                                <i data-lucide="refresh-cw" class="h-4 w-4"></i>
-                            </button>
+                            <div class="flex items-center gap-2">
+                                <button onclick="refreshLogs()" class="text-gray-400 hover:text-white">
+                                    <i data-lucide="refresh-cw" class="h-4 w-4"></i>
+                                </button>
+                                <button id="terminalToggleBtn" class="section-toggle" onclick="toggleSection('terminalSection','terminalToggleBtn')">
+                                    <i data-lucide="chevron-down" class="h-3.5 w-3.5"></i>
+                                    Expand
+                                </button>
+                            </div>
                         </div>
+                        <div id="terminalSection" class="hidden">
                         <div id="terminal" class="terminal p-4 h-64 overflow-y-auto font-mono text-sm">
                             <div class="mb-2 text-green-400">$ Loading system logs...</div>
                             <div id="logContent">
@@ -212,22 +231,30 @@ if (session_status() === PHP_SESSION_NONE) {
                                 <span class="ml-2 animate-pulse">_</span>
                             </div>
                         </div>
+                        </div>
                     </div>
 
                     <!-- Recent Admin Activity -->
                     <div class="bg-white rounded-xl shadow-sm p-6">
                         <div class="flex items-center justify-between mb-6">
                             <h2 class="text-lg font-semibold text-gray-900">Recent Admin Actions</h2>
-                            <button onclick="loadAdminActivity()" class="text-gray-500 hover:text-gray-700">
-                                <i data-lucide="refresh-cw" class="h-4 w-4"></i>
-                            </button>
+                            <div class="flex items-center gap-2">
+                                <button onclick="loadAdminActivity()" class="text-gray-500 hover:text-gray-700">
+                                    <i data-lucide="refresh-cw" class="h-4 w-4"></i>
+                                </button>
+                                <button id="activityToggleBtn" class="section-toggle" onclick="toggleSection('activitySection','activityToggleBtn')">
+                                    <i data-lucide="chevron-down" class="h-3.5 w-3.5"></i>
+                                    Expand
+                                </button>
+                            </div>
                         </div>
-                        
+                        <div id="activitySection" class="hidden">
                         <div id="adminActivity" class="space-y-4">
                             <div class="text-center py-8">
                                 <i data-lucide="loader" class="h-8 w-8 animate-spin text-blue-600 mx-auto mb-4"></i>
                                 <p class="text-gray-500">Loading activity...</p>
                             </div>
+                        </div>
                         </div>
                     </div>
                 </div>
@@ -239,7 +266,7 @@ if (session_status() === PHP_SESSION_NONE) {
                         <h2 class="text-lg font-semibold text-gray-900 mb-4">Quick Actions</h2>
                         
                         <div class="space-y-3">
-                            <button onclick="openUserApproval()" 
+                            <button onclick="openUserApproval()"
                                     class="w-full flex items-center p-3 rounded-lg border border-gray-200 hover:bg-gray-50 text-gray-700">
                                 <i data-lucide="user-check" class="h-5 w-5 text-green-600 mr-3"></i>
                                 <span>Approve Pending Users</span>
@@ -252,14 +279,14 @@ if (session_status() === PHP_SESSION_NONE) {
                                 <span>Generate Invite Tokens</span>
                             </button>
                             
-                            <button onclick="openContentModeration()" 
+                            <button onclick="openContentModeration()"
                                     class="w-full flex items-center p-3 rounded-lg border border-gray-200 hover:bg-gray-50 text-gray-700">
                                 <i data-lucide="shield-alert" class="h-5 w-5 text-red-600 mr-3"></i>
                                 <span>Content Moderation</span>
                                 <span id="reportsBadge" class="ml-auto bg-red-100 text-red-800 text-xs px-2 py-1 rounded-full">0</span>
                             </button>
                             
-                            <button onclick="openSystemSettings()" 
+                            <button onclick="openSystemSettings()"
                                     class="w-full flex items-center p-3 rounded-lg border border-gray-200 hover:bg-gray-50 text-gray-700">
                                 <i data-lucide="settings" class="h-5 w-5 text-gray-600 mr-3"></i>
                                 <span>System Settings</span>
@@ -271,7 +298,7 @@ if (session_status() === PHP_SESSION_NONE) {
                     <div class="bg-white rounded-xl shadow-sm p-6">
                         <h2 class="text-lg font-semibold text-gray-900 mb-4">System Status</h2>
                         
-                        <div class="space-y-4">
+                        <div id="systemStatusSection" class="hidden space-y-4">
                             <div>
                                 <div class="flex justify-between mb-1">
                                     <span class="text-sm text-gray-600">API Health</span>
@@ -309,6 +336,12 @@ if (session_status() === PHP_SESSION_NONE) {
                                 <span id="lastUpdate" class="font-medium">Just now</span>
                             </div>
                         </div>
+                        <div class="mt-4">
+                            <button id="systemStatusToggleBtn" class="section-toggle" onclick="toggleSection('systemStatusSection','systemStatusToggleBtn')">
+                                <i data-lucide="chevron-down" class="h-3.5 w-3.5"></i>
+                                Expand
+                            </button>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -324,9 +357,13 @@ if (session_status() === PHP_SESSION_NONE) {
                         <button onclick="loadPendingUsers()" class="px-3 py-1.5 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700">
                             Refresh
                         </button>
+                        <button id="pendingToggleBtn" class="section-toggle" onclick="toggleSection('pendingSection','pendingToggleBtn')">
+                            <i data-lucide="chevron-down" class="h-3.5 w-3.5"></i>
+                            Expand
+                        </button>
                     </div>
                 </div>
-                
+                <div id="pendingSection" class="hidden">
                 <div class="overflow-x-auto">
                     <table class="w-full">
                         <thead>
@@ -356,12 +393,20 @@ if (session_status() === PHP_SESSION_NONE) {
                     <h3 class="font-medium text-gray-900 mb-2">No pending approvals</h3>
                     <p class="text-gray-500">All users have been processed</p>
                 </div>
+                </div>
             </div>
 
             <!-- Token Generator -->
-            <div class="bg-white rounded-xl shadow-sm p-6">
-                <h2 class="text-lg font-semibold text-gray-900 mb-6">Alumni Invite Token Generator</h2>
+            <div id="tokenGenerator" class="bg-white rounded-xl shadow-sm p-6">
+                <div class="flex items-center justify-between mb-6">
+                    <h2 class="text-lg font-semibold text-gray-900">Alumni Invite Token Generator</h2>
+                    <button id="tokenToggleBtn" class="section-toggle" onclick="toggleSection('tokenSection','tokenToggleBtn')">
+                        <i data-lucide="chevron-down" class="h-3.5 w-3.5"></i>
+                        Expand
+                    </button>
+                </div>
                 
+                <div id="tokenSection" class="hidden">
                 <div class="grid md:grid-cols-2 gap-8">
                     <!-- Generate Form -->
                     <div>
@@ -452,6 +497,7 @@ if (session_status() === PHP_SESSION_NONE) {
                         </div>
                     </div>
                 </div>
+                </div>
             </div>
         </main>
     </div>
@@ -475,82 +521,63 @@ if (session_status() === PHP_SESSION_NONE) {
         </div>
     </div>
 
-    <script>
-        // Initialize Lucide icons
+        <script>
         lucide.createIcons();
-        
-        // Load admin dashboard data
+
         document.addEventListener('DOMContentLoaded', function() {
             loadAdminStats();
             loadPendingUsers();
             loadSystemLogs();
             loadRecentTokens();
             loadAdminActivity();
-            
-            // Auto-refresh logs every 30 seconds
             setInterval(loadSystemLogs, 30000);
-            
-            // Auto-update stats every minute
             setInterval(loadAdminStats, 60000);
+            lucide.createIcons();
         });
-        
+
         async function loadAdminStats() {
             try {
                 const response = await makeApiCall('admin_stats.php');
-                
-                if (response && response.success) {
-                    const stats = response.data;
-                    
-                    // Update quick stats
-                    document.getElementById('totalUsers').textContent = stats.total_users?.toLocaleString() || '0';
-                    document.getElementById('pendingUsers').textContent = stats.pending_users || '0';
-                    document.getElementById('activeReports').textContent = stats.active_reports || '0';
-                    document.getElementById('usersGrowth').textContent = `${stats.user_growth || 0}%`;
-                    
-                    // Update badges
-                    document.getElementById('pendingBadge').textContent = stats.pending_users || '0';
-                    document.getElementById('reportsBadge').textContent = stats.active_reports || '0';
-                    
-                    // Update system health
-                    const health = stats.system_health || 100;
-                    document.getElementById('systemHealth').textContent = `${health}%`;
-                    document.getElementById('apiHealth').textContent = `${health}%`;
-                    document.getElementById('apiHealthBar').style.width = `${health}%`;
-                    
-                    // Update storage
-                    const storage = stats.storage_usage || 65;
-                    document.getElementById('storageUsage').textContent = `${storage}%`;
-                    document.getElementById('storageBar').style.width = `${storage}%`;
-                    
-                    // Update last update time
-                    document.getElementById('lastUpdate').textContent = 'Just now';
-                }
+                const stats = (response && response.success && response.data) ? response.data : response;
+                if (!stats) return;
+                document.getElementById('totalUsers').textContent = stats.total_users?.toLocaleString() || '0';
+                document.getElementById('pendingUsers').textContent = stats.pending_users || '0';
+                document.getElementById('activeReports').textContent = stats.active_reports || '0';
+                document.getElementById('usersGrowth').textContent = `${stats.user_growth || 0}%`;
+                document.getElementById('pendingBadge').textContent = stats.pending_users || '0';
+                document.getElementById('reportsBadge').textContent = stats.active_reports || '0';
+
+                const health = stats.system_health || 100;
+                document.getElementById('systemHealth').textContent = `${health}%`;
+                document.getElementById('apiHealth').textContent = `${health}%`;
+                document.getElementById('apiHealthBar').style.width = `${health}%`;
+
+                const storage = stats.storage_usage || 65;
+                document.getElementById('storageUsage').textContent = `${storage}%`;
+                document.getElementById('storageBar').style.width = `${storage}%`;
+                document.getElementById('lastUpdate').textContent = 'Just now';
             } catch (error) {
                 console.error('Error loading admin stats:', error);
             }
         }
-        
+
         async function loadPendingUsers() {
             try {
                 const response = await makeApiCall('admin_stats.php?type=pending');
-                
                 const tableBody = document.getElementById('pendingUsersTable');
                 const noPendingDiv = document.getElementById('noPendingUsers');
-                
+                const tableWrap = tableBody.parentElement;
+
                 if (response && response.success && response.data && response.data.length > 0) {
                     tableBody.innerHTML = '';
-                    
                     response.data.forEach(user => {
                         const row = document.createElement('tr');
                         row.className = 'border-b border-gray-100 hover:bg-gray-50';
-                        
                         row.innerHTML = `
                             <td class="py-4 px-4">
                                 <div class="flex items-center">
                                     <div class="h-10 w-10 bg-gray-100 rounded-full flex items-center justify-center mr-3">
-                                        ${user.avatar ? 
-                                            `<img src="${user.avatar}" alt="${user.name}" class="h-10 w-10 rounded-full">` : 
-                                            `<i data-lucide="user" class="h-5 w-5 text-gray-400"></i>`}
+                                        ${user.avatar ? `<img src="${user.avatar}" alt="${user.name}" class="h-10 w-10 rounded-full">` : `<i data-lucide="user" class="h-5 w-5 text-gray-400"></i>`}
                                     </div>
                                     <div>
                                         <div class="font-medium text-gray-900">${user.name}</div>
@@ -558,61 +585,34 @@ if (session_status() === PHP_SESSION_NONE) {
                                     </div>
                                 </div>
                             </td>
-                            <td class="py-4 px-4">
-                                <span class="px-2 py-1 rounded-full text-xs ${getRoleBadgeClass(user.role)}">
-                                    ${user.role || 'user'}
-                                </span>
-                            </td>
-                            <td class="py-4 px-4 text-sm text-gray-600">
-                                ${formatDate(user.created_at)}
-                            </td>
-                            <td class="py-4 px-4">
-                                <div class="text-sm">
-                                    ${user.branch ? `<div>${user.branch}</div>` : ''}
-                                    ${user.graduation_year ? `<div>Class of ${user.graduation_year}</div>` : ''}
-                                </div>
-                            </td>
-                            <td class="py-4 px-4">
-                                <span class="badge-pending px-2 py-1 rounded-full text-xs font-medium">
-                                    Pending
-                                </span>
-                            </td>
+                            <td class="py-4 px-4"><span class="px-2 py-1 rounded-full text-xs ${getRoleBadgeClass(user.role)}">${user.role || 'user'}</span></td>
+                            <td class="py-4 px-4 text-sm text-gray-600">${formatDate(user.created_at)}</td>
+                            <td class="py-4 px-4"><div class="text-sm">${user.branch ? `<div>${user.branch}</div>` : ''}${user.graduation_year ? `<div>Class of ${user.graduation_year}</div>` : ''}</div></td>
+                            <td class="py-4 px-4"><span class="badge-pending px-2 py-1 rounded-full text-xs font-medium">Pending</span></td>
                             <td class="py-4 px-4">
                                 <div class="flex space-x-2">
-                                    <button onclick="approveUser(${user.id})" 
-                                            class="px-3 py-1 bg-green-600 text-white rounded-lg text-sm hover:bg-green-700">
-                                        Approve
-                                    </button>
-                                    <button onclick="rejectUser(${user.id})" 
-                                            class="px-3 py-1 bg-red-600 text-white rounded-lg text-sm hover:bg-red-700">
-                                        Reject
-                                    </button>
-                                    <button onclick="viewUserDetails(${user.id})" 
-                                            class="px-3 py-1 border border-gray-300 rounded-lg text-sm text-gray-700 hover:bg-gray-50">
-                                        View
-                                    </button>
+                                    <button onclick="approveUser(${user.id})" class="px-3 py-1 bg-green-600 text-white rounded-lg text-sm hover:bg-green-700">Approve</button>
+                                    <button onclick="rejectUser(${user.id})" class="px-3 py-1 bg-red-600 text-white rounded-lg text-sm hover:bg-red-700">Reject</button>
+                                    <button onclick="viewUserDetails(${user.id})" class="px-3 py-1 border border-gray-300 rounded-lg text-sm text-gray-700 hover:bg-gray-50">View</button>
                                 </div>
                             </td>
                         `;
-                        
                         tableBody.appendChild(row);
                     });
-                    
-                    tableBody.parentElement.parentElement.classList.remove('hidden');
+                    tableWrap.classList.remove('hidden');
                     noPendingDiv.classList.add('hidden');
-                    
                     lucide.createIcons();
                 } else {
-                    tableBody.parentElement.parentElement.classList.add('hidden');
+                    tableWrap.classList.add('hidden');
                     noPendingDiv.classList.remove('hidden');
                 }
             } catch (error) {
                 console.error('Error loading pending users:', error);
             }
         }
-        
+
         function getRoleBadgeClass(role) {
-            switch(role) {
+            switch (role) {
                 case 'admin': return 'bg-amber-100 text-amber-800';
                 case 'faculty': return 'bg-blue-100 text-blue-800';
                 case 'alumni': return 'bg-green-100 text-green-800';
@@ -620,106 +620,84 @@ if (session_status() === PHP_SESSION_NONE) {
                 default: return 'bg-gray-100 text-gray-800';
             }
         }
-        
+
         async function loadSystemLogs() {
             try {
                 const response = await makeApiCall('view_logs.php');
+                const logs = Array.isArray(response) ? response : (response?.data || []);
                 const logContent = document.getElementById('logContent');
-                
-                if (response && response.success) {
-                    const logs = response.data || [];
-                    
-                    if (logs.length > 0) {
-                        logContent.innerHTML = '';
-                        
-                        // Show last 20 log entries
-                        logs.slice(-20).forEach(log => {
-                            const logLine = document.createElement('div');
-                            logLine.className = 'terminal-line mb-1';
-                            
-                            // Color code based on log level
-                            let colorClass = 'text-gray-300';
-                            if (log.level === 'ERROR') colorClass = 'text-red-400';
-                            else if (log.level === 'WARNING') colorClass = 'text-yellow-400';
-                            else if (log.level === 'INFO') colorClass = 'text-blue-400';
-                            else if (log.level === 'SUCCESS') colorClass = 'text-green-400';
-                            
-                            logLine.innerHTML = `
-                                <span class="text-gray-500">[${formatDate(log.timestamp, 'HH:mm:ss')}]</span>
-                                <span class="${colorClass} ml-2">${log.message}</span>
-                            `;
-                            
-                            logContent.appendChild(logLine);
-                        });
-                        
-                        // Auto-scroll to bottom
-                        const terminal = document.getElementById('terminal');
-                        terminal.scrollTop = terminal.scrollHeight;
-                    } else {
-                        logContent.innerHTML = '<div class="text-gray-500">No logs available</div>';
-                    }
+                if (!Array.isArray(logs) || !logs.length) {
+                    logContent.innerHTML = '<div class="text-gray-500">No logs available</div>';
+                    return;
                 }
+
+                logContent.innerHTML = '';
+                logs.slice(0, 20).forEach(log => {
+                    const logLine = document.createElement('div');
+                    logLine.className = 'terminal-line mb-1';
+                    const sev = (log.level || log.severity || '').toUpperCase();
+                    let colorClass = 'text-gray-300';
+                    if (sev === 'ERROR') colorClass = 'text-red-400';
+                    else if (sev === 'WARNING') colorClass = 'text-yellow-400';
+                    else if (sev === 'INFO') colorClass = 'text-blue-400';
+                    else if (sev === 'SUCCESS') colorClass = 'text-green-400';
+                    const message = log.message || `${log.action || 'LOG'} ${log.details || ''}`;
+                    logLine.innerHTML = `<span class="text-gray-500">[${formatDate(log.created_at || log.timestamp, 'HH:mm:ss')}]</span><span class="${colorClass} ml-2">${message}</span>`;
+                    logContent.appendChild(logLine);
+                });
+                const terminal = document.getElementById('terminal');
+                terminal.scrollTop = terminal.scrollHeight;
             } catch (error) {
                 console.error('Error loading system logs:', error);
-                document.getElementById('logContent').innerHTML = 
-                    '<div class="text-red-400">Error loading logs. Check API connection.</div>';
+                document.getElementById('logContent').innerHTML = '<div class="text-red-400">Error loading logs. Check API connection.</div>';
             }
         }
-        
+
         async function loadRecentTokens() {
             try {
                 const response = await makeApiCall('generate_token.php?action=list');
                 const container = document.getElementById('recentTokens');
-                
-                if (response && response.success && response.data) {
-                    container.innerHTML = '';
-                    
-                    response.data.slice(0, 5).forEach(token => {
-                        const tokenElement = document.createElement('div');
-                        tokenElement.className = 'p-3 bg-gray-50 rounded-lg';
-                        
-                        tokenElement.innerHTML = `
-                            <div class="flex justify-between items-start mb-1">
-                                <span class="font-mono text-sm text-gray-800 truncate">${token.token.substring(0, 12)}...</span>
-                                <span class="text-xs ${token.is_active ? 'text-green-600' : 'text-gray-500'}">
-                                    ${token.is_active ? 'Active' : 'Expired'}
-                                </span>
-                            </div>
-                            <div class="text-xs text-gray-600">
-                                <div>For: ${token.email || 'N/A'}</div>
-                                <div>Uses: ${token.used_count || 0}/${token.usage_limit || '∞'}</div>
-                                <div>Expires: ${formatDate(token.expires_at)}</div>
-                            </div>
-                        `;
-                        
-                        container.appendChild(tokenElement);
-                    });
-                } else {
+                if (!(response && response.success && response.data)) {
                     container.innerHTML = '<div class="text-center py-4 text-sm text-gray-500">No tokens generated yet</div>';
+                    return;
                 }
+
+                container.innerHTML = '';
+                response.data.slice(0, 5).forEach(token => {
+                    const tokenElement = document.createElement('div');
+                    tokenElement.className = 'p-3 bg-gray-50 rounded-lg';
+                    tokenElement.innerHTML = `
+                        <div class="flex justify-between items-start mb-1">
+                            <span class="font-mono text-sm text-gray-800 truncate">${token.token.substring(0, 12)}...</span>
+                            <span class="text-xs ${token.is_active ? 'text-green-600' : 'text-gray-500'}">${token.is_active ? 'Active' : 'Used'}</span>
+                        </div>
+                        <div class="text-xs text-gray-600">
+                            <div>For: ${token.email || 'N/A'}</div>
+                            <div>Uses: ${token.used_count || 0}/${token.usage_limit || 1}</div>
+                            <div>Created: ${formatDate(token.created_at)}</div>
+                        </div>
+                    `;
+                    container.appendChild(tokenElement);
+                });
             } catch (error) {
                 console.error('Error loading tokens:', error);
             }
         }
-        
+
         async function loadAdminActivity() {
             try {
-                // This would come from an admin activity API endpoint
-                const activities = [
-                    { action: 'Approved user registration', admin: 'System Admin', time: '2 minutes ago' },
-                    { action: 'Generated alumni token', admin: 'John Doe', time: '15 minutes ago' },
-                    { action: 'Removed inappropriate content', admin: 'System Admin', time: '1 hour ago' },
-                    { action: 'Updated system settings', admin: 'Jane Smith', time: '2 hours ago' },
-                    { action: 'Exported user data', admin: 'System Admin', time: '5 hours ago' }
-                ];
-                
+                const response = await makeApiCall('admin_stats.php?type=activity');
+                const activities = (response && response.success && Array.isArray(response.data)) ? response.data : [];
                 const container = document.getElementById('adminActivity');
                 container.innerHTML = '';
-                
+                if (!activities.length) {
+                    container.innerHTML = '<p class="text-sm text-gray-500">No admin actions logged yet.</p>';
+                    return;
+                }
+
                 activities.forEach(activity => {
                     const activityElement = document.createElement('div');
                     activityElement.className = 'flex items-start p-3 rounded-lg border border-gray-100';
-                    
                     activityElement.innerHTML = `
                         <div class="flex-shrink-0">
                             <div class="h-8 w-8 bg-blue-100 rounded-full flex items-center justify-center">
@@ -727,199 +705,174 @@ if (session_status() === PHP_SESSION_NONE) {
                             </div>
                         </div>
                         <div class="ml-3 flex-1">
-                            <p class="text-sm text-gray-800">${activity.action}</p>
+                            <p class="text-sm text-gray-800">${activity.action}${activity.details ? ` - ${activity.details}` : ''}</p>
                             <div class="flex items-center justify-between mt-1">
-                                <span class="text-xs text-gray-500">By ${activity.admin}</span>
-                                <span class="text-xs text-gray-500">${activity.time}</span>
+                                <span class="text-xs text-gray-500">By ${activity.actor || 'System'}</span>
+                                <span class="text-xs text-gray-500">${formatDate(activity.created_at)}</span>
                             </div>
                         </div>
                     `;
-                    
                     container.appendChild(activityElement);
                 });
-                
                 lucide.createIcons();
             } catch (error) {
                 console.error('Error loading admin activity:', error);
             }
         }
-        
+
         async function approveUser(userId) {
             if (!confirm('Are you sure you want to approve this user?')) return;
-            
             try {
-                const response = await makeApiCall('approve_user.php', 'POST', {
-                    user_id: userId,
-                    action: 'approve'
-                });
-                
-                if (response && response.success) {
+                const response = await makeApiCall('approve_user.php', 'POST', { target_user_id: userId, action: 'approve' });
+                if (response && response.message && !response.error) {
                     alert('User approved successfully!');
                     loadPendingUsers();
                     loadAdminStats();
                 } else {
-                    alert(response.message || 'Failed to approve user');
+                    alert(response?.message || 'Failed to approve user');
                 }
             } catch (error) {
                 console.error('Error approving user:', error);
                 alert('Error approving user');
             }
         }
-        
+
         async function rejectUser(userId) {
             const reason = prompt('Please enter reason for rejection:', '');
             if (reason === null) return;
-            
             try {
-                const response = await makeApiCall('approve_user.php', 'POST', {
-                    user_id: userId,
-                    action: 'reject',
-                    reason: reason
-                });
-                
-                if (response && response.success) {
+                const response = await makeApiCall('approve_user.php', 'POST', { target_user_id: userId, action: 'reject', reason });
+                if (response && response.message && !response.error) {
                     alert('User rejected successfully!');
                     loadPendingUsers();
                     loadAdminStats();
                 } else {
-                    alert(response.message || 'Failed to reject user');
+                    alert(response?.message || 'Failed to reject user');
                 }
             } catch (error) {
                 console.error('Error rejecting user:', error);
                 alert('Error rejecting user');
             }
         }
-        
+
         async function generateToken() {
             const email = document.getElementById('tokenEmail').value.trim();
-            const expiry = document.getElementById('tokenExpiry').value;
-            const limit = document.getElementById('tokenLimit').value;
-            
-            if (!email) {
-                alert('Please enter an email address');
-                return;
-            }
-            
-            if (!validateEmail(email)) {
+            if (!email || !validateEmail(email)) {
                 alert('Please enter a valid email address');
                 return;
             }
-            
             try {
-                const response = await makeApiCall('generate_token.php', 'POST', {
-                    email: email,
-                    expires_in: expiry,
-                    usage_limit: limit
-                });
-                
+                const response = await makeApiCall('generate_token.php', 'POST', { email });
                 if (response && response.success) {
-                    // Show generated token
-                    document.getElementById('generatedToken').textContent = response.data.token;
+                    document.getElementById('generatedToken').textContent = (response.data && response.data.token) || response.token || '';
                     document.getElementById('tokenForEmail').textContent = email;
-                    
-                    // Calculate expiry date
-                    const expiryDate = new Date();
-                    expiryDate.setDate(expiryDate.getDate() + parseInt(expiry));
-                    document.getElementById('tokenExpiryDate').textContent = formatDate(expiryDate);
-                    
-                    // Show result
+                    document.getElementById('tokenExpiryDate').textContent = 'N/A';
                     document.getElementById('tokenResult').classList.remove('hidden');
-                    
-                    // Clear form
                     document.getElementById('tokenEmail').value = '';
-                    
-                    // Reload recent tokens
                     loadRecentTokens();
-                    
-                    // Scroll to result
                     document.getElementById('tokenResult').scrollIntoView({ behavior: 'smooth' });
                 } else {
-                    alert(response.message || 'Failed to generate token');
+                    alert(response?.message || 'Failed to generate token');
                 }
             } catch (error) {
                 console.error('Error generating token:', error);
                 alert('Error generating token');
             }
         }
-        
+
         function copyToken() {
             const token = document.getElementById('generatedToken').textContent;
             navigator.clipboard.writeText(token).then(() => {
                 alert('Token copied to clipboard!');
-            }).catch(err => {
+            }).catch((err) => {
                 console.error('Failed to copy token:', err);
                 alert('Failed to copy token');
             });
         }
-        
+
         function validateEmail(email) {
             const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
             return re.test(email);
         }
-        
+
         function formatDate(dateString, format = 'relative') {
             const date = new Date(dateString);
-            
+            if (Number.isNaN(date.getTime())) return '-';
             if (format === 'relative') {
                 const now = new Date();
                 const diffMs = now - date;
                 const diffMins = Math.floor(diffMs / 60000);
                 const diffHours = Math.floor(diffMs / 3600000);
                 const diffDays = Math.floor(diffMs / 86400000);
-                
-                if (diffMins < 60) {
-                    return `${diffMins}m ago`;
-                } else if (diffHours < 24) {
-                    return `${diffHours}h ago`;
-                } else if (diffDays < 7) {
-                    return `${diffDays}d ago`;
-                } else {
-                    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-                }
-            } else if (format === 'HH:mm:ss') {
-                return date.toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' });
-            } else {
-                return date.toLocaleDateString('en-US', { 
-                    year: 'numeric', 
-                    month: 'short', 
-                    day: 'numeric',
-                    hour: '2-digit',
-                    minute: '2-digit'
-                });
+                if (diffMins < 60) return `${diffMins}m ago`;
+                if (diffHours < 24) return `${diffHours}h ago`;
+                if (diffDays < 7) return `${diffDays}d ago`;
+                return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
             }
+            if (format === 'HH:mm:ss') {
+                return date.toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' });
+            }
+            return date.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
         }
-        
+
         function refreshLogs() {
             loadSystemLogs();
         }
-        
+
         function openUserApproval() {
-            document.getElementById('pendingTable').scrollIntoView({ behavior: 'smooth' });
+            window.location.href = './users.php?status=pending';
         }
-        
+
         function openTokenGenerator() {
-            document.querySelector('#tokenGenerator').scrollIntoView({ behavior: 'smooth' });
+            window.location.href = './tokens.php';
         }
-        
+
         function openContentModeration() {
-            alert('Content moderation panel coming soon!');
+            window.location.href = './reports.php';
         }
-        
+
         function openSystemSettings() {
-            alert('System settings panel coming soon!');
+            window.location.href = './system-settings.php';
         }
-        
-        function exportPendingUsers() {
-            alert('Export feature coming soon!');
+
+        async function exportPendingUsers() {
+            const response = await makeApiCall('admin_stats.php?type=pending');
+            if (!response || !response.success || !Array.isArray(response.data)) {
+                alert('Failed to export pending users.');
+                return;
+            }
+            const header = ['id', 'name', 'email', 'role', 'status', 'branch', 'graduation_year', 'created_at'];
+            const csvRows = [header.join(',')];
+            response.data.forEach((u) => {
+                csvRows.push(header.map((k) => `"${String(u[k] ?? '').replace(/"/g, '""')}"`).join(','));
+            });
+            const blob = new Blob([csvRows.join('\n')], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = 'pending_users.csv';
+            link.click();
+            URL.revokeObjectURL(link.href);
         }
-        
+
         function closeApprovalModal() {
             document.getElementById('approvalModal').classList.add('hidden');
         }
-        
+
         function viewUserDetails(userId) {
             window.open(`../profile.php?id=${userId}`, '_blank');
+        }
+
+        function toggleSection(sectionId, btnId) {
+            const section = document.getElementById(sectionId);
+            const btn = document.getElementById(btnId);
+            if (!section || !btn) return;
+            section.classList.toggle('hidden');
+            btn.innerHTML = section.classList.contains('hidden')
+                ? '<i data-lucide="chevron-down" class="h-3.5 w-3.5"></i>Expand'
+                : '<i data-lucide="chevron-up" class="h-3.5 w-3.5"></i>Collapse';
+            lucide.createIcons();
         }
     </script>
 </body>
 </html>
+

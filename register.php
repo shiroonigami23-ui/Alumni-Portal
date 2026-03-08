@@ -7,7 +7,7 @@ if (isset($_COOKIE['jwt_token']) || (isset($_SESSION) && isset($_SESSION['jwt_to
 
 // Get registration type from query parameter
 $type = isset($_GET['type']) ? $_GET['type'] : 'student';
-$validTypes = ['student', 'alumni', 'faculty'];
+$validTypes = ['student', 'alumni'];
 if (!in_array($type, $validTypes)) {
     $type = 'student';
 }
@@ -91,12 +91,6 @@ if (!in_array($type, $validTypes)) {
                         class="flex-1 py-3 px-4 text-center font-medium text-gray-500 hover:text-gray-700 tab <?php echo $type === 'alumni' ? 'tab-active' : ''; ?>">
                     <i data-lucide="graduation-cap" class="h-5 w-5 inline-block mr-2"></i>
                     Alumni
-                </button>
-                <button type="button" 
-                        data-type="faculty"
-                        class="flex-1 py-3 px-4 text-center font-medium text-gray-500 hover:text-gray-700 tab <?php echo $type === 'faculty' ? 'tab-active' : ''; ?>">
-                    <i data-lucide="briefcase" class="h-5 w-5 inline-block mr-2"></i>
-                    Faculty
                 </button>
             </div>
             
@@ -403,6 +397,7 @@ if (!in_array($type, $validTypes)) {
                     </button>
                 </form>
                 
+                <?php if (false): ?>
                 <!-- Faculty Registration Form -->
                 <form id="facultyForm" class="space-y-6 <?php echo $type !== 'faculty' ? 'hidden' : ''; ?>" enctype="multipart/form-data" data-endpoint="register_faculty.php">
                     <!-- Profile Picture Upload -->
@@ -509,16 +504,6 @@ if (!in_array($type, $validTypes)) {
                     </div>
                     
                     <div>
-                        <label for="faculty_employee_id" class="block text-sm font-medium text-gray-700 mb-2">Employee ID *</label>
-                        <input type="text" 
-                               id="faculty_employee_id" 
-                               name="employee_id"
-                               required
-                               class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                               placeholder="RJITFAC123">
-                    </div>
-                    
-                    <div>
                         <label for="faculty_qualification" class="block text-sm font-medium text-gray-700 mb-2">Highest Qualification</label>
                         <input type="text" 
                                id="faculty_qualification" 
@@ -549,9 +534,10 @@ if (!in_array($type, $validTypes)) {
                     
                     <button type="submit" 
                             class="w-full bg-blue-600 text-white py-3 px-4 rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 font-semibold transition duration-300">
-                        Register as Faculty
+                        Register
                     </button>
                 </form>
+                <?php endif; ?>
             </div>
             
             <!-- Messages -->

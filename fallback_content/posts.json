@@ -1,62 +1,63 @@
-[
-    {
-        "post_id": "fallback_1",
-        "author_name": "RJIT Alumni Association",
-        "author_role": "admin",
-        "author_profile_picture_url": null,
-        "content": "Welcome to the RJIT Alumni Portal! 🎓\n\nWe're excited to launch this platform to connect RJITians across generations. Share your success stories, find mentors, discover job opportunities, and stay connected with your alma mater.\n\n#RJITAlumni #StayConnected",
-        "image_url": "fallback_content/images/campus_main.jpg",
-        "created_at": "2026-02-15T10:00:00Z",
-        "likes_count": 45,
-        "comments_count": 12,
-        "is_pinned": true
-    },
-    {
-        "post_id": "fallback_2",
-        "author_name": "Dr. Rajesh Kumar",
-        "author_role": "faculty",
-        "author_profile_picture_url": null,
-        "content": "Proud to announce that our Computer Science department has been equipped with state-of-the-art AI and Machine Learning labs! 💻🤖\n\nStudents now have access to high-performance computing resources, GPU clusters, and industry-standard tools. The future of tech education is here at RJIT!\n\n#Innovation #TechEducation #RJIT",
-        "image_url": "fallback_content/images/lab_facility.jpg",
-        "created_at": "2026-02-14T14:30:00Z",
-        "likes_count": 78,
-        "comments_count": 23,
-        "is_pinned": false
-    },
-    {
-        "post_id": "fallback_3",
-        "author_name": "Priya Sharma",
-        "author_role": "alumni",
-        "author_profile_picture_url": null,
-        "content": "Throwback to RJIT Sports Day 2025! 🏆⚽🏃‍♀️\n\nSuch amazing memories of competing with friends, cheering for our teams, and celebrating college spirit. Miss those days! Current students, make the most of every moment.\n\nClass of 2023 💙\n\n#RJITMemories #SportsDay #CollegeLife",
-        "image_url": "fallback_content/images/sports_day.jpg",
-        "created_at": "2026-02-13T16:45:00Z",
-        "likes_count": 92,
-        "comments_count": 34,
-        "is_pinned": false
-    },
-    {
-        "post_id": "fallback_4",
-        "author_name": "Arjun Patel",
-        "author_role": "alumni",
-        "author_profile_picture_url": null,
-        "content": "Just got placed at Google Bangalore! 🎉\n\nCouldn't have done it without the solid foundation I got at RJIT. Special thanks to the placement cell and all my professors who guided me throughout my journey.\n\nTo current students: Keep learning, stay curious, and never give up!\n\n#GoogleIndia #RJITAlumni #SuccessStory",
-        "image_url": null,
-        "created_at": "2026-02-12T11:20:00Z",
-        "likes_count": 156,
-        "comments_count": 48,
-        "is_pinned": false
-    },
-    {
-        "post_id": "fallback_5",
-        "author_name": "RJIT Events Team",
-        "author_role": "admin",
-        "author_profile_picture_url": null,
-        "content": "📢 Upcoming Event Alert!\n\nTech Fest 2026 - Innovation Summit\n📅 March 15-17, 2026\n📍 RJIT Campus, Bangalore\n\nJoin us for:\n✨ Technical workshops\n🎤 Guest lectures from industry leaders\n🏆 Hackathons with amazing prizes\n🎨 Cultural performances\n\nRegistration opens soon! Stay tuned.\n\n#TechFest2026 #RJIT #Innovation",
-        "image_url": null,
-        "created_at": "2026-02-11T09:00:00Z",
-        "likes_count": 67,
-        "comments_count": 19,
-        "is_pinned": false
-    }
+﻿[
+  {
+    "post_id": "rjit_update_1",
+    "author_name": "Prof. Abhishek Chakraborty",
+    "author_email": "achakraborty@rjit.ac.in",
+    "author_role": "admin",
+    "author_profile_picture_url": null,
+    "content": "Welcome to RJIT Alumni Network. Connecting 6000+ graduates across the globe. Alumni Cell contact is managed by Prof. Abhishek Chakraborty for alumni coordination and outreach.",
+    "image_url": "assets/images/rjit_updates/anjuman_1.jpeg",
+    "created_at": "2026-02-11T10:00:00Z",
+    "likes_count": 0,
+    "comments_count": 0,
+    "is_pinned": true
+  },
+  {
+    "post_id": "rjit_update_2",
+    "author_name": "RJIT Alumni Cell",
+    "author_role": "admin",
+    "author_profile_picture_url": null,
+    "content": "RJIT Alumni Meet (Anjuman 2025) was held at Rustamji Institute of Technology, BSF Academy, Gwalior on 20 December 2025. Alumni interactions and photo gallery are available on the official RJIT alumni page.",
+    "image_url": "assets/images/rjit_updates/anjuman_2.jpeg",
+    "created_at": "2025-12-20T10:00:00Z",
+    "likes_count": 0,
+    "comments_count": 0,
+    "is_pinned": false
+  },
+  {
+    "post_id": "rjit_update_3",
+    "author_name": "RJIT Alumni Visits",
+    "author_role": "admin",
+    "author_profile_picture_url": null,
+    "content": "11 Feb 2026: Ms. Shalini Dubey (Automobile 2015-2019), entrepreneur based in Germany, visited RJIT and interacted with students on startup opportunities and international engineering career pathways.",
+    "image_url": "assets/images/featured_alumni/alumni_visits_shalini1.jpeg",
+    "created_at": "2026-02-11T12:00:00Z",
+    "likes_count": 0,
+    "comments_count": 0,
+    "is_pinned": false
+  },
+  {
+    "post_id": "rjit_update_4",
+    "author_name": "RJIT Alumni Visits",
+    "author_role": "admin",
+    "author_profile_picture_url": null,
+    "content": "10 Feb 2026: Mr. Saurabh Sikarwar (Automobile 1999-2003), Country Head Sales at Wipro Hydraulics, visited RJIT and guided students on industrial careers in core engineering sectors.",
+    "image_url": "assets/images/featured_alumni/alumni_visits_saurabh1.jpeg",
+    "created_at": "2026-02-10T12:00:00Z",
+    "likes_count": 0,
+    "comments_count": 0,
+    "is_pinned": false
+  },
+  {
+    "post_id": "rjit_update_5",
+    "author_name": "RJIT Alumni Visits",
+    "author_role": "admin",
+    "author_profile_picture_url": null,
+    "content": "07 Feb 2026: Ms. Sandhya Singh (Automobile 2003-2007), Delivery Manager at Volvo Sweden, conducted an online session with RJIT students on global automotive projects and remote collaboration.",
+    "image_url": "assets/images/featured_alumni/alumni_visits_sandhya1.jpeg",
+    "created_at": "2026-02-07T12:00:00Z",
+    "likes_count": 0,
+    "comments_count": 0,
+    "is_pinned": false
+  }
 ]

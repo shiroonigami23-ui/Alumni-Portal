@@ -46,6 +46,96 @@
   --shadow-strong: 0 22px 45px rgba(2, 132, 199, 0.35);
 }
 
+/* Force an X-like dark UI with high contrast on all utility surfaces */
+[data-theme="dark"] body,
+[data-theme="dark"] .bg-gray-50 {
+  background: #000 !important;
+  color: #e7e9ea !important;
+}
+
+[data-theme="dark"] .bg-white,
+[data-theme="dark"] .card,
+[data-theme="dark"] .rounded-xl,
+[data-theme="dark"] nav.bg-white.shadow-md,
+[data-theme="dark"] .portal-topbar {
+  background: #111827 !important;
+  border-color: #273244 !important;
+  box-shadow: none !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+
+[data-theme="dark"] .text-gray-900,
+[data-theme="dark"] .text-gray-800,
+[data-theme="dark"] .text-gray-700 {
+  color: #e7e9ea !important;
+}
+
+[data-theme="dark"] .text-gray-600,
+[data-theme="dark"] .text-gray-500,
+[data-theme="dark"] .text-gray-400 {
+  color: #8b98a5 !important;
+}
+
+[data-theme="dark"] .border-gray-100,
+[data-theme="dark"] .border-gray-200,
+[data-theme="dark"] .border-gray-300 {
+  border-color: #273244 !important;
+}
+
+[data-theme="dark"] .hover\:bg-gray-50:hover,
+[data-theme="dark"] .hover\:bg-gray-100:hover {
+  background: #1a2333 !important;
+}
+
+[data-theme="dark"] .bg-blue-100 {
+  background: #17304f !important;
+}
+
+[data-theme="dark"] .text-blue-600,
+[data-theme="dark"] .text-blue-700 {
+  color: #60a5fa !important;
+}
+
+[data-theme="dark"] .bg-red-50 {
+  background: #351826 !important;
+}
+
+[data-theme="dark"] .bg-amber-100 {
+  background: #3b2b18 !important;
+}
+
+[data-theme="dark"] input,
+[data-theme="dark"] select,
+[data-theme="dark"] textarea {
+  background: #0f172a !important;
+  border-color: #2a3a52 !important;
+  color: #e7e9ea !important;
+}
+
+[data-theme="dark"] input::placeholder,
+[data-theme="dark"] textarea::placeholder {
+  color: #6b7f95 !important;
+}
+
+[data-theme="dark"] .bg-blue-600,
+[data-theme="dark"] button.bg-blue-600,
+[data-theme="dark"] a.bg-blue-600 {
+  background: #1d9bf0 !important;
+  color: #fff !important;
+  box-shadow: none !important;
+}
+
+[data-theme="dark"] .bg-green-600 {
+  background: #1a8f3c !important;
+}
+
+[data-theme="dark"] .bg-yellow-100,
+[data-theme="dark"] .bg-purple-100,
+[data-theme="dark"] .bg-green-100 {
+  filter: brightness(0.85);
+}
+
 [data-theme="light"] {
   --bg-page: linear-gradient(180deg, #f8fafc 0%, #f1f5f9 100%);
   --surface: #ffffff;

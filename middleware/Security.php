@@ -40,6 +40,10 @@ class Security
     public static function checkCSRF()
     {
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+            // For authenticated API calls with Bearer token, CSRF is not required.
+            if (!empty($_SERVER['HTTP_AUTHORIZATION']) && stripos($_SERVER['HTTP_AUTHORIZATION'], 'Bearer ') === 0) {
+                return;
+            }
             $token = $_POST['csrf_token'] ?? $_SERVER['HTTP_X_CSRF_TOKEN'] ?? '';
             if (!self::validateCSRFToken($token)) {
                 http_response_code(403);

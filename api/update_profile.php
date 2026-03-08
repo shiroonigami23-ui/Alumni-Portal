@@ -10,46 +10,81 @@ $database = new Database();
 $db = $database->getConnection();
 $auth = new Auth($db);
 
-$user_id = $auth->validateRequest();
-$data = json_decode(file_get_contents("php://input"));
+try {
+    $user_id = (int)$auth->validateRequest();
+    $data = json_decode(file_get_contents("php://input"), true) ?: [];
 
-// 1. Check if profile exists
-$check = $db->prepare("SELECT profile_id FROM profiles WHERE user_id = :uid");
-$check->execute(['uid' => $user_id]);
+    $check = $db->prepare("SELECT profile_id FROM profiles WHERE user_id = :uid");
+    $check->execute([':uid' => $user_id]);
+    $exists = $check->fetch(PDO::FETCH_ASSOC);
 
-if ($check->rowCount() > 0) {
-    // UPDATE existing
-    $query = "UPDATE profiles SET 
-              full_name = :name, 
-              bio = :bio, 
-              skills = :skills, 
-              tech_stack = :stack,
-              updated_at = NOW() 
-              WHERE user_id = :uid";
-} else {
-    // CREATE new (Fixes the missing profile issue)
-    $query = "INSERT INTO profiles (user_id, full_name, bio, skills, tech_stack) 
-              VALUES (:uid, :name, :bio, :skills, :stack)";
-}
+    $fields = [
+        'full_name', 'bio', 'skills', 'tech_stack',
+        'profile_picture_url', 'cover_photo_url',
+        'current_company', 'job_role',
+        'department', 'branch', 'designation',
+        'contact_number',
+        'location_city', 'location_country',
+        'personal_website',
+        'linkedin_url', 'github_url', 'twitter_url'
+    ];
 
-$stmt = $db->prepare($query);
+    $payload = [];
+    foreach ($fields as $f) {
+        if (array_key_exists($f, $data)) {
+            $payload[$f] = is_string($data[$f]) ? trim($data[$f]) : $data[$f];
+        }
+    }
 
-// Sanitize inputs
-$name = $data->full_name ?? "Alumni User";
-$bio = $data->bio ?? "";
-$skills = $data->skills ?? "";
-$stack = $data->tech_stack ?? "";
+    if (empty($payload)) {
+        echo json_encode([
+            "success" => true,
+            "status" => "success",
+            "message" => "No changes provided."
+        ]);
+        exit;
+    }
 
-if ($stmt->execute([
-    'uid' => $user_id,
-    'name' => $name,
-    'bio' => $bio,
-    'skills' => $skills,
-    'stack' => $stack
-])) {
-    echo json_encode(["message" => "Profile updated successfully."]);
-} else {
+    if ($exists) {
+        $sets = [];
+        $params = [':uid' => $user_id];
+        foreach ($payload as $k => $v) {
+            $sets[] = "$k = :$k";
+            $params[":$k"] = $v;
+        }
+        $sets[] = "updated_at = NOW()";
+        $sql = "UPDATE profiles SET " . implode(', ', $sets) . " WHERE user_id = :uid";
+        $stmt = $db->prepare($sql);
+        $stmt->execute($params);
+    } else {
+        $defaultsName = isset($payload['full_name']) && $payload['full_name'] !== ''
+            ? $payload['full_name']
+            : 'Alumni User';
+        $columns = ['user_id', 'full_name'];
+        $placeholders = [':uid', ':full_name'];
+        $params = [':uid' => $user_id, ':full_name' => $defaultsName];
+        foreach ($payload as $k => $v) {
+            if ($k === 'full_name') continue;
+            $columns[] = $k;
+            $placeholders[] = ':' . $k;
+            $params[':' . $k] = $v;
+        }
+        $sql = "INSERT INTO profiles (" . implode(',', $columns) . ") VALUES (" . implode(',', $placeholders) . ")";
+        $stmt = $db->prepare($sql);
+        $stmt->execute($params);
+    }
+
+    echo json_encode([
+        "success" => true,
+        "status" => "success",
+        "message" => "Profile updated successfully."
+    ]);
+} catch (Throwable $e) {
     http_response_code(500);
-    echo json_encode(["message" => "Failed to update profile."]);
+    echo json_encode([
+        "success" => false,
+        "status" => "error",
+        "message" => "Failed to update profile.",
+        "detail" => $e->getMessage()
+    ]);
 }
-?>

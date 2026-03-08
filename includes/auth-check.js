@@ -1,12 +1,13 @@
 // Authentication and API helper functions
 const IS_ADMIN_ROUTE = window.location.pathname.includes('/admin/');
 const API_BASE = IS_ADMIN_ROUTE ? '../api' : 'api';
+const LOGIN_PAGE = IS_ADMIN_ROUTE ? '../login.php' : 'login.php';
 
 // Check authentication on page load
 function checkAuth() {
     const token = localStorage.getItem('jwt_token');
     if (!token) {
-        window.location.href = 'login.php';
+        window.location.href = LOGIN_PAGE;
         return false;
     }
     return true;
@@ -15,6 +16,10 @@ function checkAuth() {
 // Make authenticated API calls
 async function makeApiCall(endpoint, method = 'GET', body = null) {
     const token = localStorage.getItem('jwt_token');
+    if (!token) {
+        return { success: false, status: 'error', unauthorized: true, message: 'Not authenticated' };
+    }
+
     const headers = {
         'Authorization': `Bearer ${token}`
     };
@@ -35,15 +40,54 @@ async function makeApiCall(endpoint, method = 'GET', body = null) {
 
     try {
         const response = await fetch(`${API_BASE}/${endpoint}`, config);
-        
-        // Handle 401 unauthorized
-        if (response.status === 401) {
-            localStorage.removeItem('jwt_token');
-            window.location.href = 'login.php';
-            return null;
+        const rawText = await response.text();
+        let data = null;
+
+        try {
+            data = rawText ? JSON.parse(rawText) : {};
+        } catch (_error) {
+            data = {
+                success: false,
+                status: 'error',
+                message: rawText ? rawText.slice(0, 300) : 'Invalid server response'
+            };
         }
 
-        const data = await response.json();
+        if (response.status === 401) {
+            const msg = String(data?.message || '').toLowerCase();
+            const likelyExpiredSession = (
+                msg.includes('token') ||
+                msg.includes('authorization') ||
+                msg.includes('unauthorized') ||
+                msg.includes('session') ||
+                msg.includes('expired')
+            );
+
+            if (likelyExpiredSession) {
+                localStorage.removeItem('jwt_token');
+                localStorage.removeItem('user_data');
+                window.location.href = LOGIN_PAGE;
+                return null;
+            }
+
+            return {
+                ...(data || {}),
+                success: false,
+                status: 'error',
+                unauthorized: true,
+                message: data?.message || 'Access denied'
+            };
+        }
+
+        if (!response.ok) {
+            return {
+                ...(data || {}),
+                success: false,
+                status: 'error',
+                message: data?.message || `Request failed (${response.status})`
+            };
+        }
+
         return data;
     } catch (error) {
         console.error('API Error:', error);
@@ -59,6 +103,12 @@ async function fetchTextContent(filePath) {
             return 'Content not available';
         }
         const text = await response.text();
+        try {
+            const parsed = JSON.parse(text);
+            if (parsed && typeof parsed === 'object' && Object.prototype.hasOwnProperty.call(parsed, 'content')) {
+                return String(parsed.content || '');
+            }
+        } catch (_ignored) {}
         return text;
     } catch (error) {
         console.error('Error fetching text content:', error);
@@ -88,5 +138,5 @@ function getUserRole() {
 function logout() {
     localStorage.removeItem('jwt_token');
     localStorage.removeItem('user_data');
-    window.location.href = 'login.php';
+    window.location.href = LOGIN_PAGE;
 }

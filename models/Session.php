@@ -9,6 +9,10 @@ class Session {
 
     // CREATE NEW SESSION
     public function create($user_id, $session_token, $expires_at) {
+        if (!$this->conn) {
+            return false;
+        }
+
         $query = "INSERT INTO " . $this->table_name . "
                   (user_id, session_token, ip_address, user_agent, expires_at)
                   VALUES
@@ -35,6 +39,10 @@ class Session {
 
     // CHECK IF SESSION IS VALID
     public function isValid($token) {
+        if (!$this->conn) {
+            return false;
+        }
+
         // We select the record first to debug if it exists
         $query = "SELECT user_id, expires_at FROM " . $this->table_name . "
                   WHERE session_token = :token 

@@ -12,10 +12,26 @@ include_once '../models/Session.php';
 $database = new Database();
 $db = $database->getConnection();
 
+if (!$db) {
+    http_response_code(503);
+    echo json_encode(array(
+        "success" => false,
+        "message" => "Database unavailable. Please start PostgreSQL and try again."
+    ));
+    exit();
+}
+
 $user = new User($db);
 $session = new Session($db);
 
-$data = json_decode(file_get_contents("php://input"));
+$raw = file_get_contents("php://input");
+$data = json_decode($raw);
+
+if (!is_object($data)) {
+    http_response_code(400);
+    echo json_encode(array("success" => false, "message" => "Invalid JSON body."));
+    exit();
+}
 
 if (!empty($data->email) && !empty($data->password)) {
     // Set both email AND password on the user object

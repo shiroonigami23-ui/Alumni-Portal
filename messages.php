@@ -15,6 +15,10 @@ $pageTitle = "Messages - RJIT Alumni Portal";
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#0f172a">
+    <link rel="manifest" href="manifest.webmanifest">
+    <link rel="icon" type="image/png" sizes="192x192" href="assets/icons/app-icon-192.png">
+    <link rel="apple-touch-icon" href="assets/icons/app-icon-192.png">
     <title><?php echo $pageTitle; ?></title>
     
     <!-- Tailwind CSS CDN -->
@@ -29,6 +33,7 @@ $pageTitle = "Messages - RJIT Alumni Portal";
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Roboto+Slab:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="assets/css/variety-ui.css">
     <script src="assets/js/variety-ui.js" defer></script>
+    <script src="assets/js/pwa.js" defer></script>
     
     <style>
         .message-active {
@@ -44,13 +49,22 @@ $pageTitle = "Messages - RJIT Alumni Portal";
         .chat-bubble-right {
             border-radius: 18px 18px 4px 18px;
         }
+        .msg-actions {
+            opacity: 0;
+            transition: opacity 0.15s ease-in-out;
+        }
+        .msg-row:hover .msg-actions {
+            opacity: 1;
+        }
     </style>
 </head>
 <body class="bg-gray-50 min-h-screen">
     <!-- Include Header -->
     <?php include 'includes/header.php'; ?>
+    <?php include 'includes/sidebar.php'; ?>
     
     <!-- Main Content -->
+    <div class="md:pl-64 pb-20 md:pb-0">
     <div class="container mx-auto px-4 py-8">
         <div class="max-w-6xl mx-auto">
             <!-- Page Header -->
@@ -103,10 +117,13 @@ $pageTitle = "Messages - RJIT Alumni Portal";
                                 <p id="chatUserStatus" class="text-sm text-gray-600">Loading...</p>
                             </div>
                             <div class="ml-auto flex space-x-2">
-                                <button class="p-2 hover:bg-gray-100 rounded-lg">
+                                <button id="openChatProfileBtn" class="p-2 hover:bg-gray-100 rounded-lg" title="View profile">
+                                    <i data-lucide="user" class="h-5 w-5 text-gray-600"></i>
+                                </button>
+                                <button id="audioCallBtn" class="p-2 hover:bg-gray-100 rounded-lg" title="Audio call">
                                     <i data-lucide="phone" class="h-5 w-5 text-gray-600"></i>
                                 </button>
-                                <button class="p-2 hover:bg-gray-100 rounded-lg">
+                                <button id="videoCallBtn" class="p-2 hover:bg-gray-100 rounded-lg" title="Video call">
                                     <i data-lucide="video" class="h-5 w-5 text-gray-600"></i>
                                 </button>
                                 <button class="p-2 hover:bg-gray-100 rounded-lg">
@@ -152,6 +169,7 @@ $pageTitle = "Messages - RJIT Alumni Portal";
                 </div>
             </div>
         </div>
+    </div>
     </div>
     
     <!-- New Message Modal -->
@@ -205,6 +223,11 @@ $pageTitle = "Messages - RJIT Alumni Portal";
         // State variables
         let currentConversationId = null;
         let selectedUserId = null;
+        let currentChatUserId = null;
+        let conversationsSignature = '';
+        let messagesSignature = '';
+        let loadingConversations = false;
+        let loadingMessages = false;
         
         // DOM Elements
         const newMessageBtn = document.getElementById('newMessageBtn');
@@ -218,6 +241,9 @@ $pageTitle = "Messages - RJIT Alumni Portal";
         const messageInputContainer = document.getElementById('messageInputContainer');
         const messageInput = document.getElementById('messageInput');
         const sendMessageBtn = document.getElementById('sendMessageBtn');
+        const openChatProfileBtn = document.getElementById('openChatProfileBtn');
+        const audioCallBtn = document.getElementById('audioCallBtn');
+        const videoCallBtn = document.getElementById('videoCallBtn');
         
         // Event Listeners
         newMessageBtn.addEventListener('click', () => {
@@ -252,9 +278,71 @@ $pageTitle = "Messages - RJIT Alumni Portal";
         });
         
         sendMessageBtn.addEventListener('click', sendMessage);
+        if (openChatProfileBtn) {
+            openChatProfileBtn.addEventListener('click', () => {
+                if (currentChatUserId) {
+                    window.location.href = `profile.php?id=${currentChatUserId}`;
+                }
+            });
+        }
+        if (audioCallBtn) {
+            audioCallBtn.addEventListener('click', () => startCall('audio'));
+        }
+        if (videoCallBtn) {
+            videoCallBtn.addEventListener('click', () => startCall('video'));
+        }
+        document.addEventListener('click', (event) => {
+            if (!event.target.closest('[id^="msgMenu-"]') && !event.target.closest('.msg-menu-toggle')) {
+                closeAllMessageMenus();
+            }
+        });
         
         // Functions
-        async function loadConversations() {
+        function getConversationSignature(items) {
+            return (items || []).map((conv) => {
+                return [
+                    conv.conversation_id,
+                    conv.last_message_at || '',
+                    conv.unread_count || 0,
+                    conv.last_message || ''
+                ].join('|');
+            }).join('||');
+        }
+
+        function getMessagesSignature(items) {
+            return (items || []).map((msg) => {
+                return [
+                    msg.message_id || '',
+                    msg.sender_id || '',
+                    msg.created_at || msg.timestamp || '',
+                    msg.read_at || '',
+                    msg.message || '',
+                    msg.edited_at || '',
+                    msg.deleted_at || ''
+                ].join('|');
+            }).join('||');
+        }
+
+        function escapeHtml(value) {
+            return String(value || '')
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#39;');
+        }
+
+        function renderReadTick(msg) {
+            if (!msg || !msg.sender_id) return '';
+            if (msg.read_at) {
+                return '<span class="ml-1 text-blue-600 font-semibold" title="Read">✓✓</span>';
+            }
+            return '<span class="ml-1 text-emerald-600 font-semibold" title="Sent">✓</span>';
+        }
+
+        async function loadConversations(forceRender = false) {
+            if (loadingConversations) return;
+            loadingConversations = true;
             try {
                 const token = localStorage.getItem('jwt_token');
                 const response = await fetch('api/get_conversations.php', {
@@ -262,23 +350,30 @@ $pageTitle = "Messages - RJIT Alumni Portal";
                         'Authorization': `Bearer ${token}`
                     }
                 });
-                
+
                 const data = await response.json();
                 const conversationsList = document.getElementById('conversationsList');
-                
-                if (data.success && data.data && data.data.length > 0) {
-                    conversationsList.innerHTML = data.data.map(conv => `
-                        <div class="conversation-item p-4 border-b border-gray-100 hover:bg-gray-50 cursor-pointer ${conv.unread_count > 0 ? 'message-unread' : ''}" 
+                const list = (data.success && Array.isArray(data.data)) ? data.data : [];
+                const nextSignature = getConversationSignature(list);
+                if (!forceRender && nextSignature === conversationsSignature) {
+                    return;
+                }
+                conversationsSignature = nextSignature;
+
+                if (list.length > 0) {
+                    conversationsList.innerHTML = list.map(conv => `
+                        <div class="conversation-item p-4 border-b border-gray-100 hover:bg-gray-50 cursor-pointer ${conv.unread_count > 0 ? 'message-unread' : ''} ${String(currentConversationId) === String(conv.conversation_id) ? 'message-active' : ''}" 
                              data-conversation-id="${conv.conversation_id}" 
                              data-user-id="${conv.other_user_id}"
                              onclick="selectConversation('${conv.conversation_id}', '${conv.other_user_id}')">
                             <div class="flex items-center">
                                 <img src="${conv.profile_picture_url || 'https://via.placeholder.com/40'}" 
                                      alt="${conv.full_name}" 
-                                     class="h-10 w-10 rounded-full">
+                                     class="h-10 w-10 rounded-full cursor-pointer"
+                                     onclick="event.stopPropagation(); openProfileFromMessages('${conv.other_user_id}')">
                                 <div class="ml-3 flex-1">
                                     <div class="flex justify-between">
-                                        <h3 class="font-semibold text-gray-900">${conv.full_name}</h3>
+                                        <h3 class="font-semibold text-gray-900 cursor-pointer hover:underline" onclick="event.stopPropagation(); openProfileFromMessages('${conv.other_user_id}')">${conv.full_name}</h3>
                                         <span class="text-xs text-gray-500">${formatTime(conv.last_message_at)}</span>
                                     </div>
                                     <p class="text-sm text-gray-600 truncate">${conv.last_message || 'No messages yet'}</p>
@@ -300,10 +395,12 @@ $pageTitle = "Messages - RJIT Alumni Portal";
                         </div>
                     `;
                 }
-                
+
                 lucide.createIcons();
             } catch (error) {
                 console.error('Error loading conversations:', error);
+            } finally {
+                loadingConversations = false;
             }
         }
         
@@ -326,10 +423,11 @@ $pageTitle = "Messages - RJIT Alumni Portal";
                              onclick="selectUser('${user.user_id}')">
                             <img src="${user.profile_picture_url || 'https://via.placeholder.com/40'}" 
                                  alt="${user.full_name}" 
-                                 class="h-10 w-10 rounded-full">
+                                 class="h-10 w-10 rounded-full cursor-pointer"
+                                 onclick="event.stopPropagation(); openProfileFromMessages('${user.user_id}')">
                             <div class="ml-3">
-                                <h4 class="font-medium text-gray-900">${user.full_name}</h4>
-                                <p class="text-sm text-gray-600">${user.role} • ${user.branch || ''}</p>
+                                <h4 class="font-medium text-gray-900 cursor-pointer hover:underline" onclick="event.stopPropagation(); openProfileFromMessages('${user.user_id}')">${user.full_name}</h4>
+                                <p class="text-sm text-gray-600">${user.role} - ${user.branch || ''}</p>
                             </div>
                         </div>
                     `).join('');
@@ -382,7 +480,7 @@ $pageTitle = "Messages - RJIT Alumni Portal";
                 
                 if (data.success) {
                     // Reload conversations and select the new one
-                    loadConversations();
+                    await loadConversations(true);
                     selectConversation(data.conversation_id, userId);
                 } else {
                     alert(data.message || 'Failed to start conversation');
@@ -395,6 +493,7 @@ $pageTitle = "Messages - RJIT Alumni Portal";
         
         async function selectConversation(conversationId, userId) {
             currentConversationId = conversationId;
+            currentChatUserId = userId;
             
             // Update UI
             document.querySelectorAll('.conversation-item').forEach(item => {
@@ -415,6 +514,7 @@ $pageTitle = "Messages - RJIT Alumni Portal";
             // Load conversation details and messages
             await loadConversationDetails(userId);
             await loadMessages(conversationId);
+            await loadConversations(true);
         }
         
         async function loadConversationDetails(userId) {
@@ -432,7 +532,7 @@ $pageTitle = "Messages - RJIT Alumni Portal";
                     const user = data.data;
                     document.getElementById('chatUserImage').src = user.profile_picture_url || 'https://via.placeholder.com/40';
                     document.getElementById('chatUserName').textContent = user.full_name;
-                    document.getElementById('chatUserStatus').textContent = `${user.role} • ${user.branch || 'RJIT Alumni'}`;
+                    document.getElementById('chatUserStatus').textContent = `${user.role} - ${user.branch || 'RJIT Alumni'}`;
                 }
             } catch (error) {
                 console.error('Error loading conversation details:', error);
@@ -440,6 +540,8 @@ $pageTitle = "Messages - RJIT Alumni Portal";
         }
         
         async function loadMessages(conversationId) {
+            if (loadingMessages) return;
+            loadingMessages = true;
             try {
                 const token = localStorage.getItem('jwt_token');
                 const response = await fetch(`api/get_messages.php?conversation_id=${conversationId}`, {
@@ -447,18 +549,39 @@ $pageTitle = "Messages - RJIT Alumni Portal";
                         'Authorization': `Bearer ${token}`
                     }
                 });
-                
-                const data = await response.json();
-                
-                if (data.success && data.data) {
-                    const messages = data.data;
+
+                const payload = await response.json();
+                const messages = Array.isArray(payload) ? payload : (payload && Array.isArray(payload.data) ? payload.data : []);
+                const nextSignature = getMessagesSignature(messages);
+                if (nextSignature === messagesSignature) {
+                    return;
+                }
+                messagesSignature = nextSignature;
+
+                if (messages.length > 0) {
                     const userData = JSON.parse(localStorage.getItem('user_data'));
                     const currentUserId = userData.user_id;
-                    
+                    const wasNearBottom = (messagesArea.scrollHeight - messagesArea.scrollTop - messagesArea.clientHeight) < 80;
+
                     messagesArea.innerHTML = messages.map(msg => {
                         const isCurrentUser = msg.sender_id == currentUserId;
+                        const bodyHtml = msg.is_deleted
+                            ? '<p class="italic text-sm opacity-80">This message was deleted</p>'
+                            : `<p class="whitespace-pre-wrap break-words">${escapeHtml(msg.message)}</p>`;
+                        const editedTag = (isCurrentUser && msg.is_edited) ? '<span class="ml-1 text-[11px] text-gray-400">(edited)</span>' : '';
+                        const actionsMenu = isCurrentUser && !msg.is_deleted ? `
+                            <div class="relative msg-actions">
+                                <button class="msg-menu-toggle p-1 rounded hover:bg-gray-200 text-gray-500" onclick="toggleMessageMenu(${msg.message_id})">
+                                    <i data-lucide="more-vertical" class="h-4 w-4"></i>
+                                </button>
+                                <div id="msgMenu-${msg.message_id}" class="hidden absolute right-0 mt-1 w-32 bg-white border border-gray-200 rounded-md shadow-lg z-20">
+                                    ${msg.can_edit ? `<button class="w-full text-left px-3 py-2 text-sm hover:bg-gray-50" onclick="editMessagePrompt(${msg.message_id}, '${encodeURIComponent(msg.message || '')}')">Edit</button>` : ''}
+                                    <button class="w-full text-left px-3 py-2 text-sm text-red-600 hover:bg-red-50" onclick="deleteMessage(${msg.message_id})">Delete</button>
+                                </div>
+                            </div>
+                        ` : '';
                         return `
-                            <div class="flex mb-4 ${isCurrentUser ? 'justify-end' : ''}">
+                            <div class="msg-row flex mb-4 ${isCurrentUser ? 'justify-end' : ''}">
                                 ${!isCurrentUser ? `
                                     <img src="${msg.sender_profile_picture || 'https://via.placeholder.com/32'}" 
                                          alt="User" 
@@ -467,13 +590,16 @@ $pageTitle = "Messages - RJIT Alumni Portal";
                                 
                                 <div class="${isCurrentUser ? 'mr-3 text-right' : 'ml-3'}">
                                     <div class="${isCurrentUser ? 'bg-blue-600 text-white chat-bubble-right' : 'bg-gray-100 text-gray-900 chat-bubble-left'} px-4 py-2 max-w-xs lg:max-w-md">
-                                        <p>${msg.message}</p>
+                                        ${bodyHtml}
                                     </div>
-                                    <span class="text-xs text-gray-500 mt-1 block">
-                                        ${formatDateTime(msg.created_at)}
-                                        ${isCurrentUser && msg.read_at ? ' ✓✓' : (isCurrentUser ? ' ✓' : '')}
+                                    <span class="text-xs text-gray-500 mt-1 inline-flex items-center ${isCurrentUser ? 'justify-end w-full' : ''}">
+                                        ${formatDateTime(msg.created_at || msg.timestamp)}
+                                        ${editedTag}
+                                        ${isCurrentUser ? renderReadTick(msg) : ''}
                                     </span>
                                 </div>
+
+                                ${isCurrentUser ? actionsMenu : ''}
                                 
                                 ${isCurrentUser ? `
                                     <img src="${msg.sender_profile_picture || 'https://via.placeholder.com/32'}" 
@@ -483,9 +609,11 @@ $pageTitle = "Messages - RJIT Alumni Portal";
                             </div>
                         `;
                     }).join('');
-                    
-                    // Scroll to bottom
-                    messagesArea.scrollTop = messagesArea.scrollHeight;
+                    lucide.createIcons();
+
+                    if (wasNearBottom) {
+                        messagesArea.scrollTop = messagesArea.scrollHeight;
+                    }
                 } else {
                     messagesArea.innerHTML = `
                         <div class="h-full flex items-center justify-center text-center">
@@ -499,9 +627,10 @@ $pageTitle = "Messages - RJIT Alumni Portal";
                 }
             } catch (error) {
                 console.error('Error loading messages:', error);
+            } finally {
+                loadingMessages = false;
             }
         }
-        
         async function sendMessage() {
             const message = messageInput.value.trim();
             if (!message || !currentConversationId) return;
@@ -530,7 +659,7 @@ $pageTitle = "Messages - RJIT Alumni Portal";
                     await loadMessages(currentConversationId);
                     
                     // Reload conversations to update last message
-                    await loadConversations();
+                    await loadConversations(true);
                 } else {
                     alert(data.message || 'Failed to send message');
                 }
@@ -539,9 +668,120 @@ $pageTitle = "Messages - RJIT Alumni Portal";
                 alert('Error sending message');
             }
         }
+
+        function closeAllMessageMenus() {
+            document.querySelectorAll('[id^="msgMenu-"]').forEach((el) => el.classList.add('hidden'));
+        }
+
+        function toggleMessageMenu(messageId) {
+            const menu = document.getElementById(`msgMenu-${messageId}`);
+            if (!menu) return;
+            const willShow = menu.classList.contains('hidden');
+            closeAllMessageMenus();
+            if (willShow) {
+                menu.classList.remove('hidden');
+            }
+        }
+
+        async function editMessagePrompt(messageId, encodedText) {
+            closeAllMessageMenus();
+            const currentText = decodeURIComponent(String(encodedText || ''));
+            const nextText = prompt('Edit message (allowed for 30 minutes):', currentText || '');
+            if (nextText === null) return;
+            const trimmed = String(nextText).trim();
+            if (!trimmed) {
+                alert('Message cannot be empty.');
+                return;
+            }
+            try {
+                const token = localStorage.getItem('jwt_token');
+                const response = await fetch('api/edit_message.php', {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        message_id: messageId,
+                        message: trimmed
+                    })
+                });
+                const data = await response.json();
+                if (!data.success) {
+                    alert(data.message || 'Failed to edit message');
+                    return;
+                }
+                await loadMessages(currentConversationId);
+                await loadConversations(true);
+            } catch (error) {
+                console.error('Error editing message:', error);
+                alert('Error editing message');
+            }
+        }
+
+        async function deleteMessage(messageId) {
+            closeAllMessageMenus();
+            if (!confirm('Delete this message?')) return;
+            try {
+                const token = localStorage.getItem('jwt_token');
+                const response = await fetch('api/delete_message.php', {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        message_id: messageId
+                    })
+                });
+                const data = await response.json();
+                if (!data.success) {
+                    alert(data.message || 'Failed to delete message');
+                    return;
+                }
+                await loadMessages(currentConversationId);
+                await loadConversations(true);
+            } catch (error) {
+                console.error('Error deleting message:', error);
+                alert('Error deleting message');
+            }
+        }
+
+        async function startCall(callType) {
+            if (!currentChatUserId) return;
+            try {
+                const token = localStorage.getItem('jwt_token');
+                const response = await fetch('api/start_call.php', {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        receiver_id: Number(currentChatUserId),
+                        call_type: callType
+                    })
+                });
+                const data = await response.json();
+                if (!data.success || !data.data || !data.data.room_url) {
+                    alert(data.message || 'Unable to start call');
+                    return;
+                }
+                window.open(data.data.room_url, '_blank', 'noopener');
+            } catch (error) {
+                console.error('Error starting call:', error);
+                alert('Error starting call');
+            }
+        }
         
         function searchUsers(searchTerm) {
             loadUsers(searchTerm);
+        }
+
+        function openProfileFromMessages(userId) {
+            const uid = parseInt(userId || 0, 10);
+            if (!uid) return;
+            window.location.href = `profile.php?id=${uid}`;
         }
         
         function formatTime(timestamp) {
@@ -569,12 +809,25 @@ $pageTitle = "Messages - RJIT Alumni Portal";
         setInterval(() => {
             if (currentConversationId) {
                 loadMessages(currentConversationId);
-                loadConversations();
             }
-        }, 10000); // Check every 10 seconds
+            loadConversations();
+        }, 3000); // Light polling with no-flicker render guards
         
         // Initial load
         loadConversations();
+        (async function bootstrapFromQuery() {
+            const params = new URLSearchParams(window.location.search);
+            const uid = parseInt(params.get('user_id') || '0', 10);
+            if (uid > 0) {
+                await startNewConversation(uid);
+            }
+        })();
     </script>
 </body>
 </html>
+
+
+
+
+
+

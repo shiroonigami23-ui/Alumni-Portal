@@ -10,34 +10,57 @@ $database = new Database();
 $db = $database->getConnection();
 $auth = new Auth($db);
 
-$user_id = $auth->validateRequest();
-$data = json_decode(file_get_contents("php://input"));
+try {
+    $user_id = $auth->validateRequest();
+    $data = json_decode(file_get_contents("php://input"), true) ?: [];
+    $post_id = isset($data['post_id']) ? (int)$data['post_id'] : 0;
 
-if (!empty($data->post_id)) {
-    try {
-        $db->beginTransaction();
-
-        // 1. Insert into likes table (Unique constraint handles "1 like per ID")
-        $query = "INSERT INTO likes (user_id, post_id) VALUES (:uid, :pid)";
-        $stmt = $db->prepare($query);
-        $stmt->execute(['uid' => $user_id, 'pid' => $data->post_id]);
-
-        // 2. Increment count in posts table for real-time feed metrics
-        $update = "UPDATE posts SET reaction_count = reaction_count + 1 WHERE post_id = :pid";
-        $u_stmt = $db->prepare($update);
-        $u_stmt->execute(['pid' => $data->post_id]);
-
-        $db->commit();
-        echo json_encode(["message" => "Post liked."]);
-    } catch (PDOException $e) {
-        $db->rollBack();
-        if ($e->getCode() == '23505') { // Unique violation
-            // Optional: Implement "Unlike" logic here
-            echo json_encode(["message" => "You have already liked this post."]);
-        } else {
-            http_response_code(500);
-            echo json_encode(["message" => "Error: " . $e->getMessage()]);
-        }
+    if ($post_id <= 0) {
+        http_response_code(400);
+        echo json_encode(["success" => false, "status" => "error", "message" => "post_id is required"]);
+        exit;
     }
+
+    $db->beginTransaction();
+
+    // Optimistic toggle with conflict-safe insert first.
+    $ins = $db->prepare("
+        INSERT INTO likes (user_id, post_id)
+        VALUES (:uid, :pid)
+        ON CONFLICT (user_id, post_id) DO NOTHING
+    ");
+    $ins->execute(['uid' => $user_id, 'pid' => $post_id]);
+
+    if ($ins->rowCount() > 0) {
+        $db->prepare("UPDATE posts SET reaction_count = reaction_count + 1 WHERE post_id = :pid")
+           ->execute(['pid' => $post_id]);
+        $liked = true;
+    } else {
+        $del = $db->prepare("DELETE FROM likes WHERE user_id = :uid AND post_id = :pid");
+        $del->execute(['uid' => $user_id, 'pid' => $post_id]);
+        if ($del->rowCount() > 0) {
+            $db->prepare("UPDATE posts SET reaction_count = GREATEST(0, reaction_count - 1) WHERE post_id = :pid")
+               ->execute(['pid' => $post_id]);
+        }
+        $liked = false;
+    }
+
+    $countStmt = $db->prepare("SELECT reaction_count FROM posts WHERE post_id = :pid");
+    $countStmt->execute(['pid' => $post_id]);
+    $count = (int)$countStmt->fetchColumn();
+
+    $db->commit();
+    echo json_encode([
+        "success" => true,
+        "status" => "success",
+        "liked" => $liked,
+        "likes_count" => $count,
+        "message" => $liked ? "Post liked." : "Like removed."
+    ]);
+} catch (Throwable $e) {
+    if ($db && $db->inTransaction()) {
+        $db->rollBack();
+    }
+    http_response_code(500);
+    echo json_encode(["success" => false, "status" => "error", "message" => $e->getMessage()]);
 }
-?>

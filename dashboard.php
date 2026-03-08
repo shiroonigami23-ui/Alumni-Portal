@@ -42,15 +42,6 @@ $pageTitle = "Dashboard - RJIT Alumni Portal";
                         <h1 class="text-2xl font-bold text-gray-900" id="welcomeMessage">Welcome back!</h1>
                         <p class="text-gray-600 mt-1">Here's what's happening in your community</p>
                     </div>
-                    <div class="flex items-center space-x-4">
-                        <div class="relative">
-                            <img id="dashboardProfilePic"
-                                src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='48' height='48' viewBox='0 0 48 48'%3E%3Crect width='48' height='48' fill='%23dbeafe'/%3E%3Ctext x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' font-family='Arial' font-size='14' fill='%233b82f6'%3EU%3C/text%3E%3C/svg%3E"
-                                alt="Profile"
-                                class="h-12 w-12 rounded-full border-2 border-white shadow">
-                            <a href="profile.php" class="absolute inset-0 rounded-full hover:bg-gray-900 hover:bg-opacity-10 transition duration-300"></a>
-                        </div>
-                    </div>
                 </div>
             </div>
 
@@ -318,11 +309,6 @@ $pageTitle = "Dashboard - RJIT Alumni Portal";
                     // Update welcome message
                     const welcomeMessage = document.getElementById('welcomeMessage');
                     welcomeMessage.textContent = `Welcome back, ${user.full_name || user.email}!`;
-
-                    // Update profile picture if available
-                    if (user.profile_picture_url) {
-                        document.getElementById('dashboardProfilePic').src = user.profile_picture_url;
-                    }
 
                     // Show quick post section if user can post
                     const quickPostSection = document.getElementById('quickPostSection');

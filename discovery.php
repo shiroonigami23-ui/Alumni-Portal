@@ -8,7 +8,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#0f172a">
+    <link rel="manifest" href="manifest.webmanifest">
+    <link rel="icon" type="image/png" sizes="192x192" href="assets/icons/app-icon-192.png">
+    <link rel="apple-touch-icon" href="assets/icons/app-icon-192.png">
     <title>Discover Alumni - RJIT Alumni Portal</title>
+    <script src="assets/js/pwa.js" defer></script>
 
     <style>
         .alumni-card {
@@ -79,6 +84,7 @@
                             <option value="ECE">Electronics & Communication</option>
                             <option value="EE">Electrical Engineering</option>
                             <option value="ME">Mechanical Engineering</option>
+                            <option value="AU">Automobile Engineering</option>
                             <option value="CE">Civil Engineering</option>
                         </select>
                     </div>
@@ -437,6 +443,10 @@
                         renderPagination();
                     }
 
+                    if (Array.isArray(response.top_companies)) {
+                        renderTopCompanies(response.top_companies);
+                    }
+
                     // Update URL without reloading
                     updateURL();
                 } else {
@@ -499,6 +509,7 @@
             // Check if profile is private
             const isPrivate = user.is_private && user.role !== 'student';
             const canMessage = !isPrivate && user.role !== 'student';
+            const yearDisplay = getUserYearDisplay(user);
 
             card.innerHTML = `
                 <div class="p-6">
@@ -518,7 +529,7 @@
                             <h3 class="font-semibold text-gray-900">${user.name}</h3>
                             <p class="text-sm text-gray-600">
                                 ${user.branch || user.department || 'RJIT'}
-                                ${user.graduation_year ? `• ${user.graduation_year}` : ''}
+                                ${yearDisplay ? `&bull; ${yearDisplay}` : ''}
                             </p>
                         </div>
                     </div>
@@ -603,6 +614,7 @@
             // Check if profile is private
             const isPrivate = user.is_private && user.role !== 'student';
             const canMessage = !isPrivate && user.role !== 'student';
+            const yearDisplay = getUserYearDisplay(user);
 
             item.innerHTML = `
                 <div class="flex items-center justify-between">
@@ -621,7 +633,7 @@
                             <h3 class="font-semibold text-gray-900">${user.name}</h3>
                             <p class="text-sm text-gray-600">
                                 ${user.branch || user.department || 'RJIT'}
-                                ${user.graduation_year ? `• Class of ${user.graduation_year}` : ''}
+                                ${yearDisplay ? `&bull; ${yearDisplay}` : ''}
                             </p>
                         </div>
                     </div>
@@ -774,53 +786,42 @@
 
         async function loadTopCompanies() {
             try {
-                // This would come from an API endpoint
-                const companies = [{
-                        name: 'Google',
-                        count: 45
-                    },
-                    {
-                        name: 'Microsoft',
-                        count: 38
-                    },
-                    {
-                        name: 'Amazon',
-                        count: 32
-                    },
-                    {
-                        name: 'Infosys',
-                        count: 28
-                    },
-                    {
-                        name: 'TCS',
-                        count: 25
-                    },
-                    {
-                        name: 'Wipro',
-                        count: 22
-                    }
-                ];
-
-                const container = document.getElementById('topCompanies');
-                container.innerHTML = '';
-
-                companies.forEach(company => {
-                    const companyEl = document.createElement('div');
-                    companyEl.className = 'text-center';
-                    companyEl.innerHTML = `
-                        <div class="h-16 w-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-2">
-                            <i data-lucide="building" class="h-8 w-8 text-blue-600"></i>
-                        </div>
-                        <p class="font-medium text-gray-900">${company.name}</p>
-                        <p class="text-sm text-gray-600">${company.count} alumni</p>
-                    `;
-                    container.appendChild(companyEl);
-                });
-
-                lucide.createIcons();
+                const response = await makeApiCall('search_directory.php?limit=1&page=1');
+                if (response && (response.success || response.status === 'success') && Array.isArray(response.top_companies)) {
+                    renderTopCompanies(response.top_companies);
+                }
             } catch (error) {
                 console.error('Error loading companies:', error);
             }
+        }
+
+        function renderTopCompanies(companies) {
+            const container = document.getElementById('topCompanies');
+            if (!container) return;
+            container.innerHTML = '';
+            companies.forEach(company => {
+                const companyEl = document.createElement('div');
+                companyEl.className = 'text-center';
+                companyEl.innerHTML = `
+                    <div class="h-16 w-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-2">
+                        <i data-lucide="building" class="h-8 w-8 text-blue-600"></i>
+                    </div>
+                    <p class="font-medium text-gray-900">${company.name}</p>
+                    <p class="text-sm text-gray-600">${company.count} alumni</p>
+                `;
+                container.appendChild(companyEl);
+            });
+            lucide.createIcons();
+        }
+
+        function getUserYearDisplay(user) {
+            if (user && user.year_display) {
+                return user.year_display;
+            }
+            if (user && user.graduation_year) {
+                return String(user.graduation_year);
+            }
+            return '';
         }
 
         function viewProfile(userId) {
@@ -850,8 +851,8 @@
 
             try {
                 const response = await makeApiCall('send_message.php', 'POST', {
-                    recipient_id: currentRecipientId,
-                    content: content
+                    receiver_id: currentRecipientId,
+                    message: content
                 });
 
                 if (response && (response.success || response.status === 'success')) {

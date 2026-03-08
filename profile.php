@@ -10,6 +10,10 @@ $userId = isset($_GET['id']) ? $_GET['id'] : null;
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#0f172a">
+    <link rel="manifest" href="manifest.webmanifest">
+    <link rel="icon" type="image/png" sizes="192x192" href="assets/icons/app-icon-192.png">
+    <link rel="apple-touch-icon" href="assets/icons/app-icon-192.png">
     <title>Profile - RJIT Alumni Portal</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
@@ -19,11 +23,14 @@ $userId = isset($_GET['id']) ? $_GET['id'] : null;
     <link rel="stylesheet" href="assets/css/variety-ui.css">
     <script src="includes/auth-check.js"></script>
     <script src="assets/js/variety-ui.js" defer></script>
+    <script src="assets/js/pwa.js" defer></script>
     
     <style>
         .cover-image {
             height: 300px;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background-size: cover;
+            background-position: center;
         }
         
         .profile-avatar {
@@ -55,7 +62,7 @@ $userId = isset($_GET['id']) ? $_GET['id'] : null;
     <!-- Main Content -->
     <div class="md:pl-64">
         <!-- Cover Image -->
-        <div class="cover-image relative">
+        <div id="profileCover" class="cover-image relative">
             <div class="absolute inset-0 bg-black bg-opacity-30"></div>
             <div class="absolute bottom-6 left-8 text-white">
                 <h1 class="text-3xl font-bold" id="profileName">Loading...</h1>
@@ -64,10 +71,11 @@ $userId = isset($_GET['id']) ? $_GET['id'] : null;
             
             <!-- Edit Cover Button (only for own profile) -->
             <div id="editCoverBtn" class="absolute bottom-6 right-8 hidden">
-                <button class="bg-white bg-opacity-20 hover:bg-opacity-30 text-white px-4 py-2 rounded-lg flex items-center">
+                <button id="editCoverActionBtn" class="bg-white bg-opacity-20 hover:bg-opacity-30 text-white px-4 py-2 rounded-lg flex items-center" type="button">
                     <i data-lucide="camera" class="h-4 w-4 mr-2"></i>
                     Edit Cover
                 </button>
+                <input type="file" id="coverUpload" accept="image/*" class="hidden">
             </div>
         </div>
 
@@ -78,7 +86,7 @@ $userId = isset($_GET['id']) ? $_GET['id'] : null;
                     <!-- Profile Avatar -->
                     <div class="relative">
                         <img id="profileAvatar" 
-                             src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='150' height='150' viewBox='0 0 150 150'%3E%3Crect width='150' height='150' fill='%23dbeafe'/%3E%3Ctext x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' font-family='Arial' font-size='20' fill='%233b82f6'%3EU%3C/text%3E%3C/svg%3E" 
+                             src="https://via.placeholder.com/150?text=%20" 
                              alt="Profile" 
                              class="profile-avatar h-32 w-32 rounded-full">
                         
@@ -134,12 +142,6 @@ $userId = isset($_GET['id']) ? $_GET['id'] : null;
                         <i data-lucide="award" class="h-4 w-4 inline mr-2"></i>
                         Badges
                     </button>
-                    <button data-tab="settings" 
-                            class="tab-button py-3 px-1 text-sm font-medium text-gray-500 hover:text-gray-700 hidden"
-                            id="settingsTab">
-                        <i data-lucide="settings" class="h-4 w-4 inline mr-2"></i>
-                        Settings
-                    </button>
                 </nav>
             </div>
 
@@ -163,7 +165,7 @@ $userId = isset($_GET['id']) ? $_GET['id'] : null;
                         <div class="bg-white rounded-xl shadow-sm p-6">
                             <div class="flex items-start">
                                 <img id="timelineAvatar" 
-                                     src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='48' height='48' viewBox='0 0 48 48'%3E%3Crect width='48' height='48' fill='%23dbeafe'/%3E%3Ctext x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' font-family='Arial' font-size='14' fill='%233b82f6'%3EU%3C/text%3E%3C/svg%3E" 
+                                     src="https://via.placeholder.com/48?text=%20" 
                                      alt="Profile" 
                                      class="h-12 w-12 rounded-full mr-4">
                                 <div class="flex-1">
@@ -186,10 +188,6 @@ $userId = isset($_GET['id']) ? $_GET['id'] : null;
                                                 <input type="checkbox" id="timelineAllowComments" checked class="h-4 w-4 text-blue-600 rounded">
                                                 <label for="timelineAllowComments" class="ml-2 text-sm text-gray-600">Allow comments</label>
                                             </div>
-                                            <div class="flex items-center">
-                                                <input type="checkbox" id="timelinePinPost" class="h-4 w-4 text-amber-600 rounded">
-                                                <label for="timelinePinPost" class="ml-2 text-sm text-gray-600">Pin to profile</label>
-                                            </div>
                                         </div>
                                         <button onclick="createTimelinePost()" 
                                                 class="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 font-medium">
@@ -202,6 +200,14 @@ $userId = isset($_GET['id']) ? $_GET['id'] : null;
                     </div>
 
                     <!-- Timeline Posts -->
+                    <div class="mb-4 border-b border-gray-200">
+                        <div class="flex items-center gap-4 text-sm">
+                            <button class="timeline-subtab px-3 py-2 font-medium text-blue-600 border-b-2 border-blue-600" data-subtab="posts">Posts</button>
+                            <button class="timeline-subtab px-3 py-2 font-medium text-gray-600 hover:text-gray-800" data-subtab="replies">Replies</button>
+                            <button class="timeline-subtab px-3 py-2 font-medium text-gray-600 hover:text-gray-800" data-subtab="media">Media</button>
+                            <button class="timeline-subtab px-3 py-2 font-medium text-gray-600 hover:text-gray-800" data-subtab="reposts">Reposts</button>
+                        </div>
+                    </div>
                     <div id="timelinePosts" class="space-y-6">
                         <!-- Posts will be loaded here -->
                         <div class="text-center py-12">
@@ -209,6 +215,7 @@ $userId = isset($_GET['id']) ? $_GET['id'] : null;
                             <p class="text-gray-500">Loading posts...</p>
                         </div>
                     </div>
+                    <div id="timelineReplies" class="space-y-4 hidden"></div>
                 </div>
 
                 <!-- About Tab -->
@@ -324,7 +331,12 @@ $userId = isset($_GET['id']) ? $_GET['id'] : null;
 
                             <!-- Contact Information -->
                             <div class="bg-white rounded-xl shadow-sm p-6">
-                                <h3 class="font-semibold text-gray-900 mb-4">Contact Information</h3>
+                                <div class="flex items-center justify-between mb-4">
+                                    <h3 class="font-semibold text-gray-900">Contact Information</h3>
+                                    <button id="editContactInfo" class="text-blue-600 hover:text-blue-800 text-sm font-medium hidden">
+                                        Edit
+                                    </button>
+                                </div>
                                 
                                 <div class="space-y-3" id="contactInfo">
                                     <div class="flex items-center">
@@ -355,41 +367,6 @@ $userId = isset($_GET['id']) ? $_GET['id'] : null;
                                 </div>
                             </div>
 
-                            <!-- Privacy Settings (only for own profile) -->
-                            <div id="privacySettings" class="bg-white rounded-xl shadow-sm p-6 hidden">
-                                <h3 class="font-semibold text-gray-900 mb-4">Privacy Settings</h3>
-                                
-                                <div class="space-y-4">
-                                    <div class="flex items-center justify-between">
-                                        <div>
-                                            <p class="font-medium text-gray-900">Profile Visibility</p>
-                                            <p class="text-sm text-gray-500">Who can see your profile</p>
-                                        </div>
-                                        <button id="togglePrivacy" class="relative inline-flex h-6 w-11 items-center rounded-full bg-gray-200">
-                                            <span id="privacyToggle" class="inline-block h-4 w-4 translate-x-1 transform rounded-full bg-white transition"></span>
-                                        </button>
-                                    </div>
-                                    
-                                    <div class="flex items-center justify-between">
-                                        <div>
-                                            <p class="font-medium text-gray-900">Message Requests</p>
-                                            <p class="text-sm text-gray-500">Who can send you messages</p>
-                                        </div>
-                                        <select id="messagePrivacy" class="px-3 py-1 border border-gray-300 rounded-lg text-sm">
-                                            <option value="everyone">Everyone</option>
-                                            <option value="connections">Connections Only</option>
-                                            <option value="none">No One</option>
-                                        </select>
-                                    </div>
-                                    
-                                    <div class="pt-4 border-t border-gray-100">
-                                        <button onclick="savePrivacySettings()" 
-                                                class="w-full bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700 font-medium">
-                                            Save Privacy Settings
-                                        </button>
-                                    </div>
-                                </div>
-                            </div>
                         </div>
                     </div>
                 </div>
@@ -409,84 +386,6 @@ $userId = isset($_GET['id']) ? $_GET['id'] : null;
                     </div>
                 </div>
 
-                <!-- Settings Tab (only for own profile) -->
-                <div id="settingsTabContent" class="tab-content hidden">
-                    <div class="bg-white rounded-xl shadow-sm p-6">
-                        <h3 class="text-lg font-semibold text-gray-900 mb-6">Profile Settings</h3>
-                        
-                        <div class="space-y-6">
-                            <!-- Account Settings -->
-                            <div>
-                                <h4 class="font-medium text-gray-900 mb-4">Account Settings</h4>
-                                <div class="space-y-4">
-                                    <div>
-                                        <label class="block text-sm font-medium text-gray-700 mb-2">Email Address</label>
-                                        <input type="email" 
-                                               id="settingsEmail" 
-                                               class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent">
-                                    </div>
-                                    
-                                    <div>
-                                        <label class="block text-sm font-medium text-gray-700 mb-2">Change Password</label>
-                                        <input type="password" 
-                                               id="currentPassword" 
-                                               placeholder="Current password"
-                                               class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent mb-2">
-                                        <input type="password" 
-                                               id="newPassword" 
-                                               placeholder="New password"
-                                               class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent">
-                                    </div>
-                                </div>
-                            </div>
-                            
-                            <!-- Notification Settings -->
-                            <div>
-                                <h4 class="font-medium text-gray-900 mb-4">Notification Settings</h4>
-                                <div class="space-y-3">
-                                    <div class="flex items-center">
-                                        <input type="checkbox" id="notifyPosts" checked class="h-4 w-4 text-blue-600 rounded">
-                                        <label for="notifyPosts" class="ml-2 text-gray-700">New posts from connections</label>
-                                    </div>
-                                    <div class="flex items-center">
-                                        <input type="checkbox" id="notifyMessages" checked class="h-4 w-4 text-blue-600 rounded">
-                                        <label for="notifyMessages" class="ml-2 text-gray-700">New messages</label>
-                                    </div>
-                                    <div class="flex items-center">
-                                        <input type="checkbox" id="notifyEvents" checked class="h-4 w-4 text-blue-600 rounded">
-                                        <label for="notifyEvents" class="ml-2 text-gray-700">Upcoming events</label>
-                                    </div>
-                                </div>
-                            </div>
-                            
-                            <!-- Danger Zone -->
-                            <div class="pt-6 border-t border-gray-200">
-                                <h4 class="font-medium text-red-700 mb-4">Danger Zone</h4>
-                                <div class="space-y-3">
-                                    <button onclick="exportData()" 
-                                            class="w-full text-left px-4 py-3 border border-gray-300 rounded-lg hover:bg-gray-50 text-gray-700">
-                                        <div class="font-medium">Export My Data</div>
-                                        <div class="text-sm text-gray-500">Download all your data from the portal</div>
-                                    </button>
-                                    
-                                    <button onclick="deactivateAccount()" 
-                                            class="w-full text-left px-4 py-3 border border-red-300 rounded-lg hover:bg-red-50 text-red-700">
-                                        <div class="font-medium">Deactivate Account</div>
-                                        <div class="text-sm text-red-500">Temporarily disable your account</div>
-                                    </button>
-                                </div>
-                            </div>
-                            
-                            <!-- Save Button -->
-                            <div class="pt-6 border-t border-gray-200">
-                                <button onclick="saveProfileSettings()" 
-                                        class="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 font-medium">
-                                    Save Changes
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
             </div>
         </main>
     </div>
@@ -500,6 +399,9 @@ $userId = isset($_GET['id']) ? $_GET['id'] : null;
         let profileUserId = <?php echo $userId ? "'$userId'" : 'null'; ?>;
         let isOwnProfile = false;
         let profileData = null;
+        let timelinePostsData = [];
+        let timelineRepliesData = [];
+        let currentTimelineSubtab = 'posts';
         
         // Load profile data
         document.addEventListener('DOMContentLoaded', async function() {
@@ -513,7 +415,7 @@ $userId = isset($_GET['id']) ? $_GET['id'] : null;
                 const userData = localStorage.getItem('user_data');
                 if (userData) {
                     const user = JSON.parse(userData);
-                    currentUserId = user.id;
+                    currentUserId = parseInt(user.user_id || user.id || 0, 10) || null;
                     
                     // If no profile ID specified, show current user's profile
                     if (!profileUserId) {
@@ -530,12 +432,18 @@ $userId = isset($_GET['id']) ? $_GET['id'] : null;
         
         async function loadProfileData() {
             try {
+                if (!profileUserId) {
+                    showProfileError();
+                    return;
+                }
                 const response = await makeApiCall(`get_user_profile.php?user_id=${profileUserId}`);
                 
                 if (response && (response.success || response.status === 'success')) {
-                    profileData = response.data;
+                    profileData = normalizeProfileData(response.data || {});
                     renderProfile(profileData);
                     await loadProfilePosts();
+                    await loadProfileReplies();
+                    renderTimelineSubtab();
                     await loadBadges();
                     
                     if (isOwnProfile) {
@@ -548,6 +456,27 @@ $userId = isset($_GET['id']) ? $_GET['id'] : null;
                 console.error('Error loading profile:', error);
                 showProfileError();
             }
+        }
+
+        function normalizeProfileData(data) {
+            return {
+                ...data,
+                id: data.id || data.user_id || profileUserId,
+                name: data.name || data.full_name || 'User',
+                avatar: data.avatar || data.profile_picture_url || data.profile_picture || '',
+                cover_photo_url: data.cover_photo_url || data.cover || '',
+                headline: data.headline || data.bio || 'Member of RJIT Community',
+                current_position: data.current_position || data.job_role || '',
+                current_company: data.current_company || '',
+                phone: data.phone || data.contact_number || '',
+                location: data.location || [data.location_city, data.location_country].filter(Boolean).join(', '),
+                website: data.website || data.personal_website || '',
+                social_links: data.social_links || {
+                    linkedin: data.linkedin_url || '',
+                    github: data.github_url || '',
+                    twitter: data.twitter_url || ''
+                }
+            };
         }
         
         function renderProfile(data) {
@@ -562,6 +491,7 @@ $userId = isset($_GET['id']) ? $_GET['id'] : null;
                 document.getElementById('profileAvatar').src = data.avatar;
                 document.getElementById('timelineAvatar').src = data.avatar;
             }
+            applyProfileCover(data);
             
             // Update role badge
             const roleBadge = document.getElementById('profileRoleBadge');
@@ -595,6 +525,18 @@ $userId = isset($_GET['id']) ? $_GET['id'] : null;
                 return `Student • ${data.branch || 'RJIT'} • Class of ${data.graduation_year || 'N/A'}`;
             }
             return 'RJIT Community Member';
+        }
+
+        function applyProfileCover(data) {
+            const cover = document.getElementById('profileCover');
+            if (!cover) return;
+            const fallbackFaculty = 'assets/images/rjit_updates/anjuman_1.jpeg';
+            const url = data.cover_photo_url || (String(data.role || '').toLowerCase() === 'faculty' ? fallbackFaculty : '');
+            if (url) {
+                cover.style.backgroundImage = `url('${url}')`;
+            } else {
+                cover.style.backgroundImage = 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)';
+            }
         }
         
         function getRoleBadgeClass(role) {
@@ -639,10 +581,10 @@ $userId = isset($_GET['id']) ? $_GET['id'] : null;
                             <i data-lucide="message-square" class="h-4 w-4 inline mr-2"></i>
                             Message
                         </button>
-                        <button onclick="connect(${data.id})" 
+                        <button id="connectBtn" onclick="connect(${data.id})" 
                                 class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium">
                             <i data-lucide="user-plus" class="h-4 w-4 inline mr-2"></i>
-                            Connect
+                            ${data.is_connected ? 'Following' : 'Follow'}
                         </button>
                     `;
                 }
@@ -727,11 +669,10 @@ $userId = isset($_GET['id']) ? $_GET['id'] : null;
         
         async function loadProfilePosts() {
             try {
-                const response = await makeApiCall(`get_feed.php?user_id=${profileUserId}`);
-                const timelinePosts = document.getElementById('timelinePosts');
-                
+                const response = await makeApiCall(`get_feed.php?user_id=${profileUserId}&filter=all`);
                 if (response && (response.success || response.status === 'success') && response.data) {
-                    const posts = response.data;
+                    const posts = response.data.filter((p) => !!p && !!p.id);
+                    timelinePostsData = posts;
                     
                     // Check for pinned posts
                     const pinnedPosts = posts.filter(post => post.is_pinned);
@@ -743,37 +684,27 @@ $userId = isset($_GET['id']) ? $_GET['id'] : null;
                     if (isOwnProfile) {
                         document.getElementById('createPostSection').classList.remove('hidden');
                     }
-                    
-                    // Filter out pinned posts from regular timeline
-                    const regularPosts = posts.filter(post => !post.is_pinned);
-                    
-                    if (regularPosts.length === 0) {
-                        timelinePosts.innerHTML = `
-                            <div class="text-center py-12">
-                                <i data-lucide="newspaper" class="h-12 w-12 text-gray-300 mx-auto mb-4"></i>
-                                <p class="text-gray-500">No posts to show yet</p>
-                                ${isOwnProfile ? 
-                                    '<p class="text-gray-400 text-sm mt-2">Share your first post with the community!</p>' : 
-                                    ''}
-                            </div>
-                        `;
-                    } else {
-                        timelinePosts.innerHTML = '';
-                        for (const post of regularPosts) {
-                            const postElement = await createPostElement(post);
-                            timelinePosts.appendChild(postElement);
-                        }
-                    }
+                    renderTimelineSubtab();
                 } else {
-                    timelinePosts.innerHTML = `
-                        <div class="text-center py-12">
-                            <i data-lucide="newspaper" class="h-12 w-12 text-gray-300 mx-auto mb-4"></i>
-                            <p class="text-gray-500">No posts to show yet</p>
-                        </div>
-                    `;
+                    timelinePostsData = [];
+                    renderTimelineSubtab();
                 }
             } catch (error) {
                 console.error('Error loading profile posts:', error);
+            }
+        }
+
+        async function loadProfileReplies() {
+            try {
+                const response = await makeApiCall(`get_user_replies.php?user_id=${profileUserId}`);
+                if (response && (response.success || response.status === 'success') && Array.isArray(response.data)) {
+                    timelineRepliesData = response.data;
+                } else {
+                    timelineRepliesData = [];
+                }
+            } catch (error) {
+                console.error('Error loading profile replies:', error);
+                timelineRepliesData = [];
             }
         }
         
@@ -793,19 +724,15 @@ $userId = isset($_GET['id']) ? $_GET['id'] : null;
         }
         
         async function createPostElement(post, isPinned = false) {
-            // Similar to feed.php createPostElement function
-            // You can reuse the same logic or create a simplified version
             const postElement = document.createElement('div');
             postElement.className = `bg-white rounded-xl shadow-sm p-6 ${isPinned ? 'border-l-4 border-amber-500 bg-amber-50' : ''}`;
+            postElement.id = `profile-post-${post.id}`;
             
-            // Fetch content from file
             let content = '';
-            if (post.content_file_path) {
-                try {
-                    content = await fetchTextContent(post.content_file_path);
-                } catch (error) {
-                    content = 'Content not available';
-                }
+            if (post.content) {
+                content = post.content;
+            } else if (post.content_file_path) {
+                try { content = await fetchTextContent(post.content_file_path); } catch (_) {}
             }
             
             postElement.innerHTML = `
@@ -818,19 +745,141 @@ $userId = isset($_GET['id']) ? $_GET['id'] : null;
                 </div>
                 <p class="text-gray-700 mb-4 whitespace-pre-line">${content}</p>
                 <div class="flex items-center text-sm text-gray-500">
-                    <span class="flex items-center mr-4">
+                    <button class="profile-like-btn flex items-center mr-4 hover:text-red-600 ${post.user_has_liked ? 'text-red-600' : ''}">
                         <i data-lucide="heart" class="h-4 w-4 mr-1"></i>
-                        ${post.likes_count || 0}
-                    </span>
-                    <span class="flex items-center">
+                        <span class="profile-like-count">${post.likes_count || 0}</span>
+                    </button>
+                    <a href="feed.php?open_comments=${post.id}#post-${post.id}" class="flex items-center mr-4 hover:text-blue-600">
                         <i data-lucide="message-square" class="h-4 w-4 mr-1"></i>
-                        ${post.comments_count || 0}
-                    </span>
+                        <span>${post.comments_count || 0}</span>
+                    </a>
+                    <button class="profile-repost-btn flex items-center mr-4 hover:text-emerald-600 ${post.user_has_reposted ? 'text-emerald-600' : ''}">
+                        <i data-lucide="repeat-2" class="h-4 w-4 mr-1"></i>
+                        <span class="profile-repost-count">${post.reposts_count || 0}</span>
+                    </button>
+                    <button class="profile-share-btn flex items-center mr-4 hover:text-green-600">
+                        <i data-lucide="share-2" class="h-4 w-4 mr-1"></i>
+                        <span>${post.shares_count || 0}</span>
+                    </button>
+                    <button class="profile-report-btn flex items-center hover:text-amber-700">
+                        <i data-lucide="flag" class="h-4 w-4 mr-1"></i>
+                        <span>Report</span>
+                    </button>
                 </div>
             `;
             
+            const likeBtn = postElement.querySelector('.profile-like-btn');
+            if (likeBtn) {
+                likeBtn.addEventListener('click', async () => {
+                    const res = await makeApiCall('react_to_post.php', 'POST', { post_id: post.id, reaction: 'like' });
+                    if (res && (res.success || res.status === 'success')) {
+                        likeBtn.classList.toggle('text-red-600', !!res.liked);
+                        const countEl = postElement.querySelector('.profile-like-count');
+                        if (countEl && typeof res.likes_count !== 'undefined') {
+                            countEl.textContent = res.likes_count;
+                        }
+                    }
+                });
+            }
+
+            const repostBtn = postElement.querySelector('.profile-repost-btn');
+            if (repostBtn) {
+                repostBtn.addEventListener('click', async () => {
+                    const res = await makeApiCall('toggle_repost.php', 'POST', { post_id: post.id });
+                    if (res && (res.success || res.status === 'success')) {
+                        repostBtn.classList.toggle('text-emerald-600', !!res.reposted);
+                        const countEl = postElement.querySelector('.profile-repost-count');
+                        if (countEl && typeof res.reposts_count !== 'undefined') {
+                            countEl.textContent = res.reposts_count;
+                        }
+                    }
+                });
+            }
+
+            const shareBtn = postElement.querySelector('.profile-share-btn');
+            if (shareBtn) {
+                shareBtn.addEventListener('click', async () => {
+                    const res = await makeApiCall('create_share_link.php', 'POST', { post_id: post.id });
+                    if (res && (res.success || res.status === 'success')) {
+                        const url = `${window.location.origin}/${res.share_path}`.replace(/([^:]\/)\/+/g, '$1');
+                        if (navigator.clipboard && navigator.clipboard.writeText) {
+                            await navigator.clipboard.writeText(url);
+                        }
+                        shareBtn.classList.add('text-green-600');
+                    }
+                });
+            }
+
+            const reportBtn = postElement.querySelector('.profile-report-btn');
+            if (reportBtn) {
+                reportBtn.addEventListener('click', async () => {
+                    if (!confirm('Report this post?')) return;
+                    const res = await makeApiCall('report_content.php', 'POST', { post_id: post.id, reason: 'spam' });
+                    if (res && (res.success || res.status === 'success' || res.message)) {
+                        alert(res.message || 'Post reported.');
+                    }
+                });
+            }
+
             lucide.createIcons();
             return postElement;
+        }
+
+        function renderTimelineSubtab() {
+            const postsContainer = document.getElementById('timelinePosts');
+            const repliesContainer = document.getElementById('timelineReplies');
+            if (!postsContainer || !repliesContainer) return;
+
+            document.querySelectorAll('.timeline-subtab').forEach((btn) => {
+                const active = btn.dataset.subtab === currentTimelineSubtab;
+                btn.className = active
+                    ? 'timeline-subtab px-3 py-2 font-medium text-blue-600 border-b-2 border-blue-600'
+                    : 'timeline-subtab px-3 py-2 font-medium text-gray-600 hover:text-gray-800';
+            });
+
+            if (currentTimelineSubtab === 'replies') {
+                postsContainer.classList.add('hidden');
+                repliesContainer.classList.remove('hidden');
+                renderRepliesTimeline();
+                return;
+            }
+
+            repliesContainer.classList.add('hidden');
+            postsContainer.classList.remove('hidden');
+
+            let visible = timelinePostsData.filter((p) => !p.is_pinned);
+            if (currentTimelineSubtab === 'media') {
+                visible = visible.filter((p) => Array.isArray(p.attachments) && p.attachments.length > 0);
+            } else if (currentTimelineSubtab === 'reposts') {
+                visible = visible.filter((p) => !!p.user_has_reposted);
+            }
+
+            if (!visible.length) {
+                postsContainer.innerHTML = `<div class="text-center py-10 text-gray-500">No ${currentTimelineSubtab} yet.</div>`;
+                return;
+            }
+            postsContainer.innerHTML = '';
+            (async () => {
+                for (const post of visible) {
+                    postsContainer.appendChild(await createPostElement(post));
+                }
+            })();
+        }
+
+        function renderRepliesTimeline() {
+            const repliesContainer = document.getElementById('timelineReplies');
+            if (!repliesContainer) return;
+            if (!timelineRepliesData.length) {
+                repliesContainer.innerHTML = `<div class="text-center py-10 text-gray-500">No replies yet.</div>`;
+                return;
+            }
+            repliesContainer.innerHTML = timelineRepliesData.map((r) => `
+                <div class="bg-white rounded-xl shadow-sm p-5">
+                    <p class="text-sm text-gray-500 mb-1">${formatDate(r.created_at)} - on post #${r.post_id}</p>
+                    <p class="text-gray-800 whitespace-pre-line">${r.content || ''}</p>
+                    <a href="feed.php?open_comments=${r.post_id}#post-${r.post_id}" class="inline-flex mt-3 text-blue-600 hover:text-blue-800 text-sm">Open Thread</a>
+                </div>
+            `).join('');
         }
         
         async function loadBadges() {
@@ -873,45 +922,18 @@ $userId = isset($_GET['id']) ? $_GET['id'] : null;
             document.getElementById('editBasicInfo').classList.remove('hidden');
             document.getElementById('editEducationWork').classList.remove('hidden');
             document.getElementById('editSkills').classList.remove('hidden');
+            document.getElementById('editContactInfo').classList.remove('hidden');
             
-            // Show settings tab
-            document.getElementById('settingsTab').classList.remove('hidden');
-            
-            // Show privacy settings
-            document.getElementById('privacySettings').classList.remove('hidden');
-            
-            // Setup privacy toggle
-            setupPrivacyToggle();
-        }
-        
-        function setupPrivacyToggle() {
-            const toggleBtn = document.getElementById('togglePrivacy');
-            const toggleCircle = document.getElementById('privacyToggle');
-            
-            if (profileData && profileData.is_private) {
-                toggleBtn.classList.add('bg-green-600');
-                toggleBtn.classList.remove('bg-gray-200');
-                toggleCircle.classList.add('translate-x-6');
-            }
-            
-            toggleBtn.addEventListener('click', function() {
-                const isPrivate = toggleBtn.classList.contains('bg-green-600');
-                
-                if (isPrivate) {
-                    // Switch to public
-                    toggleBtn.classList.remove('bg-green-600');
-                    toggleBtn.classList.add('bg-gray-200');
-                    toggleCircle.classList.remove('translate-x-6');
-                } else {
-                    // Switch to private
-                    toggleBtn.classList.add('bg-green-600');
-                    toggleBtn.classList.remove('bg-gray-200');
-                    toggleCircle.classList.add('translate-x-6');
-                }
-            });
         }
         
         function setupEventListeners() {
+            document.querySelectorAll('.timeline-subtab').forEach((btn) => {
+                btn.addEventListener('click', () => {
+                    currentTimelineSubtab = btn.dataset.subtab || 'posts';
+                    renderTimelineSubtab();
+                });
+            });
+
             // Tab switching
             document.querySelectorAll('.tab-button').forEach(tab => {
                 tab.addEventListener('click', function() {
@@ -944,50 +966,109 @@ $userId = isset($_GET['id']) ? $_GET['id'] : null;
                     }
                 });
             }
+            const coverUpload = document.getElementById('coverUpload');
+            const coverBtn = document.getElementById('editCoverActionBtn');
+            if (coverBtn && coverUpload) {
+                coverBtn.addEventListener('click', () => coverUpload.click());
+                coverUpload.addEventListener('change', async function() {
+                    if (this.files[0]) {
+                        await uploadCover(this.files[0]);
+                    }
+                    this.value = '';
+                });
+            }
             
             // Create timeline post
             const timelinePostBtn = document.querySelector('#createPostSection button');
             if (timelinePostBtn) {
                 timelinePostBtn.addEventListener('click', createTimelinePost);
             }
+
+            const editBasicInfoBtn = document.getElementById('editBasicInfo');
+            if (editBasicInfoBtn) {
+                editBasicInfoBtn.addEventListener('click', () => {
+                    window.location.href = 'settings.php?scope=basic#profile';
+                });
+            }
+
+            const editEducationWorkBtn = document.getElementById('editEducationWork');
+            if (editEducationWorkBtn) {
+                editEducationWorkBtn.addEventListener('click', () => {
+                    window.location.href = 'settings.php?scope=work#profile';
+                });
+            }
+
+            const editSkillsBtn = document.getElementById('editSkills');
+            if (editSkillsBtn) {
+                editSkillsBtn.addEventListener('click', () => {
+                    window.location.href = 'settings.php?scope=skills#profile';
+                });
+            }
+
+            const editContactInfoBtn = document.getElementById('editContactInfo');
+            if (editContactInfoBtn) {
+                editContactInfoBtn.addEventListener('click', () => {
+                    window.location.href = 'settings.php?scope=contact#profile';
+                });
+            }
         }
         
-                async function uploadAvatar(file) {
+        async function uploadAvatar(file) {
             try {
                 const formData = new FormData();
                 formData.append('avatar', file);
-                
+
                 const token = localStorage.getItem('jwt_token');
-                const response = await fetch('api/upload_avatar.php', {
+                const response = await fetch(`${window.PORTAL_BASE_PREFIX || ''}api/upload_avatar.php`, {
                     method: 'POST',
-                    headers: { 'Authorization': 'Bearer ' + token },
+                    headers: token ? { 'Authorization': `Bearer ${token}` } : {},
+                    credentials: 'include',
                     body: formData
                 });
                 const result = await response.json();
-                
-                if (result.status === 'success') {
+
+                if (result && (result.success || result.status === 'success')) {
                     alert('Profile picture updated successfully!');
-                    location.reload();
+                    window.location.reload();
                 } else {
-                    alert(result.message || 'Failed to update profile picture');
+                    alert((result && result.message) || 'Failed to update profile picture');
                 }
             } catch (error) {
                 console.error('Error uploading avatar:', error);
                 alert('Error uploading profile picture');
             }
-        } else {
-                    alert(response.message || 'Failed to update profile picture');
+        }
+
+        async function uploadCover(file) {
+            try {
+                const formData = new FormData();
+                formData.append('cover', file);
+                const token = localStorage.getItem('jwt_token');
+                const response = await fetch(`${window.PORTAL_BASE_PREFIX || ''}api/upload_cover.php`, {
+                    method: 'POST',
+                    headers: token ? { 'Authorization': `Bearer ${token}` } : {},
+                    credentials: 'include',
+                    body: formData
+                });
+                const result = await response.json();
+                if (result && result.success && result.cover_url) {
+                    const cover = document.getElementById('profileCover');
+                    if (cover) {
+                        cover.style.backgroundImage = `url('${result.cover_url}')`;
+                    }
+                    alert('Cover photo updated successfully!');
+                } else {
+                    alert((result && result.message) || 'Failed to update cover photo');
                 }
             } catch (error) {
-                console.error('Error uploading avatar:', error);
-                alert('Error uploading profile picture');
+                console.error('Error uploading cover:', error);
+                alert('Error uploading cover photo');
             }
         }
         
         async function createTimelinePost() {
             const content = document.getElementById('timelinePostContent').value.trim();
             const allowComments = document.getElementById('timelineAllowComments').checked;
-            const pinPost = document.getElementById('timelinePinPost').checked;
             
             if (!content) {
                 alert('Please enter some content for your post');
@@ -997,10 +1078,6 @@ $userId = isset($_GET['id']) ? $_GET['id'] : null;
             const formData = new FormData();
             formData.append('content', content);
             formData.append('allow_comments', allowComments ? '1' : '0');
-            
-            if (pinPost) {
-                formData.append('pin_post', '1');
-            }
             
             // Add image if selected
             const imageInput = document.getElementById('timelineImage');
@@ -1022,7 +1099,6 @@ $userId = isset($_GET['id']) ? $_GET['id'] : null;
                     document.getElementById('timelinePostContent').value = '';
                     document.getElementById('timelineImage').value = '';
                     document.getElementById('timelineFile').value = '';
-                    document.getElementById('timelinePinPost').checked = false;
                     
                     // Reload posts
                     await loadProfilePosts();
@@ -1032,27 +1108,6 @@ $userId = isset($_GET['id']) ? $_GET['id'] : null;
             } catch (error) {
                 console.error('Error creating post:', error);
                 alert('Error creating post');
-            }
-        }
-        
-        async function savePrivacySettings() {
-            const isPrivate = document.getElementById('togglePrivacy').classList.contains('bg-green-600');
-            const messagePrivacy = document.getElementById('messagePrivacy').value;
-            
-            try {
-                const response = await makeApiCall('update_privacy.php', 'POST', {
-                    is_private: isPrivate ? 1 : 0,
-                    message_privacy: messagePrivacy
-                });
-                
-                if (response && (response.success || response.status === 'success')) {
-                    alert('Privacy settings updated successfully!');
-                } else {
-                    alert(response.message || 'Failed to update privacy settings');
-                }
-            } catch (error) {
-                console.error('Error saving privacy settings:', error);
-                alert('Error saving privacy settings');
             }
         }
         
@@ -1101,15 +1156,27 @@ $userId = isset($_GET['id']) ? $_GET['id'] : null;
         
         async function connect(userId) {
             try {
-                // You would need to implement a connection API endpoint
-                alert('Connection request sent!');
+                const response = await makeApiCall('connect_user.php', 'POST', { user_id: userId });
+                if (response && (response.success || response.status === 'success')) {
+                    const btn = document.getElementById('connectBtn');
+                    if (btn) {
+                        const connected = !!response.connected;
+                        btn.innerHTML = `<i data-lucide="user-plus" class="h-4 w-4 inline mr-2"></i>${connected ? 'Following' : 'Follow'}`;
+                        btn.className = connected
+                            ? 'px-4 py-2 border border-blue-300 text-blue-700 rounded-lg hover:bg-blue-50 font-medium'
+                            : 'px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium';
+                        lucide.createIcons();
+                    }
+                } else {
+                    alert((response && response.message) || 'Failed to update follow state');
+                }
             } catch (error) {
                 console.error('Error sending connection request:', error);
             }
         }
         
         function editProfile() {
-            window.location.href = 'edit-profile.php';
+            window.location.href = 'settings.php#profile';
         }
         
         function exportData() {
