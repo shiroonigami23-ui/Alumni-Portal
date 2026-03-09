@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 // If user is already logged in, redirect to dashboard
 session_start();
 if (isset($_COOKIE['jwt_token']) || isset($_SESSION['jwt_token'])) {
