@@ -25,6 +25,7 @@ credentials
 deployment/db-backups/
 *.backup
 !deployment/sql/*.sql
+!scripts/ensure_perf_indexes.sql
 
 # Logs
 *.log
@@ -62,15 +63,26 @@ storage/avatars/
 storage/documents/
 storage/profile_pictures/
 storage/comments/comm_*.txt
+storage/comments/comm_*.json
+storage/comments/cmt_*.txt
+storage/comments/reply_*.txt
 storage/messages/msg_*.txt
 storage/jobs/job_desc_*.txt
 storage/posts/post_body_*.txt
+storage/posts/post_body_*.json
+storage/posts/sched_*.txt
 storage/posts/file_*.pdf
 storage/resumes/cv_*.pdf
 storage/stories/story_*.txt
+storage/announcements/ann_*.txt
+storage/events/event_desc_*.txt
+storage/exports/
 storage/profiles/avatar_*.jpg
 storage/profiles/avatar_*.jpeg
 storage/profiles/avatar_*.png
+storage/test_post.txt
+storage/imports/
+storage/test_reports/
 docs/feature_matrix_report.json
 docs/full_system_audit.json
 

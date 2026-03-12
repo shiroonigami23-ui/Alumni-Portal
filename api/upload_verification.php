@@ -5,6 +5,7 @@ header("Access-Control-Allow-Methods: POST");
 
 include_once '../config/Database.php';
 include_once '../middleware/Auth.php';
+include_once '../helpers/FileStorageHelper.php';
 
 $database = new Database();
 $db = $database->getConnection();
@@ -21,7 +22,7 @@ if (isset($_FILES['document'])) {
         exit();
     }
 
-    $filename = "verify_" . $user_id . "_" . time() . ".pdf";
+    $filename = FileStorageHelper::uniqueFileName('verify', (int)$user_id, 'pdf', 'alumni_token');
     $path = dirname(__DIR__) . "/storage/verification/" . $filename;
 
     if (!file_exists(dirname($path))) mkdir(dirname($path), 0777, true);

@@ -8,11 +8,20 @@ header("Access-Control-Allow-Headers: Content-Type, Access-Control-Allow-Headers
 
 include_once '../config/Database.php';
 include_once '../models/User.php';
+include_once '../middleware/Auth.php';
+include_once '../helpers/StudentLifecycleHelper.php';
 
 // Instantiate DB & User
 $database = new Database();
 $db = $database->getConnection();
 $user = new User($db);
+$authGuard = new Auth($db);
+
+if ($authGuard->isCurrentDeviceBanned()) {
+    http_response_code(403);
+    echo json_encode(array("message" => "This device is banned from registration."));
+    exit();
+}
 
 // Get raw posted data
 $data = json_decode(file_get_contents("php://input"));
@@ -26,6 +35,17 @@ if(
     $user->email = $data->email;
     $user->password = $data->password;
     $user->role = $data->role; // Must be 'student', 'alumni', 'faculty', or 'admin'
+
+    if ($user->role === 'alumni') {
+        $email = strtolower(trim((string)$user->email));
+        if (str_ends_with($email, '@rjit.ac.in') && !StudentLifecycleHelper::isEligibleForAlumniRoleByEmail($email)) {
+            $gradYear = StudentLifecycleHelper::expectedGraduationYearForEmail($email);
+            $cutoff = $gradYear ? StudentLifecycleHelper::graduationCutoffDate($gradYear)->format('Y-m-d') : 'July 1 of graduation year';
+            http_response_code(400);
+            echo json_encode(array("message" => "This college email still maps to an active student. Alumni registration allowed after {$cutoff}."));
+            exit();
+        }
+    }
 
     // Check if email already exists
     if($user->emailExists()) {

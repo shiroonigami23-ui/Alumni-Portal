@@ -8,6 +8,8 @@ header("Access-Control-Allow-Headers: Content-Type, Access-Control-Allow-Headers
 include_once '../config/Database.php';
 include_once '../models/User.php';
 include_once '../models/Session.php';
+include_once '../middleware/Auth.php';
+include_once '../helpers/StudentLifecycleHelper.php';
 
 $database = new Database();
 $db = $database->getConnection();
@@ -23,6 +25,17 @@ if (!$db) {
 
 $user = new User($db);
 $session = new Session($db);
+$authGuard = new Auth($db);
+
+// Device ban pre-check
+if ($authGuard->isCurrentDeviceBanned()) {
+    http_response_code(403);
+    echo json_encode(array(
+        "success" => false,
+        "message" => "This device is banned from accessing the platform."
+    ));
+    exit();
+}
 
 $raw = file_get_contents("php://input");
 $data = json_decode($raw);
@@ -40,6 +53,22 @@ if (!empty($data->email) && !empty($data->password)) {
 
     // Attempt Login
     if ($user->login()) {
+        if ($user->role === 'student' && StudentLifecycleHelper::isEligibleForAlumniRoleByEmail((string)$user->email)) {
+            try {
+                $gradYear = StudentLifecycleHelper::expectedGraduationYearForEmail((string)$user->email);
+                $db->beginTransaction();
+                $db->prepare("UPDATE users SET role = 'alumni', updated_at = CURRENT_TIMESTAMP WHERE user_id = :uid AND role = 'student'")
+                   ->execute(['uid' => $user->user_id]);
+                if ($gradYear) {
+                    $db->prepare("UPDATE profiles SET graduation_year = :gy, updated_at = CURRENT_TIMESTAMP WHERE user_id = :uid")
+                       ->execute(['gy' => $gradYear, 'uid' => $user->user_id]);
+                }
+                $db->commit();
+                $user->role = 'alumni';
+            } catch (Throwable $e) {
+                if ($db->inTransaction()) $db->rollBack();
+            }
+        }
 
         if ($user->status === 'banned' || $user->status === 'suspended') {
             http_response_code(403);

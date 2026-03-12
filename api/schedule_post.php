@@ -5,6 +5,7 @@ header("Access-Control-Allow-Methods: POST");
 
 include_once "../config/Database.php";
 include_once "../middleware/Auth.php";
+include_once "../helpers/FileStorageHelper.php";
 
 $database = new Database();
 $db = $database->getConnection();
@@ -14,7 +15,7 @@ $user_id = $auth->validateRequest();
 $data = json_decode(file_get_contents("php://input"));
 
 if (!empty($data->content) && !empty($data->publish_at)) {
-    $filename = "sched_" . $user_id . "_" . time() . ".txt";
+    $filename = FileStorageHelper::uniqueFileName('sched', (int)$user_id, 'txt', 'post');
     $storage_dir = dirname(__DIR__) . DIRECTORY_SEPARATOR . "storage" . DIRECTORY_SEPARATOR . "posts" . DIRECTORY_SEPARATOR;
     if (!file_exists($storage_dir)) { mkdir($storage_dir, 0777, true); }
     

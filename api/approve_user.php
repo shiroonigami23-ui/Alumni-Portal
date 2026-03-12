@@ -56,6 +56,14 @@ if (!empty($data->target_user_id) && !empty($data->action)) {
         $update = $db->prepare("UPDATE users SET status = :status, suspension_expires_at = NULL WHERE user_id = :tid");
         
         if ($update->execute(['status' => $new_status, 'tid' => $data->target_user_id])) {
+            if ($new_status === 'active') {
+                $db->prepare("
+                    INSERT INTO moderation_strikes (user_id, warning_count, strike_count, shadow_ban_until)
+                    VALUES (:uid, 0, 0, NULL)
+                    ON CONFLICT (user_id) DO UPDATE
+                    SET shadow_ban_until = NULL
+                ")->execute(['uid' => $data->target_user_id]);
+            }
             // Log the action for Admin Audit (Section 13)
             $auth->logAction($requestor_id, "USER_APPROVAL", "Target ID: " . $data->target_user_id . " set to " . $new_status);
             

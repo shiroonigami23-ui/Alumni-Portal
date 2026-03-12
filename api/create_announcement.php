@@ -5,6 +5,7 @@ header("Access-Control-Allow-Methods: POST");
 
 include_once '../config/Database.php';
 include_once '../middleware/Auth.php';
+include_once '../helpers/FileStorageHelper.php';
 
 $database = new Database();
 $db = $database->getConnection();
@@ -34,7 +35,7 @@ if (!empty($data->title) && !empty($data->content)) {
     }
 
     // 3. 3.5NF File Storage
-    $filename = "ann_" . $user_id . "_" . time() . ".txt";
+    $filename = FileStorageHelper::uniqueFileName('ann', (int)$user_id, 'txt', 'announcement');
     $storage_path = dirname(__DIR__) . DIRECTORY_SEPARATOR . "storage" . DIRECTORY_SEPARATOR . "announcements" . DIRECTORY_SEPARATOR;
     if (!file_exists($storage_path)) mkdir($storage_path, 0777, true);
     

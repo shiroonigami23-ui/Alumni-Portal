@@ -5,6 +5,7 @@ header("Access-Control-Allow-Methods: POST");
 
 include_once '../config/Database.php';
 include_once '../middleware/Auth.php';
+include_once '../helpers/FileStorageHelper.php';
 
 $database = new Database();
 $db = $database->getConnection();
@@ -52,7 +53,7 @@ if (isset($_FILES['attachment'])) {
     }
 
     // 4. Storage Logic
-    $filename = "file_" . $user_id . "_" . bin2hex(random_bytes(4)) . "_" . time() . "." . $extension;
+    $filename = FileStorageHelper::uniqueFileName('file', (int)$user_id, $extension, $context);
     $sub_folder = in_array($context, ['posts', 'events', 'comments']) ? $context : 'posts';
     if ($sub_folder === 'comments') $sub_folder = "comments/attachments";
 

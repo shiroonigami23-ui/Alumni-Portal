@@ -6,6 +6,7 @@ header("Access-Control-Allow-Methods: POST");
 include_once '../config/Database.php';
 include_once '../middleware/Auth.php';
 include_once '../helpers/AWSHelper.php';
+include_once '../helpers/FileStorageHelper.php';
 include_once '../middleware/Security.php';
 
 $database = new Database();
@@ -33,7 +34,7 @@ if (isset($_FILES['file'])) {
 
         if (in_array($fileExt, $allowed)) {
             if ($file['size'] < 5000000) { // 5MB
-                $newFileName = uniqid('', true) . "." . $fileExt;
+                $newFileName = FileStorageHelper::uniqueFileName('upload', (int)$user_id, $fileExt, 'generic');
 
                 // Construct S3 Key (Folder structure: uploads/user_id/filename)
                 $key = "uploads/" . $user_id . "/" . $newFileName;

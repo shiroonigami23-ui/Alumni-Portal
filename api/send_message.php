@@ -5,6 +5,7 @@ header("Access-Control-Allow-Methods: POST");
 
 include_once '../config/Database.php';
 include_once '../middleware/Auth.php';
+include_once '../helpers/FileStorageHelper.php';
 include_once __DIR__ . '/_message_schema.php';
 
 $database = new Database();
@@ -70,7 +71,7 @@ if ($receiver_id > 0 && !empty($data->message)) {
     }
 
     // 5. 3.5NF Storage Logic (Message Content to File)
-    $filename = "msg_" . $sender_id . "_" . time() . ".txt";
+    $filename = FileStorageHelper::uniqueFileName('msg', (int)$sender_id, 'txt', 'chat');
     $storage_dir = dirname(__DIR__) . DIRECTORY_SEPARATOR . "storage" . DIRECTORY_SEPARATOR . "messages" . DIRECTORY_SEPARATOR;
     if (!file_exists($storage_dir)) { mkdir($storage_dir, 0777, true); }
     

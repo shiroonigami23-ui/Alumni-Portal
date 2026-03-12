@@ -5,6 +5,7 @@ header("Access-Control-Allow-Methods: POST");
 
 include_once '../config/Database.php';
 include_once '../middleware/Auth.php';
+include_once '../helpers/FileStorageHelper.php';
 
 $database = new Database();
 $db = $database->getConnection();
@@ -17,7 +18,7 @@ $data = json_decode(file_get_contents("php://input"));
 if (!empty($data->post_id) && !empty($data->content)) {
     
     // 2. 3.5NF Logic: Create physical text file for the comment
-    $filename = "cmt_" . $user_id . "_" . time() . ".txt";
+    $filename = FileStorageHelper::uniqueFileName('cmt', (int)$user_id, 'txt', 'comment');
     $relative_path = "storage/comments/" . $filename;
     $absolute_dir = dirname(__DIR__) . DIRECTORY_SEPARATOR . "storage" . DIRECTORY_SEPARATOR . "comments" . DIRECTORY_SEPARATOR;
 

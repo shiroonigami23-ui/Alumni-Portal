@@ -9,9 +9,20 @@ header("Access-Control-Allow-Methods: POST");
 header("Access-Control-Allow-Headers: Content-Type");
 
 include_once '../config/Database.php';
+include_once '../middleware/Auth.php';
 
 $database = new Database();
 $db = $database->getConnection();
+$authGuard = new Auth($db);
+
+if ($authGuard->isCurrentDeviceBanned()) {
+    http_response_code(403);
+    echo json_encode([
+        "success" => false,
+        "message" => "This device is banned from registration."
+    ]);
+    exit();
+}
 
 // Get raw POST data
 $rawData = file_get_contents("php://input");

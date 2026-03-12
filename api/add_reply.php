@@ -4,6 +4,7 @@ header("Content-Type: application/json; charset=UTF-8");
 
 include_once '../config/Database.php';
 include_once '../middleware/Auth.php';
+include_once '../helpers/FileStorageHelper.php';
 
 $database = new Database();
 $db = $database->getConnection();
@@ -28,9 +29,10 @@ if (!empty($data->post_id) && !empty($data->parent_id) && !empty($data->content)
     $new_depth = $parent['depth_level'] + 1;
 
     // 2. 3.5NF Storage Logic
-    $filename = "reply_" . $user_id . "_" . time() . ".txt";
+    $filename = FileStorageHelper::uniqueFileName('reply', (int)$user_id, 'txt', 'comment');
     $storage_dir = dirname(__DIR__) . DIRECTORY_SEPARATOR . "storage" . DIRECTORY_SEPARATOR . "comments" . DIRECTORY_SEPARATOR . "attachments" . DIRECTORY_SEPARATOR;
     $relative_path = "storage/comments/attachments/" . $filename;
+    if (!file_exists($storage_dir)) { mkdir($storage_dir, 0777, true); }
 
     if (file_put_contents($storage_dir . $filename, $data->content)) {
         // 3. Insert into DB

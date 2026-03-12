@@ -29,17 +29,64 @@ if (!empty($data->target_id)) {
     try {
         $db->beginTransaction();
 
+        $targetStmt = $db->prepare("SELECT user_id, role FROM users WHERE user_id = :tid FOR UPDATE");
+        $targetStmt->execute(['tid' => $data->target_id]);
+        $target = $targetStmt->fetch(PDO::FETCH_ASSOC);
+        if (!$target) {
+            throw new Exception("Target user not found.");
+        }
+        if ((int)$target['user_id'] === (int)$admin_id) {
+            throw new Exception("Admin cannot ban self.");
+        }
+
         // 2. Set status to 'banned'
-        $query = "UPDATE users SET status = 'banned' WHERE user_id = :tid";
+        $query = "UPDATE users SET status = 'banned', suspension_expires_at = NULL WHERE user_id = :tid";
         $db->prepare($query)->execute(['tid' => $data->target_id]);
 
-        // 3. Optional: Logic to blacklist IP/Fingerprint (Blueprint Section 6)
-        // For now, we update the user record.
+        // 3. Device/IP blacklisting for permanent ban
+        $reason = trim((string)($data->reason ?? 'Permanent ban by admin'));
+        $seen = [];
+        $src = $db->prepare("
+            SELECT device_fingerprint, ip_address::text AS ip_address, user_agent
+            FROM sessions
+            WHERE user_id = :uid
+            UNION
+            SELECT device_fingerprint, ip_address::text AS ip_address, user_agent
+            FROM activity_logs
+            WHERE user_id = :uid
+        ");
+        $src->execute(['uid' => $data->target_id]);
+        $insertBan = $db->prepare("
+            INSERT INTO device_bans (device_fingerprint, ip_address, banned_by_admin_id, reason)
+            VALUES (:fp, CAST(:ip AS inet), :aid, :reason)
+            ON CONFLICT (device_fingerprint, ip_address) DO NOTHING
+        ");
+        while ($row = $src->fetch(PDO::FETCH_ASSOC)) {
+            $ip = trim((string)($row['ip_address'] ?? ''));
+            if ($ip === '') continue;
+            $fp = trim((string)($row['device_fingerprint'] ?? ''));
+            if ($fp === '') {
+                $ua = (string)($row['user_agent'] ?? '');
+                $fp = substr(hash('sha256', $ua . '|' . $ip), 0, 120);
+            }
+            $key = $fp . '|' . $ip;
+            if (isset($seen[$key])) continue;
+            $seen[$key] = true;
+            $insertBan->execute([
+                'fp' => $fp,
+                'ip' => $ip,
+                'aid' => $admin_id,
+                'reason' => $reason
+            ]);
+        }
+
+        // 4. Remove active sessions for banned user.
+        $db->prepare("DELETE FROM sessions WHERE user_id = :uid")->execute(['uid' => $data->target_id]);
         
         $auth->logAction($admin_id, "PERMANENT_BAN", "Admin banned user " . $data->target_id);
         
         $db->commit();
-        echo json_encode(["message" => "User permanently banned."]);
+        echo json_encode(["message" => "User permanently banned and device blacklist applied where available."]);
     } catch (Exception $e) {
         $db->rollBack();
         http_response_code(500);

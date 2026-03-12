@@ -3,12 +3,32 @@ header("Access-Control-Allow-Origin: *");
 header("Content-Type: application/json; charset=UTF-8");
 
 include_once '../config/Database.php';
+include_once '../middleware/Auth.php';
+include_once '../helpers/StudentLifecycleHelper.php';
 
 $database = new Database();
 $db = $database->getConnection();
+$authGuard = new Auth($db);
 $data = json_decode(file_get_contents("php://input"));
 
+if ($authGuard->isCurrentDeviceBanned()) {
+    http_response_code(403);
+    echo json_encode(["message" => "This device is banned from registration."]);
+    exit();
+}
+
 if (!empty($data->email) && !empty($data->token)) {
+    $email = strtolower(trim((string)$data->email));
+    if (str_ends_with($email, '@rjit.ac.in') && !StudentLifecycleHelper::isEligibleForAlumniRoleByEmail($email)) {
+        $gradYear = StudentLifecycleHelper::expectedGraduationYearForEmail($email);
+        $cutoff = $gradYear ? StudentLifecycleHelper::graduationCutoffDate($gradYear)->format('Y-m-d') : 'July 1 of graduation year';
+        http_response_code(400);
+        echo json_encode([
+            "message" => "This college email appears to be for an active student. Alumni role from this ID is allowed only after {$cutoff}."
+        ]);
+        exit();
+    }
+
     try {
         $db->beginTransaction();
 

@@ -5,6 +5,7 @@ header("Access-Control-Allow-Methods: POST");
 
 include_once '../config/Database.php';
 include_once '../middleware/Auth.php';
+include_once '../helpers/FileStorageHelper.php';
 
 $database = new Database();
 $db = $database->getConnection();
@@ -35,7 +36,7 @@ if (isset($_FILES['avatar'])) {
     $old_avatar = $stmt->fetch(PDO::FETCH_ASSOC);
 
     // 2. Setup paths
-    $filename = "avatar_" . $user_id . "_" . bin2hex(random_bytes(4)) . "_" . time() . "." . $extension;
+    $filename = FileStorageHelper::uniqueFileName('avatar', (int)$user_id, $extension, 'profile');
     $upload_dir = dirname(__DIR__) . DIRECTORY_SEPARATOR . "storage" . DIRECTORY_SEPARATOR . "profiles" . DIRECTORY_SEPARATOR;
     if (!file_exists($upload_dir)) {
         mkdir($upload_dir, 0777, true);

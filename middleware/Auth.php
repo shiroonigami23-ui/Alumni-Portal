@@ -72,30 +72,79 @@ class Auth {
             exit();
         }
 
-        // 6. SHADOW BAN CHECK: Malicious Reporting (Section 6)
-try {
-    $s_stmt = $this->db->prepare("SELECT shadow_ban_until FROM moderation_strikes WHERE user_id = :uid");
-    $s_stmt->execute(['uid' => $user_id]);
-    $shadow_ban = $s_stmt->fetchColumn();
+        // 6. SHADOW BAN CHECK: reported abuse threshold
+        try {
+            $s_stmt = $this->db->prepare("SELECT shadow_ban_until FROM moderation_strikes WHERE user_id = :uid");
+            $s_stmt->execute(['uid' => $user_id]);
+            $shadow_ban = $s_stmt->fetchColumn();
 
-    if ($shadow_ban && strtotime($shadow_ban) > time()) {
-        // Only block "POST" or "PUT" requests for shadow-banned users
-        // They can still view (GET), but cannot interact.
-        if ($_SERVER['REQUEST_METHOD'] === 'POST' || $_SERVER['REQUEST_METHOD'] === 'PUT') {
-            http_response_code(403);
-            echo json_encode([
-                "message" => "You are shadow banned until $shadow_ban for malicious reporting.",
-                "is_shadow_banned" => true
-            ]);
-            exit();
+            if ($shadow_ban && strtotime((string)$shadow_ban) > time()) {
+                $method = strtoupper((string)($_SERVER['REQUEST_METHOD'] ?? 'GET'));
+                $script = basename((string)($_SERVER['SCRIPT_NAME'] ?? ''));
+                $readBlockedScripts = ['get_feed.php', 'public_feed.php', 'search_posts.php', 'get_user_replies.php'];
+
+                if (in_array($method, ['POST', 'PUT', 'PATCH', 'DELETE'], true) || ($method === 'GET' && in_array($script, $readBlockedScripts, true))) {
+                    http_response_code(403);
+                    echo json_encode([
+                        "message" => "Your account is shadow banned until $shadow_ban.",
+                        "is_shadow_banned" => true
+                    ]);
+                    exit();
+                }
+            }
+        } catch (Exception $e) {
+            // moderation_strikes table might not exist, ignore
+            error_log("Moderation strikes check failed: " . $e->getMessage());
         }
-    }
-} catch (Exception $e) {
-    // moderation_strikes table might not exist, ignore
-    error_log("Moderation strikes check failed: " . $e->getMessage());
-}
+
+        // 7. DEVICE BAN CHECK
+        try {
+            if ($this->isCurrentDeviceBanned()) {
+                http_response_code(403);
+                echo json_encode(["message" => "This device is banned from the platform."]);
+                exit();
+            }
+        } catch (Exception $e) {
+            error_log("Device ban check failed: " . $e->getMessage());
+        }
 
         return $user_id;
+    }
+
+    public static function getClientIp(): string
+    {
+        $ip = $_SERVER['HTTP_X_FORWARDED_FOR'] ?? ($_SERVER['REMOTE_ADDR'] ?? '127.0.0.1');
+        if (strpos($ip, ',') !== false) {
+            $parts = explode(',', $ip);
+            $ip = trim((string)$parts[0]);
+        }
+        return (string)$ip;
+    }
+
+    public static function getClientFingerprint(): string
+    {
+        $raw = (string)($_SERVER['HTTP_X_DEVICE_FINGERPRINT'] ?? '');
+        if ($raw !== '') {
+            return substr(hash('sha256', $raw), 0, 120);
+        }
+        $ua = (string)($_SERVER['HTTP_USER_AGENT'] ?? 'Unknown');
+        $ip = self::getClientIp();
+        return substr(hash('sha256', $ua . '|' . $ip), 0, 120);
+    }
+
+    public function isCurrentDeviceBanned(): bool
+    {
+        $fp = self::getClientFingerprint();
+        $ip = self::getClientIp();
+        $stmt = $this->db->prepare("
+            SELECT 1
+            FROM device_bans
+            WHERE device_fingerprint = :fp
+               OR ip_address = CAST(:ip AS inet)
+            LIMIT 1
+        ");
+        $stmt->execute(['fp' => $fp, 'ip' => $ip]);
+        return (bool)$stmt->fetchColumn();
     }
 
     public function logAction($user_id, $action, $details) {

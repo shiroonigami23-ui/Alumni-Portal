@@ -5,6 +5,7 @@ header("Access-Control-Allow-Methods: POST");
 
 require_once '../config/Database.php';
 require_once '../middleware/Auth.php';
+require_once '../helpers/FileStorageHelper.php';
 
 $database = new Database();
 $db = $database->getConnection();
@@ -42,7 +43,7 @@ if (!is_dir($uploadDir)) {
     mkdir($uploadDir, 0777, true);
 }
 
-$filename = "cover_" . $user_id . "_" . bin2hex(random_bytes(4)) . "_" . time() . "." . $extension;
+$filename = FileStorageHelper::uniqueFileName('cover', (int)$user_id, $extension, 'banner');
 $abs = $uploadDir . $filename;
 $dbUrl = "storage/covers/" . $filename;
 
@@ -77,4 +78,3 @@ echo json_encode([
     "message" => "Cover updated.",
     "cover_url" => $dbUrl
 ]);
-

@@ -396,6 +396,7 @@ $userId = isset($_GET['id']) ? $_GET['id'] : null;
         
         // Global variables
         let currentUserId = null;
+        let currentUserRole = '';
         let profileUserId = <?php echo $userId ? "'$userId'" : 'null'; ?>;
         let isOwnProfile = false;
         let profileData = null;
@@ -416,6 +417,7 @@ $userId = isset($_GET['id']) ? $_GET['id'] : null;
                 if (userData) {
                     const user = JSON.parse(userData);
                     currentUserId = parseInt(user.user_id || user.id || 0, 10) || null;
+                    currentUserRole = String(user.role || '').toLowerCase();
                     
                     // If no profile ID specified, show current user's profile
                     if (!profileUserId) {
@@ -587,6 +589,7 @@ $userId = isset($_GET['id']) ? $_GET['id'] : null;
                         </button>
                     `;
                 } else {
+                    const canReportUser = ['student', 'alumni'].includes(currentUserRole);
                     actionsContainer.innerHTML = `
                         <button onclick="sendMessage(${data.id})" 
                                 class="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 font-medium">
@@ -598,6 +601,12 @@ $userId = isset($_GET['id']) ? $_GET['id'] : null;
                             <i data-lucide="user-plus" class="h-4 w-4 inline mr-2"></i>
                             ${data.is_connected ? 'Following' : 'Follow'}
                         </button>
+                        ${canReportUser ? `
+                        <button onclick="reportUser(${data.id})"
+                                class="px-4 py-2 border border-amber-300 text-amber-700 rounded-lg hover:bg-amber-50 font-medium">
+                            <i data-lucide="shield-alert" class="h-4 w-4 inline mr-2"></i>
+                            Report
+                        </button>` : ''}
                     `;
                 }
             }
@@ -703,6 +712,23 @@ $userId = isset($_GET['id']) ? $_GET['id'] : null;
                 }
             } catch (error) {
                 console.error('Error loading profile posts:', error);
+            }
+        }
+
+        async function reportUser(targetUserId) {
+            if (!confirm('Report this user for harassment/spam?')) return;
+            try {
+                const res = await makeApiCall('report_user.php', 'POST', {
+                    target_user_id: targetUserId,
+                    reason: 'harassment'
+                });
+                if (res && (res.success || res.status === 'success' || res.message)) {
+                    alert(res.message || 'User reported.');
+                } else {
+                    alert((res && res.message) || 'Failed to report user.');
+                }
+            } catch (e) {
+                alert('Failed to report user.');
             }
         }
 

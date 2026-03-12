@@ -8,6 +8,7 @@
 require_once '../config/Database.php';
 require_once '../middleware/Auth.php';
 require_once '../models/Event.php';
+require_once '../helpers/FileStorageHelper.php';
 
 header('Content-Type: application/json');
 
@@ -60,7 +61,7 @@ if (!empty($data['description'])) {
     if (!is_dir($events_dir)) {
         mkdir($events_dir, 0755, true);
     }
-    $description_filename = 'event_desc_' . time() . '.txt';
+    $description_filename = FileStorageHelper::uniqueFileName('event_desc', (int)$user['user_id'], 'txt', 'event');
     $description_absolute_path = $events_dir . DIRECTORY_SEPARATOR . $description_filename;
     file_put_contents($description_absolute_path, $data['description']);
     $description_file_path = 'storage/events/' . $description_filename;
