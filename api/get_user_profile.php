@@ -39,7 +39,8 @@ try {
                      p.location_city, p.location_country,
                      p.contact_number, p.personal_website, 
                      p.linkedin_url, p.github_url, p.twitter_url,
-                     p.is_private, p.show_email, p.show_contact,
+                     CASE WHEN u.role = 'student' THEN false ELSE COALESCE(p.is_private, false) END AS is_private,
+                     p.show_email, p.show_contact,
                      p.roll_number, p.year_of_study
               FROM users u
               LEFT JOIN profiles p ON u.user_id = p.user_id

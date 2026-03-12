@@ -19,6 +19,16 @@ if (!isset($data->is_private)) {
     exit;
 }
 
+$roleStmt = $db->prepare("SELECT role FROM users WHERE user_id = :uid LIMIT 1");
+$roleStmt->execute(['uid' => $user_id]);
+$userRole = strtolower((string)($roleStmt->fetchColumn() ?: ''));
+
+$requestedPrivate = (bool)$data->is_private;
+if ($userRole === 'student') {
+    // Students are always public by policy.
+    $requestedPrivate = false;
+}
+
 $query = "
     INSERT INTO profiles (user_id, full_name, is_private)
     VALUES (:uid, :full_name, :priv)
@@ -31,9 +41,21 @@ $stmt = $db->prepare($query);
 if ($stmt->execute([
     'uid' => $user_id,
     'full_name' => 'User ' . $user_id,
-    'priv' => $data->is_private ? 'true' : 'false'
+    'priv' => $requestedPrivate ? 'true' : 'false'
 ])) {
-    echo json_encode(["success" => true, "message" => "Privacy settings updated."]);
+    if ($userRole === 'student') {
+        echo json_encode([
+            "success" => true,
+            "message" => "Students are always public. Privacy remains Public.",
+            "data" => ["is_private" => false, "enforced_public" => true]
+        ]);
+    } else {
+        echo json_encode([
+            "success" => true,
+            "message" => "Privacy settings updated.",
+            "data" => ["is_private" => $requestedPrivate]
+        ]);
+    }
 } else {
     http_response_code(500);
     echo json_encode(["success" => false, "message" => "Failed to update privacy settings."]);

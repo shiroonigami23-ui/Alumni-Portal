@@ -298,6 +298,7 @@ include 'includes/header.php';
 
             const fullName = user.full_name || user.name || (user.email ? user.email.split('@')[0] : 'Member');
             const roleText = formatRole(user.role);
+            window.settingsCurrentUserRole = (user.role || '').toLowerCase();
             const { first, last } = splitName(fullName);
             const avatar = (user.profile_picture || user.profile_picture_url || '').replace(/\\/g, '/');
 
@@ -579,11 +580,38 @@ include 'includes/header.php';
     async function initSettingsPrivacy() {
         try {
             const user = JSON.parse(localStorage.getItem('user_data') || '{}');
+            const role = String(user.role || window.settingsCurrentUserRole || '').toLowerCase();
             const uid = user.user_id || user.id;
             if (!uid) return;
             const res = await makeApiCall(`get_user_profile.php?user_id=${uid}`);
-            const isPrivate = !!(res && (res.success || res.status === 'success') && res.data && res.data.is_private);
+            let isPrivate = !!(res && (res.success || res.status === 'success') && res.data && res.data.is_private);
+            if (role === 'student') {
+                isPrivate = false;
+            }
             setPrivacyToggleState(isPrivate);
+
+            if (role === 'student') {
+                const btn = document.getElementById('settingsTogglePrivacy');
+                const saveBtn = document.getElementById('settingsSavePrivacyBtn');
+                const help = document.getElementById('settingsPrivacyHelpText');
+                const badge = document.getElementById('settingsPrivacyStateBadge');
+                if (btn) {
+                    btn.disabled = true;
+                    btn.classList.add('hidden');
+                    btn.setAttribute('aria-label', 'Students are always public');
+                }
+                if (saveBtn) {
+                    saveBtn.disabled = true;
+                    saveBtn.classList.add('hidden');
+                }
+                if (badge) {
+                    badge.textContent = 'Public (Required)';
+                    badge.className = 'inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-700';
+                }
+                if (help) {
+                    help.textContent = 'Students are always public. This setting is locked by portal policy.';
+                }
+            }
         } catch (e) {
             console.error('Privacy init failed', e);
         }
@@ -597,6 +625,13 @@ include 'includes/header.php';
         }
         if (saveBtn) {
             saveBtn.addEventListener('click', async () => {
+                const user = JSON.parse(localStorage.getItem('user_data') || '{}');
+                const role = String(user.role || window.settingsCurrentUserRole || '').toLowerCase();
+                if (role === 'student') {
+                    alert('Students are always public on this portal.');
+                    setPrivacyToggleState(false);
+                    return;
+                }
                 const isPrivate = (document.getElementById('settingsTogglePrivacy')?.dataset.private === '1');
                 const res = await makeApiCall('update_privacy.php', 'POST', { is_private: isPrivate ? 1 : 0 });
                 if (res && (res.success || res.status === 'success' || res.message)) {

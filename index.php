@@ -5,6 +5,86 @@ if (isset($_COOKIE['jwt_token']) || isset($_SESSION['jwt_token'])) {
     header('Location: dashboard.php');
     exit();
 }
+
+$landingStats = [
+    'alumni_network' => 0,
+    'active_members' => 0,
+    'total_posts' => 0,
+    'companies' => 0,
+    'linkedin_profiles' => 0,
+    'branches' => 0,
+];
+$publicAlumniPhotos = [];
+
+function normalize_public_image_url($value)
+{
+    $url = trim((string)$value);
+    if ($url === '') return '';
+    $url = str_replace('\\', '/', $url);
+    if (strpos($url, 'data:') === 0) return $url;
+    if (preg_match('#^(https?:)?//#i', $url)) return $url;
+    return ltrim($url, './');
+}
+
+try {
+    require_once __DIR__ . '/config/Database.php';
+    $database = new Database();
+    $conn = $database->getConnection();
+
+    if ($conn instanceof PDO) {
+        $stmt = $conn->query("
+            SELECT
+                (SELECT COUNT(*) FROM users WHERE role = 'alumni' AND status = 'active') AS alumni_network,
+                (SELECT COUNT(*) FROM users WHERE status = 'active') AS active_members,
+                (SELECT COUNT(*) FROM posts WHERE status = 'published') AS total_posts,
+                (SELECT COUNT(DISTINCT p.current_company)
+                 FROM profiles p
+                 JOIN users u ON u.user_id = p.user_id
+                 WHERE u.role = 'alumni'
+                   AND COALESCE(TRIM(p.current_company), '') <> '') AS companies,
+                (SELECT COUNT(*)
+                 FROM profiles p
+                 JOIN users u ON u.user_id = p.user_id
+                 WHERE u.role = 'alumni'
+                   AND COALESCE(TRIM(p.linkedin_url), '') <> '') AS linkedin_profiles,
+                (SELECT COUNT(DISTINCT p.branch)
+                 FROM profiles p
+                 JOIN users u ON u.user_id = p.user_id
+                 WHERE u.role = 'alumni'
+                   AND COALESCE(TRIM(p.branch), '') <> '') AS branches
+        ");
+        $row = $stmt->fetch(PDO::FETCH_ASSOC);
+        if ($row) {
+            $landingStats = [
+                'alumni_network' => (int) ($row['alumni_network'] ?? 0),
+                'active_members' => (int) ($row['active_members'] ?? 0),
+                'total_posts' => (int) ($row['total_posts'] ?? 0),
+                'companies' => (int) ($row['companies'] ?? 0),
+                'linkedin_profiles' => (int) ($row['linkedin_profiles'] ?? 0),
+                'branches' => (int) ($row['branches'] ?? 0),
+            ];
+        }
+
+        $photoStmt = $conn->query("
+            SELECT
+                p.full_name,
+                p.branch,
+                p.graduation_year,
+                p.profile_picture_url
+            FROM profiles p
+            JOIN users u ON u.user_id = p.user_id
+            WHERE u.role = 'alumni'
+              AND u.status = 'active'
+              AND COALESCE(p.is_private, false) = false
+              AND COALESCE(TRIM(p.profile_picture_url), '') <> ''
+            ORDER BY p.updated_at DESC NULLS LAST, p.profile_id DESC
+            LIMIT 24
+        ");
+        $publicAlumniPhotos = $photoStmt ? ($photoStmt->fetchAll(PDO::FETCH_ASSOC) ?: []) : [];
+    }
+} catch (Throwable $e) {
+    // Keep graceful fallbacks if DB is unavailable.
+}
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -69,16 +149,16 @@ if (isset($_COOKIE['jwt_token']) || isset($_SESSION['jwt_token'])) {
     <!-- Navigation -->
     <nav class="bg-white shadow-sm sticky top-0 z-50">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="flex justify-between h-16">
+            <div class="flex justify-between items-center h-16 gap-3">
                 <div class="flex items-center">
                     <a href="index.php" class="flex items-center">
                         <i data-lucide="graduation-cap" class="h-8 w-8 text-blue-600"></i>
-                        <span class="ml-2 text-xl font-bold text-gray-900">RJIT Alumni Portal</span>
+                        <span class="ml-2 text-base sm:text-xl font-bold text-gray-900">RJIT Alumni Portal</span>
                     </a>
                 </div>
-                <div class="flex items-center space-x-4">
-                    <a href="login.php" class="text-gray-700 hover:text-blue-600 font-medium">Login</a>
-                    <a href="register.php" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 font-medium">Register</a>
+                <div class="flex items-center gap-2 sm:gap-4">
+                    <a href="login.php" class="text-sm sm:text-base text-gray-700 hover:text-blue-600 font-medium px-2 py-1">Login</a>
+                    <a href="register.php" class="text-sm sm:text-base bg-blue-600 text-white px-3 sm:px-4 py-2 rounded-lg hover:bg-blue-700 font-medium">Register</a>
                 </div>
             </div>
         </div>
@@ -90,6 +170,17 @@ if (isset($_COOKIE['jwt_token']) || isset($_SESSION['jwt_token'])) {
             <div class="text-center">
                 <h1 class="text-4xl md:text-6xl font-bold mb-6">Welcome to the RJIT Alumni Portal</h1>
                 <p class="text-xl md:text-2xl mb-8 opacity-90">Connecting generations of RJITians. Share, Network, Grow.</p>
+                <div class="mb-8 inline-flex flex-wrap items-center justify-center gap-3 text-sm md:text-base">
+                    <span class="px-3 py-1 rounded-full bg-white/15 border border-white/30">
+                        <?php echo number_format($landingStats['alumni_network']); ?> Active Alumni
+                    </span>
+                    <span class="px-3 py-1 rounded-full bg-white/15 border border-white/30">
+                        <?php echo number_format($landingStats['branches']); ?> Branches
+                    </span>
+                    <span class="px-3 py-1 rounded-full bg-white/15 border border-white/30">
+                        <?php echo number_format($landingStats['linkedin_profiles']); ?> LinkedIn Profiles
+                    </span>
+                </div>
                 <div class="flex flex-col sm:flex-row justify-center gap-4">
                     <a href="register.php" class="bg-white text-blue-600 px-8 py-3 rounded-lg text-lg font-semibold hover:bg-gray-100 transition duration-300">Join Now</a>
                     <a href="#features" class="bg-transparent border-2 border-white px-8 py-3 rounded-lg text-lg font-semibold hover:bg-white hover:text-blue-600 transition duration-300">Learn More</a>
@@ -103,19 +194,19 @@ if (isset($_COOKIE['jwt_token']) || isset($_SESSION['jwt_token'])) {
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="grid grid-cols-2 md:grid-cols-4 gap-8 text-center">
                 <div>
-                    <div class="text-3xl font-bold text-blue-600 mb-2 stats-counter" id="totalUsers">2,500+</div>
+                    <div class="text-3xl font-bold text-blue-600 mb-2 stats-counter" id="totalUsers"><?php echo number_format($landingStats['alumni_network']); ?></div>
                     <div class="text-gray-600">Alumni Network</div>
                 </div>
                 <div>
-                    <div class="text-3xl font-bold text-blue-600 mb-2 stats-counter" id="activeUsers">1,200+</div>
+                    <div class="text-3xl font-bold text-blue-600 mb-2 stats-counter" id="activeUsers"><?php echo number_format($landingStats['active_members']); ?></div>
                     <div class="text-gray-600">Active Members</div>
                 </div>
                 <div>
-                    <div class="text-3xl font-bold text-blue-600 mb-2 stats-counter" id="totalPosts">5,000+</div>
+                    <div class="text-3xl font-bold text-blue-600 mb-2 stats-counter" id="totalPosts"><?php echo number_format($landingStats['total_posts']); ?></div>
                     <div class="text-gray-600">Community Posts</div>
                 </div>
                 <div>
-                    <div class="text-3xl font-bold text-blue-600 mb-2 stats-counter" id="companies">150+</div>
+                    <div class="text-3xl font-bold text-blue-600 mb-2 stats-counter" id="companies"><?php echo number_format($landingStats['companies']); ?></div>
                     <div class="text-gray-600">Companies Represented</div>
                 </div>
             </div>
@@ -176,49 +267,40 @@ if (isset($_COOKIE['jwt_token']) || isset($_SESSION['jwt_token'])) {
     <!-- Alumni Grid -->
     <section class="py-20 bg-gray-50">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <h2 class="text-3xl font-bold text-center mb-12">Our Alumni Community</h2>
+            <h2 class="text-3xl font-bold text-center mb-10">Our Alumni Community</h2>
 
-            <div id="alumniGrid" class="alumni-grid grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
-                <!-- Alumni grid will be loaded here with fallback images -->
-                <?php
-                // Fallback images from storage
-                $fallbackImages = [];
-
-                // Check for existing profile images in storage
-                $storagePath = 'storage/profiles/';
-                if (is_dir($storagePath)) {
-                    $files = scandir($storagePath);
-                    foreach ($files as $file) {
-                        if (preg_match('/\.(jpg|jpeg|png|gif)$/i', $file)) {
-                            $fallbackImages[] = $storagePath . $file;
-                            if (count($fallbackImages) >= 12) break;
-                        }
-                    }
-                }
-
-                // Add default fallbacks if needed
-                $defaultImages = [
-                    'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="150" height="150" viewBox="0 0 150 150"%3E%3Crect width="150" height="150" fill="%23dbeafe"/%3E%3Ctext x="50%" y="50%" dominant-baseline="middle" text-anchor="middle" font-family="Arial" font-size="20" fill="%233b82f6"%3EAlumni%3C/text%3E%3C/svg%3E',
-                    'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="150" height="150" viewBox="0 0 150 150"%3E%3Crect width="150" height="150" fill="%23dbeafe"/%3E%3Ctext x="50%" y="50%" dominant-baseline="middle" text-anchor="middle" font-family="Arial" font-size="20" fill="%233b82f6"%3ERJIT%3C/text%3E%3C/svg%3E'
-                ];
-
-                // Display 12 images total
-                for ($i = 0; $i < 12; $i++):
-                    if (isset($fallbackImages[$i])) {
-                        $imageSrc = $fallbackImages[$i];
-                        $altText = 'Alumni Profile';
-                    } else {
-                        $imageSrc = $defaultImages[$i % count($defaultImages)];
-                        $altText = 'Alumni Member';
-                    }
-                ?>
-                    <div class="aspect-square rounded-lg overflow-hidden bg-white shadow-sm">
-                        <img src="<?php echo $imageSrc; ?>"
-                            alt="<?php echo $altText; ?>"
-                            class="w-full h-full object-cover"
-                            loading="lazy">
+            <div id="alumniGrid" class="alumni-grid grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 sm:gap-4">
+                <?php if (!empty($publicAlumniPhotos)): ?>
+                    <?php foreach ($publicAlumniPhotos as $person): ?>
+                        <?php
+                        $img = normalize_public_image_url($person['profile_picture_url'] ?? '');
+                        if ($img === '') continue;
+                        $name = trim((string)($person['full_name'] ?? 'RJIT Alumni'));
+                        $branch = trim((string)($person['branch'] ?? ''));
+                        $year = trim((string)($person['graduation_year'] ?? ''));
+                        ?>
+                        <div class="group relative aspect-square rounded-xl overflow-hidden bg-white shadow-sm border border-gray-100">
+                            <img src="<?php echo htmlspecialchars($img, ENT_QUOTES, 'UTF-8'); ?>"
+                                 alt="<?php echo htmlspecialchars($name, ENT_QUOTES, 'UTF-8'); ?>"
+                                 class="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+                                 loading="lazy"
+                                 referrerpolicy="no-referrer">
+                            <div class="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/70 to-transparent p-2 sm:p-3">
+                                <p class="text-white text-xs sm:text-sm font-semibold leading-tight truncate"><?php echo htmlspecialchars($name, ENT_QUOTES, 'UTF-8'); ?></p>
+                                <p class="text-blue-100 text-[11px] sm:text-xs leading-tight truncate">
+                                    <?php echo htmlspecialchars($branch, ENT_QUOTES, 'UTF-8'); ?>
+                                    <?php if ($branch !== '' && $year !== ''): ?> • <?php endif; ?>
+                                    <?php echo $year !== '' ? ('Class of ' . htmlspecialchars($year, ENT_QUOTES, 'UTF-8')) : ''; ?>
+                                </p>
+                            </div>
+                        </div>
+                    <?php endforeach; ?>
+                <?php else: ?>
+                    <div class="col-span-2 sm:col-span-3 lg:col-span-6 text-center py-10">
+                        <i data-lucide="users" class="h-10 w-10 text-blue-500 mx-auto mb-3"></i>
+                        <p class="text-gray-600">Public alumni photos will appear here as members upload them.</p>
                     </div>
-                <?php endfor; ?>
+                <?php endif; ?>
             </div>
         </div>
     </section>
@@ -241,18 +323,6 @@ if (isset($_COOKIE['jwt_token']) || isset($_SESSION['jwt_token'])) {
                     <span>View full community feed</span>
                     <i data-lucide="arrow-right" class="h-4 w-4 ml-2"></i>
                 </a>
-            </div>
-        </div>
-    </section>
-
-    <!-- CTA Section -->
-    <section class="bg-blue-600 text-white py-16">
-        <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-            <h2 class="text-3xl font-bold mb-6">Ready to Join Our Community?</h2>
-            <p class="text-xl mb-8 opacity-90">Thousands of RJIT alumni are already connecting, sharing, and growing together.</p>
-            <div class="flex flex-col sm:flex-row justify-center gap-4">
-                <a href="register.php" class="bg-white text-blue-600 px-8 py-3 rounded-lg text-lg font-semibold hover:bg-gray-100 transition duration-300">Register Now</a>
-                <a href="login.php" class="bg-transparent border-2 border-white px-8 py-3 rounded-lg text-lg font-semibold hover:bg-white hover:text-blue-600 transition duration-300">Login</a>
             </div>
         </div>
     </section>
@@ -305,6 +375,8 @@ if (isset($_COOKIE['jwt_token']) || isset($_SESSION['jwt_token'])) {
     </footer>
 
     <script>
+        window.LANDING_STATS = <?php echo json_encode($landingStats, JSON_UNESCAPED_SLASHES); ?>;
+
         // Initialize Lucide icons
         lucide.createIcons();
 
@@ -320,7 +392,7 @@ if (isset($_COOKIE['jwt_token']) || isset($_SESSION['jwt_token'])) {
                 const progress = frame / totalFrames;
                 const current = Math.round(target * progress);
 
-                element.textContent = current.toLocaleString() + '+';
+                element.textContent = current.toLocaleString();
 
                 if (frame === totalFrames) {
                     clearInterval(counter);
@@ -332,10 +404,10 @@ if (isset($_COOKIE['jwt_token']) || isset($_SESSION['jwt_token'])) {
         document.addEventListener('DOMContentLoaded', async function() {
             // Animate stats
             setTimeout(() => {
-                animateCounter(document.getElementById('totalUsers'), 2500);
-                animateCounter(document.getElementById('activeUsers'), 1200);
-                animateCounter(document.getElementById('totalPosts'), 5000);
-                animateCounter(document.getElementById('companies'), 150);
+                animateCounter(document.getElementById('totalUsers'), window.LANDING_STATS.alumni_network || 0);
+                animateCounter(document.getElementById('activeUsers'), window.LANDING_STATS.active_members || 0);
+                animateCounter(document.getElementById('totalPosts'), window.LANDING_STATS.total_posts || 0);
+                animateCounter(document.getElementById('companies'), window.LANDING_STATS.companies || 0);
             }, 500);
 
             // Load featured alumni
@@ -556,5 +628,3 @@ if (isset($_COOKIE['jwt_token']) || isset($_SESSION['jwt_token'])) {
 </body>
 
 </html>
-
-
