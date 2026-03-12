@@ -507,13 +507,25 @@ $userId = isset($_GET['id']) ? $_GET['id'] : null;
             // Update stats
             document.getElementById('connectionCount').textContent = `${data.connections_count || 0} connections`;
             document.getElementById('postCount').textContent = `${data.posts_count || 0} posts`;
-            document.getElementById('joinedDate').textContent = `Joined ${formatDate(data.created_at, 'MMMM YYYY')}`;
+            document.getElementById('joinedDate').textContent = getJoinedLabel(data);
             
             // Update action buttons
             renderActionButtons(data);
             
             // Update about tab
             updateAboutTab(data);
+        }
+
+        function getJoinedLabel(data) {
+            const role = String(data.role || '').toLowerCase();
+            const gradYear = parseInt(data.graduation_year, 10);
+            if (role === 'alumni' && Number.isFinite(gradYear)) {
+                const course = String(data.course || '').toUpperCase();
+                const duration = course.includes('MCA') ? 3 : 4;
+                const startYear = gradYear - duration;
+                return `Batch ${startYear}-${gradYear}`;
+            }
+            return `Joined ${formatDate(data.created_at, 'MMMM YYYY')}`;
         }
         
         function getProfileTitle(data) {

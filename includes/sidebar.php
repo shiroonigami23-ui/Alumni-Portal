@@ -152,6 +152,17 @@ $basePrefix = $isAdminPath ? '../' : '';
                         <span class="sidebar-label">Profile</span>
                     </a>
                 </div>
+
+                <!-- Alumni Tools (Only for alumni) -->
+                <div id="alumniSection" class="hidden">
+                    <div class="px-3 pt-6 pb-2">
+                        <h3 class="sidebar-section-title text-xs font-semibold text-emerald-600 uppercase tracking-wider">Alumni</h3>
+                    </div>
+                    <a href="<?php echo $basePrefix; ?>profile.php" class="sidebar-link group flex items-center px-3 py-3 text-sm font-medium rounded-lg <?php echo basename($_SERVER['PHP_SELF']) == 'profile.php' ? 'bg-emerald-50 text-emerald-700 border-l-4 border-emerald-500' : 'text-gray-700 hover:bg-gray-50 hover:text-gray-900'; ?>">
+                        <i data-lucide="user-round" class="h-5 w-5 mr-3"></i>
+                        <span class="sidebar-label">Profile</span>
+                    </a>
+                </div>
             </nav>
         </div>
         
@@ -198,6 +209,7 @@ $basePrefix = $isAdminPath ? '../' : '';
         <a href="<?php echo $basePrefix; ?>settings.php" class="block px-3 py-2 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50">Settings</a>
         <a href="<?php echo $basePrefix; ?>admin/dashboard.php" id="mobileAdminLink" class="hidden block px-3 py-2 rounded-lg text-sm font-medium text-amber-700 bg-amber-50 hover:bg-amber-100">Admin Panel</a>
         <a href="<?php echo $basePrefix; ?>profile.php" id="mobileFacultyLink" class="hidden block px-3 py-2 rounded-lg text-sm font-medium text-blue-700 bg-blue-50 hover:bg-blue-100">Profile</a>
+        <a href="<?php echo $basePrefix; ?>profile.php" id="mobileAlumniLink" class="hidden block px-3 py-2 rounded-lg text-sm font-medium text-emerald-700 bg-emerald-50 hover:bg-emerald-100">Profile</a>
     </nav>
 </aside>
 
@@ -269,6 +281,10 @@ $basePrefix = $isAdminPath ? '../' : '';
                     break;
                 case 'alumni':
                     roleText = 'Alumni';
+                    roleClass = 'text-emerald-600';
+                    document.getElementById('alumniSection').classList.remove('hidden');
+                    const mobileAlumniLink = document.getElementById('mobileAlumniLink');
+                    if (mobileAlumniLink) mobileAlumniLink.classList.remove('hidden');
                     break;
                 case 'student':
                     roleText = 'Student';
@@ -278,11 +294,19 @@ $basePrefix = $isAdminPath ? '../' : '';
             document.getElementById('sidebarUserRole').textContent = roleText;
             document.getElementById('sidebarUserRole').className = `text-xs ${roleClass}`;
             
-            // Add badge if admin or faculty
-            if (user.role === 'admin' || user.role === 'faculty') {
+            // Add badge if admin, faculty, or alumni
+            if (user.role === 'admin' || user.role === 'faculty' || user.role === 'alumni') {
                 const roleBadge = document.createElement('span');
-                roleBadge.className = user.role === 'admin' ? 'ml-2 px-2 py-0.5 text-xs bg-amber-100 text-amber-800 rounded-full' : 'ml-2 px-2 py-0.5 text-xs bg-blue-100 text-blue-800 rounded-full';
-                roleBadge.textContent = user.role === 'admin' ? 'ADMIN' : 'FACULTY';
+                if (user.role === 'admin') {
+                    roleBadge.className = 'ml-2 px-2 py-0.5 text-xs bg-amber-100 text-amber-800 rounded-full';
+                    roleBadge.textContent = 'ADMIN';
+                } else if (user.role === 'faculty') {
+                    roleBadge.className = 'ml-2 px-2 py-0.5 text-xs bg-blue-100 text-blue-800 rounded-full';
+                    roleBadge.textContent = 'FACULTY';
+                } else {
+                    roleBadge.className = 'ml-2 px-2 py-0.5 text-xs bg-emerald-100 text-emerald-800 rounded-full';
+                    roleBadge.textContent = 'ALUMNI';
+                }
                 document.getElementById('sidebarUserRole').parentNode.appendChild(roleBadge);
             }
         }

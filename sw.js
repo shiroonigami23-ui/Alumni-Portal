@@ -1,5 +1,5 @@
 const CACHE_NAME = "rjit-portal-v1";
-const APP_SCOPE = "/alumni_portal/";
+const APP_SCOPE = new URL(self.registration.scope).pathname;
 const PRE_CACHE = [
   APP_SCOPE,
   APP_SCOPE + "feed.php",
@@ -73,4 +73,3 @@ self.addEventListener("notificationclick", (event) => {
     })
   );
 });
-
