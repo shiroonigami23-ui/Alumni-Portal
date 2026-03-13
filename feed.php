@@ -1434,9 +1434,17 @@
             
             try {
                 const token = localStorage.getItem('jwt_token');
+            const csrfToken = (window.ensureCsrfToken ? await window.ensureCsrfToken() : (localStorage.getItem('csrf_token') || ''));
+            if (csrfToken && !formData.has('csrf_token')) {
+                formData.append('csrf_token', csrfToken);
+            }
             const responseRaw = await fetch(API_BASE + '/create_post.php', {
                 method: 'POST',
-                headers: { 'Authorization': 'Bearer ' + token }, // Allow browser to set Content-Type for FormData
+                headers: {
+                    'Authorization': 'Bearer ' + token,
+                    ...(csrfToken ? { 'X-CSRF-TOKEN': csrfToken } : {})
+                }, // Allow browser to set Content-Type for FormData
+                credentials: 'same-origin',
                 body: formData
             });
             const responseText = await responseRaw.text();

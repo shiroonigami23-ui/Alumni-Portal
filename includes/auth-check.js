@@ -60,6 +60,51 @@ function checkAuth() {
     return true;
 }
 
+let __csrfFetchPromise = null;
+async function ensureCsrfToken() {
+    const existing = localStorage.getItem('csrf_token');
+    if (existing) return existing;
+
+    if (__csrfFetchPromise) return __csrfFetchPromise;
+
+    __csrfFetchPromise = (async () => {
+        try {
+            const token = localStorage.getItem('jwt_token');
+            if (!token) return '';
+
+            const response = await fetch(`${getApiBase()}/csrf_token.php`, {
+                method: 'GET',
+                credentials: 'same-origin',
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
+            });
+
+            const raw = await response.text();
+            let data = {};
+            try {
+                data = raw ? JSON.parse(raw) : {};
+            } catch (_error) {
+                data = {};
+            }
+
+            const csrf = String(data?.csrf_token || '').trim();
+            if (csrf) {
+                localStorage.setItem('csrf_token', csrf);
+                return csrf;
+            }
+            return '';
+        } catch (_e) {
+            return '';
+        } finally {
+            __csrfFetchPromise = null;
+        }
+    })();
+
+    return __csrfFetchPromise;
+}
+window.ensureCsrfToken = ensureCsrfToken;
+
 // Make authenticated API calls
 async function makeApiCall(endpoint, method = 'GET', body = null) {
     const token = localStorage.getItem('jwt_token');
@@ -73,15 +118,27 @@ async function makeApiCall(endpoint, method = 'GET', body = null) {
 
     const config = {
         method: method,
-        headers: headers
+        headers: headers,
+        credentials: 'same-origin'
     };
 
     if (body && (method === 'POST' || method === 'PUT' || method === 'PATCH' || method === 'DELETE')) {
+        const csrfToken = await ensureCsrfToken();
+        if (csrfToken) {
+            headers['X-CSRF-TOKEN'] = csrfToken;
+        }
         if (body instanceof FormData) {
+            if (csrfToken && !body.has('csrf_token')) {
+                body.append('csrf_token', csrfToken);
+            }
             config.body = body;
         } else {
             headers['Content-Type'] = 'application/json';
-            config.body = JSON.stringify(body);
+            const payload = (body && typeof body === 'object') ? { ...body } : body;
+            if (csrfToken && payload && typeof payload === 'object' && !Object.prototype.hasOwnProperty.call(payload, 'csrf_token')) {
+                payload.csrf_token = csrfToken;
+            }
+            config.body = JSON.stringify(payload);
         }
     }
 
@@ -186,5 +243,6 @@ function getUserRole() {
 function logout() {
     localStorage.removeItem('jwt_token');
     localStorage.removeItem('user_data');
+    localStorage.removeItem('csrf_token');
     window.location.href = getLoginPage();
 }

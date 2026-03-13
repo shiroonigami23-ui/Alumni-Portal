@@ -43,7 +43,8 @@ try {
     $connectionsTableExists = (bool)$db->query("SELECT to_regclass('public.connections')")->fetchColumn();
 
     if ($filter === 'announcements') {
-        $where .= " AND p.post_type = 'announcement'";
+        // Cast enum to text so unknown enum literals do not throw SQL errors on older schemas.
+        $where .= " AND p.post_type::text = 'announcement'";
     } elseif ($filter === 'reposts') {
         if ($authorUserId > 0) {
             $where .= " AND EXISTS (SELECT 1 FROM reposts rp WHERE rp.post_id = p.post_id AND rp.user_id = :author_uid)";

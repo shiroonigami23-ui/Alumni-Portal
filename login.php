@@ -172,6 +172,9 @@ if (isset($_COOKIE['jwt_token']) || (isset($_SESSION) && isset($_SESSION['jwt_to
                 if (data.success) {
                     // Store token in localStorage
                     localStorage.setItem('jwt_token', data.token);
+                    if (data.csrf_token) {
+                        localStorage.setItem('csrf_token', data.csrf_token);
+                    }
                     console.log('4. Token stored:', data.token.substring(0, 20) + '...');
                     
                     // Get user info
