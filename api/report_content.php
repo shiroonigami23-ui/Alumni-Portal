@@ -27,6 +27,28 @@ function ensure_comment_reports_schema(PDO $db): void
     $done = true;
 }
 
+function ensure_post_reports_schema(PDO $db): void
+{
+    static $done = false;
+    if ($done) {
+        return;
+    }
+    // Remove duplicate legacy reports so unique index can be created safely.
+    $db->exec("
+        DELETE FROM reports r
+        USING reports r2
+        WHERE r.ctid < r2.ctid
+          AND r.reported_post_id = r2.reported_post_id
+          AND r.reporter_user_id = r2.reporter_user_id
+          AND r.reported_post_id IS NOT NULL
+    ");
+    $db->exec("
+        CREATE UNIQUE INDEX IF NOT EXISTS uq_reports_post_reporter
+        ON reports (reported_post_id, reporter_user_id)
+    ");
+    $done = true;
+}
+
 $database = new Database();
 $db = $database->getConnection();
 $auth = new Auth($db);
@@ -48,6 +70,7 @@ try {
     $role = (string)$u_stmt->fetchColumn();
 
     if ($post_id > 0) {
+        ensure_post_reports_schema($db);
         $db->beginTransaction();
         if ($role === 'admin') {
             $db->prepare("DELETE FROM posts WHERE post_id = :pid")->execute(['pid' => $post_id]);
@@ -57,18 +80,34 @@ try {
         }
 
         $query = "INSERT INTO reports (reported_post_id, reporter_user_id, reason, status)
-                  VALUES (:pid, :rid, 'spam'::report_reason, 'pending'::report_status)";
-        $db->prepare($query)->execute(['pid' => $post_id, 'rid' => $reporter_id]);
-        $db->prepare("UPDATE posts SET report_count = COALESCE(report_count, 0) + 1 WHERE post_id = :pid")->execute(['pid' => $post_id]);
+                  VALUES (:pid, :rid, 'spam'::report_reason, 'pending'::report_status)
+                  ON CONFLICT (reported_post_id, reporter_user_id) DO NOTHING";
+        $ins = $db->prepare($query);
+        $ins->execute(['pid' => $post_id, 'rid' => $reporter_id]);
+        $isNew = $ins->rowCount() > 0;
+
+        if ($isNew) {
+            $db->prepare("
+                UPDATE posts
+                SET report_count = (
+                    SELECT COUNT(*)
+                    FROM reports
+                    WHERE reported_post_id = :pid
+                )
+                WHERE post_id = :pid
+            ")->execute(['pid' => $post_id]);
+        }
 
         $count_stmt = $db->prepare("SELECT COALESCE(report_count, 0) FROM posts WHERE post_id = :pid");
         $count_stmt->execute(['pid' => $post_id]);
         $current = (int)$count_stmt->fetchColumn();
 
-        $message = "Report logged. Current count: $current";
-        if ($current >= 5) {
+        $message = "Already reported by you.";
+        if ($isNew && $current >= 5) {
             $db->prepare("UPDATE posts SET status = 'shadow_banned'::post_status WHERE post_id = :pid")->execute(['pid' => $post_id]);
-            $message = "Threshold reached. Post shadow_banned for review.";
+            $message = "Report submitted. Post sent for review.";
+        } elseif ($isNew) {
+            $message = "Report submitted.";
         }
         $db->commit();
         echo json_encode(["success" => true, "status" => "success", "message" => $message]);

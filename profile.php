@@ -189,7 +189,8 @@ $userId = isset($_GET['id']) ? $_GET['id'] : null;
                                                 <label for="timelineAllowComments" class="ml-2 text-sm text-gray-600">Allow comments</label>
                                             </div>
                                         </div>
-                                        <button onclick="createTimelinePost()" 
+                                        <button id="timelinePostBtn"
+                                                type="button"
                                                 class="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 font-medium">
                                             Post
                                         </button>
@@ -787,11 +788,12 @@ $userId = isset($_GET['id']) ? $_GET['id'] : null;
                 }
             }
         }
-        
+
         async function createPostElement(post, isPinned = false) {
             const postElement = document.createElement('div');
             postElement.className = `bg-white rounded-xl shadow-sm p-6 ${isPinned ? 'border-l-4 border-amber-500 bg-amber-50' : ''}`;
             postElement.id = `profile-post-${post.id}`;
+            postElement.dataset.postId = String(post.id);
             
             let content = '';
             if (post.content) {
@@ -799,6 +801,8 @@ $userId = isset($_GET['id']) ? $_GET['id'] : null;
             } else if (post.content_file_path) {
                 try { content = await fetchTextContent(post.content_file_path); } catch (_) {}
             }
+            const canManagePost = !!(post.is_owner || isOwnProfile);
+            const canReportPost = !canManagePost;
             
             postElement.innerHTML = `
                 <div class="flex items-start justify-between mb-4">
@@ -806,9 +810,16 @@ $userId = isset($_GET['id']) ? $_GET['id'] : null;
                         <h4 class="font-semibold text-gray-900">${post.title || 'Post'}</h4>
                         <p class="text-sm text-gray-500 mt-1">${formatDate(post.created_at)}</p>
                     </div>
-                    ${isPinned ? '<span class="text-amber-600 font-medium">📌 Pinned</span>' : ''}
+                    <div class="flex items-center gap-3">
+                        ${isPinned ? '<span class="text-amber-600 font-medium">Pinned</span>' : ''}
+                        ${canManagePost ? `
+                        <div class="flex items-center gap-2">
+                            <button class="profile-edit-post-btn text-sm text-blue-600 hover:text-blue-800 font-medium">Edit</button>
+                            <button class="profile-delete-post-btn text-sm text-red-600 hover:text-red-800 font-medium">Delete</button>
+                        </div>` : ''}
+                    </div>
                 </div>
-                <p class="text-gray-700 mb-4 whitespace-pre-line">${content}</p>
+                <p class="profile-post-content text-gray-700 mb-4 whitespace-pre-line">${content}</p>
                 <div class="flex items-center text-sm text-gray-500">
                     <button class="profile-like-btn flex items-center mr-4 hover:text-red-600 ${post.user_has_liked ? 'text-red-600' : ''}">
                         <i data-lucide="heart" class="h-4 w-4 mr-1"></i>
@@ -826,10 +837,11 @@ $userId = isset($_GET['id']) ? $_GET['id'] : null;
                         <i data-lucide="share-2" class="h-4 w-4 mr-1"></i>
                         <span>${post.shares_count || 0}</span>
                     </button>
+                    ${canReportPost ? `
                     <button class="profile-report-btn flex items-center hover:text-amber-700">
                         <i data-lucide="flag" class="h-4 w-4 mr-1"></i>
                         <span>Report</span>
-                    </button>
+                    </button>` : ''}
                 </div>
             `;
             
@@ -882,6 +894,48 @@ $userId = isset($_GET['id']) ? $_GET['id'] : null;
                     const res = await makeApiCall('report_content.php', 'POST', { post_id: post.id, reason: 'spam' });
                     if (res && (res.success || res.status === 'success' || res.message)) {
                         alert(res.message || 'Post reported.');
+                    }
+                });
+            }
+
+            const editPostBtn = postElement.querySelector('.profile-edit-post-btn');
+            if (editPostBtn) {
+                editPostBtn.addEventListener('click', async () => {
+                    const contentEl = postElement.querySelector('.profile-post-content');
+                    const currentContent = (contentEl?.textContent || '').trim();
+                    const edited = prompt('Edit your post:', currentContent);
+                    if (edited === null) return;
+                    const nextContent = edited.trim();
+                    if (!nextContent) {
+                        alert('Post content cannot be empty.');
+                        return;
+                    }
+                    const res = await makeApiCall('edit_post.php', 'POST', { post_id: post.id, content: nextContent });
+                    if (res && (res.success || res.status === 'success')) {
+                        if (contentEl) contentEl.textContent = nextContent;
+                    } else {
+                        alert((res && res.message) || 'Failed to edit post.');
+                    }
+                });
+            }
+
+            const deletePostBtn = postElement.querySelector('.profile-delete-post-btn');
+            if (deletePostBtn) {
+                deletePostBtn.addEventListener('click', async () => {
+                    if (!confirm('Delete this post?')) return;
+                    const res = await makeApiCall('delete_post.php', 'POST', { post_id: post.id });
+                    if (res && (res.success || res.status === 'success')) {
+                        timelinePostsData = timelinePostsData.filter((item) => Number(item.id) !== Number(post.id));
+                        const pinnedSection = document.getElementById('pinnedPostsSection');
+                        if (pinnedSection && post.is_pinned) {
+                            const hasPinned = timelinePostsData.some((item) => !!item.is_pinned);
+                            if (!hasPinned) {
+                                pinnedSection.classList.add('hidden');
+                            }
+                        }
+                        postElement.remove();
+                    } else {
+                        alert((res && res.message) || 'Failed to delete post.');
                     }
                 });
             }
@@ -1044,7 +1098,7 @@ $userId = isset($_GET['id']) ? $_GET['id'] : null;
             }
             
             // Create timeline post
-            const timelinePostBtn = document.querySelector('#createPostSection button');
+            const timelinePostBtn = document.getElementById('timelinePostBtn');
             if (timelinePostBtn) {
                 timelinePostBtn.addEventListener('click', createTimelinePost);
             }
@@ -1133,7 +1187,9 @@ $userId = isset($_GET['id']) ? $_GET['id'] : null;
             }
         }
         
+        let isCreatingTimelinePost = false;
         async function createTimelinePost() {
+            if (isCreatingTimelinePost) return;
             const content = document.getElementById('timelinePostContent').value.trim();
             const allowComments = document.getElementById('timelineAllowComments').checked;
             
@@ -1141,6 +1197,7 @@ $userId = isset($_GET['id']) ? $_GET['id'] : null;
                 alert('Please enter some content for your post');
                 return;
             }
+            isCreatingTimelinePost = true;
             
             const formData = new FormData();
             formData.append('content', content);
@@ -1175,6 +1232,8 @@ $userId = isset($_GET['id']) ? $_GET['id'] : null;
             } catch (error) {
                 console.error('Error creating post:', error);
                 alert('Error creating post');
+            } finally {
+                isCreatingTimelinePost = false;
             }
         }
         

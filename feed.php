@@ -1403,7 +1403,9 @@
             }
         }
         
+        let isCreatingFeedPost = false;
         async function createPost() {
+            if (isCreatingFeedPost) return;
             const content = document.getElementById('postContent').value.trim();
             const allowComments = document.getElementById('allowComments').checked;
             const gifUrl = document.getElementById('postGifUrl').value.trim();
@@ -1433,27 +1435,8 @@
             }
             
             try {
-                const token = localStorage.getItem('jwt_token');
-            const csrfToken = (window.ensureCsrfToken ? await window.ensureCsrfToken() : (localStorage.getItem('csrf_token') || ''));
-            if (csrfToken && !formData.has('csrf_token')) {
-                formData.append('csrf_token', csrfToken);
-            }
-            const responseRaw = await fetch(API_BASE + '/create_post.php', {
-                method: 'POST',
-                headers: {
-                    'Authorization': 'Bearer ' + token,
-                    ...(csrfToken ? { 'X-CSRF-TOKEN': csrfToken } : {})
-                }, // Allow browser to set Content-Type for FormData
-                credentials: 'same-origin',
-                body: formData
-            });
-            const responseText = await responseRaw.text();
-            let response = {};
-            try {
-                response = responseText ? JSON.parse(responseText) : {};
-            } catch (_error) {
-                response = { success: false, status: 'error', message: responseText || 'Invalid server response' };
-            }
+                isCreatingFeedPost = true;
+                const response = await makeApiCall('create_post.php', 'POST', formData);
                 
                 if (response && (response.success || response.status === 'success')) {
                     clearPostForm();
@@ -1464,6 +1447,8 @@
             } catch (error) {
                 console.error('Error creating post:', error);
                 alert('Error creating post');
+            } finally {
+                isCreatingFeedPost = false;
             }
         }
         
