@@ -67,7 +67,7 @@
                             <option value="">All Years</option>
                             <?php
                             $currentYear = date('Y');
-                            for ($i = $currentYear; $i >= 1990; $i--) {
+                            for ($i = $currentYear; $i >= 2003; $i--) {
                                 echo "<option value=\"$i\">$i</option>";
                             }
                             ?>
@@ -301,6 +301,7 @@
             if (currentFilters.sort) {
                 document.getElementById('sortBy').value = currentFilters.sort;
             }
+            syncGraduationYearFilter();
 
             // Setup event listeners
             setupEventListeners();
@@ -353,6 +354,7 @@
 
             document.getElementById('filterRole').addEventListener('change', function() {
                 currentFilters.role = this.value;
+                syncGraduationYearFilter();
                 currentPage = 1;
                 loadAlumni();
             });
@@ -405,15 +407,38 @@
             }
         }
 
+        function syncGraduationYearFilter() {
+            const yearSelect = document.getElementById('filterYear');
+            const isAlumniOnly = currentFilters.role === 'alumni';
+            if (!isAlumniOnly) {
+                currentFilters.year = '';
+                if (yearSelect) {
+                    yearSelect.value = '';
+                }
+            }
+            if (yearSelect) {
+                yearSelect.disabled = !isAlumniOnly;
+                yearSelect.classList.toggle('bg-gray-100', !isAlumniOnly);
+                yearSelect.classList.toggle('cursor-not-allowed', !isAlumniOnly);
+            }
+        }
+
         async function loadAlumni() {
             // Show loading state
             showLoadingState();
 
             // Build query parameters
+            const requestFilters = {
+                ...currentFilters
+            };
+            if (requestFilters.role !== 'alumni') {
+                requestFilters.year = '';
+            }
+
             const params = new URLSearchParams({
                 page: currentPage,
                 limit: 12,
-                ...currentFilters
+                ...requestFilters
             });
 
             // Remove empty values
@@ -759,6 +784,7 @@
             currentFilters.branch = document.getElementById('filterBranch').value;
             currentFilters.company = document.getElementById('filterCompany').value;
             currentFilters.role = document.getElementById('filterRole').value;
+            syncGraduationYearFilter();
             currentPage = 1;
             loadAlumni();
         }
@@ -779,6 +805,7 @@
             document.getElementById('filterCompany').value = '';
             document.getElementById('filterRole').value = '';
             document.getElementById('sortBy').value = 'name_asc';
+            syncGraduationYearFilter();
 
             currentPage = 1;
             loadAlumni();

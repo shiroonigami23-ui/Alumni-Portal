@@ -109,7 +109,7 @@ try {
         $params[':role'] = $role;
     }
 
-    if ($graduation_year) {
+    if ($graduation_year && $role === 'alumni') {
         $where .= " AND p.graduation_year = :graduation_year";
         $params[':graduation_year'] = (int)$graduation_year;
     }

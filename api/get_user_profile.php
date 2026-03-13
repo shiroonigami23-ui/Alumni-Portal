@@ -10,6 +10,28 @@ require_once '../helpers/TechStackHelper.php';
 
 header('Content-Type: application/json');
 
+function derive_joined_year(?string $rollNumber, ?string $email): ?int
+{
+    $candidates = [];
+    if ($rollNumber) {
+        $candidates[] = trim($rollNumber);
+    }
+    if ($email) {
+        $local = strtolower(trim((string)explode('@', (string)$email)[0]));
+        if ($local !== '') {
+            $candidates[] = $local;
+        }
+    }
+
+    foreach ($candidates as $value) {
+        if (preg_match('/^\d{4}[a-z]{2,4}(\d{2})\d+$/i', $value, $m) === 1) {
+            return 2000 + (int)$m[1];
+        }
+    }
+
+    return null;
+}
+
 // Authenticate user (optional)
 $database = new Database(); $db = $database->getConnection(); $auth = new Auth($db);
 $current_user = $auth->validateRequest();
@@ -62,6 +84,8 @@ try {
     $profile['posts_count'] = (int)$pCount->fetchColumn();
 
     $profile['connections_count'] = 0;
+    $profile['followers_count'] = 0;
+    $profile['following_count'] = 0;
     $profile['is_connected'] = false;
     $connTable = $db->query("SELECT to_regclass('public.connections')")->fetchColumn();
     if ($connTable) {
@@ -73,6 +97,24 @@ try {
         ");
         $cCount->execute([':uid' => $user_id]);
         $profile['connections_count'] = (int)$cCount->fetchColumn();
+
+        $followersCount = $db->prepare("
+            SELECT COUNT(*)
+            FROM connections c
+            WHERE c.status = 'accepted'
+              AND c.addressee_user_id = :uid
+        ");
+        $followersCount->execute([':uid' => $user_id]);
+        $profile['followers_count'] = (int)$followersCount->fetchColumn();
+
+        $followingCount = $db->prepare("
+            SELECT COUNT(*)
+            FROM connections c
+            WHERE c.status = 'accepted'
+              AND c.requester_user_id = :uid
+        ");
+        $followingCount->execute([':uid' => $user_id]);
+        $profile['following_count'] = (int)$followingCount->fetchColumn();
 
         if ($current_user && (int)$current_user !== (int)$user_id) {
             $cState = $db->prepare("
@@ -140,6 +182,7 @@ try {
     if (!isset($profile['show_contact'])) {
         $profile['show_contact'] = false;
     }
+    $profile['joined_year'] = derive_joined_year($profile['roll_number'] ?? null, $profile['email'] ?? null);
     
     // Get tech stack
     if(isset($techHelper)) {

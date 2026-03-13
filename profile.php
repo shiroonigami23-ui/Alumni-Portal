@@ -111,7 +111,7 @@ $userId = isset($_GET['id']) ? $_GET['id'] : null;
                         </div>
                         <p class="text-gray-600 mt-1" id="profileHeadline">Member of RJIT Community</p>
                         <div class="flex items-center space-x-4 mt-3 text-sm text-gray-500">
-                            <span id="connectionCount">0 connections</span>
+                            <span id="connectionCount">0 followers</span>
                             <span id="postCount">0 posts</span>
                             <span id="joinedDate">Joined recently</span>
                         </div>
@@ -507,7 +507,10 @@ $userId = isset($_GET['id']) ? $_GET['id'] : null;
             }
             
             // Update stats
-            document.getElementById('connectionCount').textContent = `${data.connections_count || 0} connections`;
+            const followersCount = Number.isFinite(parseInt(data.followers_count, 10))
+                ? parseInt(data.followers_count, 10)
+                : (data.connections_count || 0);
+            document.getElementById('connectionCount').textContent = `${followersCount} followers`;
             document.getElementById('postCount').textContent = `${data.posts_count || 0} posts`;
             document.getElementById('joinedDate').textContent = getJoinedLabel(data);
             
@@ -521,13 +524,37 @@ $userId = isset($_GET['id']) ? $_GET['id'] : null;
         function getJoinedLabel(data) {
             const role = String(data.role || '').toLowerCase();
             const gradYear = parseInt(data.graduation_year, 10);
+            const joinedYear = deriveJoinedYearFromIdentity(data);
+            if (role === 'student' && Number.isFinite(joinedYear)) {
+                return `Joined ${joinedYear}`;
+            }
             if (role === 'alumni' && Number.isFinite(gradYear)) {
                 const course = String(data.course || '').toUpperCase();
                 const duration = course.includes('MCA') ? 3 : 4;
                 const startYear = gradYear - duration;
                 return `Batch ${startYear}-${gradYear}`;
             }
+            if (Number.isFinite(joinedYear)) {
+                return `Joined ${joinedYear}`;
+            }
             return `Joined ${formatDate(data.created_at, 'MMMM YYYY')}`;
+        }
+
+        function deriveJoinedYearFromIdentity(data) {
+            const precomputed = parseInt(data.joined_year, 10);
+            if (Number.isFinite(precomputed)) {
+                return precomputed;
+            }
+            const fromRoll = String(data.roll_number || '').trim();
+            const localEmail = String(data.email || '').split('@')[0] || '';
+            const candidates = [fromRoll, localEmail].filter(Boolean);
+            for (const value of candidates) {
+                const match = value.match(/^\d{4}[A-Za-z]{2,4}(\d{2})\d+$/);
+                if (match) {
+                    return 2000 + parseInt(match[1], 10);
+                }
+            }
+            return NaN;
         }
         
         function getProfileTitle(data) {

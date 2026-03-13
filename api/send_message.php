@@ -26,7 +26,12 @@ if (!empty($data->receiver_id)) {
     $receiver_id = (int)$data->other_user_id;
 }
 
-if ($receiver_id > 0 && !empty($data->message)) {
+$messageText = trim((string)($data->message ?? ''));
+$attachmentUrl = trim((string)($data->attachment_url ?? ''));
+$attachmentType = trim((string)($data->attachment_type ?? ''));
+$attachmentName = trim((string)($data->attachment_name ?? ''));
+
+if ($receiver_id > 0 && ($messageText !== '' || $attachmentUrl !== '')) {
     
     // 1. Get Roles for Hierarchy Logic
     $stmt = $db->prepare("SELECT role FROM users WHERE user_id = :sid");
@@ -77,7 +82,19 @@ if ($receiver_id > 0 && !empty($data->message)) {
     
     $relative_path = "storage/messages/" . $filename;
     
-    if (file_put_contents($storage_dir . $filename, $data->message)) {
+    $messagePayload = [
+        'message' => $messageText
+    ];
+    if ($attachmentUrl !== '') {
+        $messagePayload['attachment'] = [
+            'url' => str_replace('\\', '/', $attachmentUrl),
+            'type' => $attachmentType ?: null,
+            'name' => $attachmentName ?: null
+        ];
+    }
+    $payloadJson = json_encode($messagePayload, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+
+    if ($payloadJson !== false && file_put_contents($storage_dir . $filename, $payloadJson)) {
         
         // 6. Insert Message into DB
         $query = "INSERT INTO messages (sender_user_id, receiver_user_id, content_file_path) VALUES (:sid, :rid, :path)";
@@ -114,6 +131,6 @@ if ($receiver_id > 0 && !empty($data->message)) {
     }
 } else {
     http_response_code(400);
-    echo json_encode(["success" => false, "message" => "Incomplete data. receiver_id and message required."]);
+    echo json_encode(["success" => false, "message" => "Incomplete data. receiver_id and either message or attachment required."]);
 }
 ?>

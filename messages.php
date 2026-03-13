@@ -147,19 +147,22 @@ $pageTitle = "Messages - RJIT Alumni Portal";
                     
                     <!-- Message Input (Hidden initially) -->
                     <div id="messageInputContainer" class="p-4 border-t border-gray-200 hidden">
+                        <div id="pendingAttachmentPreview" class="hidden mb-2 text-xs text-gray-600 bg-gray-100 rounded-lg px-3 py-2"></div>
                         <div class="flex items-center">
-                            <button class="p-2 hover:bg-gray-100 rounded-lg mr-2">
+                            <button id="attachFileBtn" class="p-2 hover:bg-gray-100 rounded-lg mr-2" type="button" title="Attach file">
                                 <i data-lucide="paperclip" class="h-5 w-5 text-gray-600"></i>
                             </button>
+                            <input type="file" id="messageAttachmentInput" class="hidden">
                             <div class="flex-1 relative">
                                 <input type="text" 
                                        id="messageInput" 
                                        placeholder="Type your message..." 
                                        class="w-full px-4 py-3 border border-gray-300 rounded-full focus:outline-none focus:ring-2 focus:ring-blue-500"
                                        disabled>
-                                <button class="absolute right-3 top-2.5">
+                                <button id="emojiBtn" class="absolute right-3 top-2.5" type="button" title="Add emoji">
                                     <i data-lucide="smile" class="h-5 w-5 text-gray-400"></i>
                                 </button>
+                                <div id="emojiPicker" class="hidden absolute bottom-14 right-0 bg-white border border-gray-200 rounded-lg shadow-md p-2 z-20"></div>
                             </div>
                             <button id="sendMessageBtn" class="ml-3 bg-blue-600 text-white p-3 rounded-full hover:bg-blue-700" disabled>
                                 <i data-lucide="send" class="h-5 w-5"></i>
@@ -228,6 +231,7 @@ $pageTitle = "Messages - RJIT Alumni Portal";
         let messagesSignature = '';
         let loadingConversations = false;
         let loadingMessages = false;
+        let pendingAttachment = null;
         
         // DOM Elements
         const newMessageBtn = document.getElementById('newMessageBtn');
@@ -241,6 +245,11 @@ $pageTitle = "Messages - RJIT Alumni Portal";
         const messageInputContainer = document.getElementById('messageInputContainer');
         const messageInput = document.getElementById('messageInput');
         const sendMessageBtn = document.getElementById('sendMessageBtn');
+        const attachFileBtn = document.getElementById('attachFileBtn');
+        const messageAttachmentInput = document.getElementById('messageAttachmentInput');
+        const pendingAttachmentPreview = document.getElementById('pendingAttachmentPreview');
+        const emojiBtn = document.getElementById('emojiBtn');
+        const emojiPicker = document.getElementById('emojiPicker');
         const openChatProfileBtn = document.getElementById('openChatProfileBtn');
         const audioCallBtn = document.getElementById('audioCallBtn');
         const videoCallBtn = document.getElementById('videoCallBtn');
@@ -278,6 +287,22 @@ $pageTitle = "Messages - RJIT Alumni Portal";
         });
         
         sendMessageBtn.addEventListener('click', sendMessage);
+        if (attachFileBtn) {
+            attachFileBtn.addEventListener('click', () => messageAttachmentInput.click());
+        }
+        if (messageAttachmentInput) {
+            messageAttachmentInput.addEventListener('change', handleMessageAttachmentSelection);
+        }
+        if (emojiBtn) {
+            emojiBtn.addEventListener('click', toggleEmojiPicker);
+        }
+        document.addEventListener('click', (event) => {
+            if (emojiPicker && !emojiPicker.classList.contains('hidden')) {
+                if (!emojiPicker.contains(event.target) && event.target !== emojiBtn && !emojiBtn.contains(event.target)) {
+                    emojiPicker.classList.add('hidden');
+                }
+            }
+        });
         if (openChatProfileBtn) {
             openChatProfileBtn.addEventListener('click', () => {
                 if (currentChatUserId) {
@@ -318,7 +343,10 @@ $pageTitle = "Messages - RJIT Alumni Portal";
                     msg.read_at || '',
                     msg.message || '',
                     msg.edited_at || '',
-                    msg.deleted_at || ''
+                    msg.deleted_at || '',
+                    msg.attachment_url || '',
+                    msg.attachment_name || '',
+                    msg.attachment_type || ''
                 ].join('|');
             }).join('||');
         }
@@ -567,7 +595,10 @@ $pageTitle = "Messages - RJIT Alumni Portal";
                         const isCurrentUser = msg.sender_id == currentUserId;
                         const bodyHtml = msg.is_deleted
                             ? '<p class="italic text-sm opacity-80">This message was deleted</p>'
-                            : `<p class="whitespace-pre-wrap break-words">${escapeHtml(msg.message)}</p>`;
+                            : `
+                                ${msg.message ? `<p class="whitespace-pre-wrap break-words">${escapeHtml(msg.message)}</p>` : ''}
+                                ${renderAttachmentHtml(msg)}
+                            `;
                         const editedTag = (isCurrentUser && msg.is_edited) ? '<span class="ml-1 text-[11px] text-gray-400">(edited)</span>' : '';
                         const actionsMenu = isCurrentUser && !msg.is_deleted ? `
                             <div class="relative msg-actions">
@@ -633,9 +664,14 @@ $pageTitle = "Messages - RJIT Alumni Portal";
         }
         async function sendMessage() {
             const message = messageInput.value.trim();
-            if (!message || !currentConversationId) return;
+            if (!currentConversationId) return;
+            if (!message && !pendingAttachment) return;
             
             try {
+                let uploadedAttachment = null;
+                if (pendingAttachment) {
+                    uploadedAttachment = await uploadMessageAttachment(pendingAttachment);
+                }
                 const token = localStorage.getItem('jwt_token');
                 const response = await fetch('api/send_message.php', {
                     method: 'POST',
@@ -645,7 +681,10 @@ $pageTitle = "Messages - RJIT Alumni Portal";
                     },
                     body: JSON.stringify({
                         conversation_id: currentConversationId,
-                        message: message
+                        message: message,
+                        attachment_url: uploadedAttachment ? uploadedAttachment.url : '',
+                        attachment_type: uploadedAttachment ? uploadedAttachment.type : '',
+                        attachment_name: uploadedAttachment ? uploadedAttachment.name : ''
                     })
                 });
                 
@@ -654,6 +693,7 @@ $pageTitle = "Messages - RJIT Alumni Portal";
                 if (data.success) {
                     // Clear input
                     messageInput.value = '';
+                    clearPendingAttachment();
                     
                     // Reload messages
                     await loadMessages(currentConversationId);
@@ -667,6 +707,87 @@ $pageTitle = "Messages - RJIT Alumni Portal";
                 console.error('Error sending message:', error);
                 alert('Error sending message');
             }
+        }
+
+        function renderAttachmentHtml(msg) {
+            if (!msg || !msg.attachment_url) return '';
+            const url = escapeHtml(msg.attachment_url);
+            const name = escapeHtml(msg.attachment_name || 'Attachment');
+            const lowerType = String(msg.attachment_type || '').toLowerCase();
+            const lowerName = String(msg.attachment_name || '').toLowerCase();
+            const isImage = ['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(lowerType) || /\.(jpg|jpeg|png|gif|webp)$/.test(lowerName);
+            if (isImage) {
+                return `<a href="${url}" target="_blank" rel="noopener" class="block mt-2"><img src="${url}" alt="${name}" class="max-h-52 rounded-lg border border-white/20"></a>`;
+            }
+            return `<a href="${url}" target="_blank" rel="noopener" class="inline-flex items-center mt-2 underline break-all">${name}</a>`;
+        }
+
+        function clearPendingAttachment() {
+            pendingAttachment = null;
+            if (messageAttachmentInput) {
+                messageAttachmentInput.value = '';
+            }
+            if (pendingAttachmentPreview) {
+                pendingAttachmentPreview.innerHTML = '';
+                pendingAttachmentPreview.classList.add('hidden');
+            }
+        }
+
+        function handleMessageAttachmentSelection(event) {
+            const file = event.target.files && event.target.files[0] ? event.target.files[0] : null;
+            if (!file) return;
+            pendingAttachment = file;
+            if (pendingAttachmentPreview) {
+                pendingAttachmentPreview.innerHTML = `
+                    <span class="font-medium">Attachment:</span> ${escapeHtml(file.name)}
+                    <button type="button" class="ml-2 underline" onclick="clearPendingAttachment()">Remove</button>
+                `;
+                pendingAttachmentPreview.classList.remove('hidden');
+            }
+        }
+
+        async function uploadMessageAttachment(file) {
+            const token = localStorage.getItem('jwt_token');
+            const formData = new FormData();
+            formData.append('attachment', file);
+            formData.append('context', 'messages');
+            const response = await fetch('api/upload_file.php', {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                },
+                body: formData
+            });
+            const data = await response.json();
+            if (!response.ok || !data || !data.url) {
+                throw new Error(data && data.message ? data.message : 'Attachment upload failed');
+            }
+            return {
+                url: data.url,
+                type: data.type || '',
+                name: file.name || ''
+            };
+        }
+
+        function toggleEmojiPicker() {
+            if (!emojiPicker) return;
+            if (!emojiPicker.dataset.ready) {
+                const emojis = ['😀', '😁', '😂', '😊', '😍', '😎', '👍', '🔥', '🎉', '🙏', '💯', '🚀', '❤️', '🙂', '🤝'];
+                emojiPicker.innerHTML = emojis.map((emoji) => `
+                    <button type="button" class="p-1 text-lg hover:bg-gray-100 rounded" onclick="insertEmoji('${emoji}')">${emoji}</button>
+                `).join('');
+                emojiPicker.dataset.ready = '1';
+            }
+            emojiPicker.classList.toggle('hidden');
+        }
+
+        function insertEmoji(emoji) {
+            const cursorPos = messageInput.selectionStart || messageInput.value.length;
+            const text = messageInput.value;
+            messageInput.value = `${text.slice(0, cursorPos)}${emoji}${text.slice(cursorPos)}`;
+            messageInput.focus();
+            const nextPos = cursorPos + emoji.length;
+            messageInput.setSelectionRange(nextPos, nextPos);
         }
 
         function closeAllMessageMenus() {

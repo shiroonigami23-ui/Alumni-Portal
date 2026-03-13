@@ -14,7 +14,25 @@ function read_message_content(string $relativePath): string
         return '';
     }
     $content = @file_get_contents($abs);
-    return $content === false ? '' : trim($content);
+    if ($content === false) {
+        return '';
+    }
+    $decoded = json_decode($content, true);
+    if (is_array($decoded)) {
+        $message = trim((string)($decoded['message'] ?? ''));
+        $attachment = is_array($decoded['attachment'] ?? null) ? $decoded['attachment'] : null;
+        if ($message !== '') {
+            return $message;
+        }
+        if ($attachment && !empty($attachment['name'])) {
+            return 'Sent an attachment: ' . (string)$attachment['name'];
+        }
+        if ($attachment && !empty($attachment['url'])) {
+            return 'Sent an attachment';
+        }
+        return '';
+    }
+    return trim($content);
 }
 
 try {

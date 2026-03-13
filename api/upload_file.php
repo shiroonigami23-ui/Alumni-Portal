@@ -37,7 +37,7 @@ if (isset($_FILES['attachment'])) {
     }
 
     // 2. Extension Validation
-    $allowed_extensions = ['pdf', 'docx', 'epub', 'txt', 'jpg', 'png', 'mp3', 'mp4', 'm4a', 'json'];
+    $allowed_extensions = ['pdf', 'docx', 'epub', 'txt', 'jpg', 'jpeg', 'png', 'gif', 'webp', 'mp3', 'mp4', 'm4a', 'json'];
     if (!in_array($extension, $allowed_extensions)) {
         http_response_code(400);
         echo json_encode(["message" => "File type .$extension not allowed."]);
@@ -54,7 +54,7 @@ if (isset($_FILES['attachment'])) {
 
     // 4. Storage Logic
     $filename = FileStorageHelper::uniqueFileName('file', (int)$user_id, $extension, $context);
-    $sub_folder = in_array($context, ['posts', 'events', 'comments']) ? $context : 'posts';
+    $sub_folder = in_array($context, ['posts', 'events', 'comments', 'messages']) ? $context : 'posts';
     if ($sub_folder === 'comments') $sub_folder = "comments/attachments";
 
     $upload_dir = dirname(__DIR__) . DIRECTORY_SEPARATOR . "storage" . DIRECTORY_SEPARATOR . $sub_folder . DIRECTORY_SEPARATOR;

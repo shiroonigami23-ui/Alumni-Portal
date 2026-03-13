@@ -13,6 +13,25 @@ function resolve_absolute_path(string $relativePath): string
     return dirname(__DIR__) . DIRECTORY_SEPARATOR . str_replace('/', DIRECTORY_SEPARATOR, $clean);
 }
 
+function read_message_payload_from_file(string $absolutePath): array
+{
+    if (!is_file($absolutePath)) {
+        return ['message' => '', 'attachment' => null];
+    }
+    $raw = @file_get_contents($absolutePath);
+    if ($raw === false) {
+        return ['message' => '', 'attachment' => null];
+    }
+    $decoded = json_decode($raw, true);
+    if (is_array($decoded)) {
+        return [
+            'message' => (string)($decoded['message'] ?? ''),
+            'attachment' => is_array($decoded['attachment'] ?? null) ? $decoded['attachment'] : null
+        ];
+    }
+    return ['message' => (string)$raw, 'attachment' => null];
+}
+
 try {
     $database = new Database();
     $db = $database->getConnection();
@@ -65,7 +84,15 @@ try {
     }
 
     $absPath = resolve_absolute_path((string)$row['content_file_path']);
-    if (!is_file($absPath) || file_put_contents($absPath, $message) === false) {
+    $existing = read_message_payload_from_file($absPath);
+    $nextPayload = [
+        'message' => $message
+    ];
+    if (!empty($existing['attachment']) && is_array($existing['attachment'])) {
+        $nextPayload['attachment'] = $existing['attachment'];
+    }
+    $serialized = json_encode($nextPayload, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+    if (!is_file($absPath) || $serialized === false || file_put_contents($absPath, $serialized) === false) {
         http_response_code(500);
         echo json_encode(['success' => false, 'message' => 'Failed to update message content']);
         exit;
@@ -90,4 +117,3 @@ try {
         'error' => $e->getMessage()
     ]);
 }
-

@@ -13,15 +13,41 @@ $auth = new Auth($db);
 
 $user_id = $auth->validateRequest();
 
-function read_message_body(string $relativePath): string
+function read_message_payload(string $relativePath): array
 {
     $clean = str_replace(['\\', "\0"], ['/', ''], $relativePath);
     $fullPath = dirname(__DIR__) . DIRECTORY_SEPARATOR . str_replace('/', DIRECTORY_SEPARATOR, $clean);
     if (!is_file($fullPath)) {
-        return '[Content Missing]';
+        return [
+            'message' => '[Content Missing]',
+            'attachment' => null
+        ];
     }
     $content = @file_get_contents($fullPath);
-    return $content === false ? '[Content Missing]' : $content;
+    if ($content === false) {
+        return [
+            'message' => '[Content Missing]',
+            'attachment' => null
+        ];
+    }
+
+    $decoded = json_decode($content, true);
+    if (is_array($decoded)) {
+        $message = (string)($decoded['message'] ?? '');
+        $attachment = is_array($decoded['attachment'] ?? null) ? $decoded['attachment'] : null;
+        if ($attachment && !empty($attachment['url'])) {
+            $attachment['url'] = str_replace('\\', '/', (string)$attachment['url']);
+        }
+        return [
+            'message' => $message,
+            'attachment' => $attachment
+        ];
+    }
+
+    return [
+        'message' => $content,
+        'attachment' => null
+    ];
 }
 
 $isConversationMode = !empty($_GET['conversation_id']);
@@ -65,11 +91,17 @@ try {
     $history = [];
     foreach ($messages as $msg) {
         $isDeleted = !empty($msg['deleted_at']);
+        $parsed = read_message_payload((string)$msg['content_file_path']);
+        $attachment = $isDeleted ? null : ($parsed['attachment'] ?? null);
         $history[] = [
             "message_id" => (int)$msg['message_id'],
             "sender_id" => (int)$msg['sender_user_id'],
             "receiver_id" => (int)$msg['receiver_user_id'],
-            "message" => $isDeleted ? "This message was deleted" : read_message_body((string)$msg['content_file_path']),
+            "message" => $isDeleted ? "This message was deleted" : (string)($parsed['message'] ?? ''),
+            "attachment" => $attachment,
+            "attachment_url" => is_array($attachment) ? ($attachment['url'] ?? null) : null,
+            "attachment_type" => is_array($attachment) ? ($attachment['type'] ?? null) : null,
+            "attachment_name" => is_array($attachment) ? ($attachment['name'] ?? null) : null,
             "timestamp" => $msg['created_at'],
             "created_at" => $msg['created_at'],
             "read_at" => $msg['read_at'],

@@ -34,6 +34,7 @@ $data = array_map(function ($n) {
     if (($n['notification_type'] ?? '') === 'new_comment') $icon = 'message-square';
     if (($n['notification_type'] ?? '') === 'new_like') $icon = 'heart';
     if (($n['notification_type'] ?? '') === 'new_message') $icon = 'mail';
+    if (($n['notification_type'] ?? '') === 'new_post') $icon = 'newspaper';
     if (($n['notification_type'] ?? '') === 'connection_request') $icon = 'user-plus';
     return [
         'notification_id' => $n['notification_id'] ?? null,

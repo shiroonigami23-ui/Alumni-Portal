@@ -183,6 +183,54 @@ if (!empty($content) || !empty($attachments)) {
     // 5. Activity Logging (Section 13)
     Logger::log($user_id, "CREATE_POST", "Post ID: $post_id | Title: " . $title);
 
+    // Notify followers when a user posts (best-effort, should not block post creation).
+    try {
+        $posterNameStmt = $db->prepare("
+            SELECT COALESCE(NULLIF(TRIM(full_name), ''), 'Someone') AS name
+            FROM profiles
+            WHERE user_id = :uid
+            LIMIT 1
+        ");
+        $posterNameStmt->execute([':uid' => $user_id]);
+        $posterName = (string)($posterNameStmt->fetchColumn() ?: 'Someone');
+
+        $notifContent = $posterName . " posted a new update.";
+        $notifSqlNewPost = "
+            INSERT INTO notifications (user_id, notification_type, related_post_id, related_user_id, content)
+            SELECT c.requester_user_id, 'new_post'::notification_type, :post_id, :poster_id, :content
+            FROM connections c
+            WHERE c.status = 'accepted'
+              AND c.addressee_user_id = :poster_id
+              AND c.requester_user_id <> :poster_id
+        ";
+        $notifStmt = $db->prepare($notifSqlNewPost);
+        $notifStmt->execute([
+            ':post_id' => $post_id,
+            ':poster_id' => $user_id,
+            ':content' => $notifContent
+        ]);
+    } catch (Throwable $notifError) {
+        try {
+            // Fallback to a broadly supported notification type in case enum lacks new_post.
+            $fallbackSql = "
+                INSERT INTO notifications (user_id, notification_type, related_post_id, related_user_id, content)
+                SELECT c.requester_user_id, 'new_comment'::notification_type, :post_id, :poster_id, :content
+                FROM connections c
+                WHERE c.status = 'accepted'
+                  AND c.addressee_user_id = :poster_id
+                  AND c.requester_user_id <> :poster_id
+            ";
+            $fallbackStmt = $db->prepare($fallbackSql);
+            $fallbackStmt->execute([
+                ':post_id' => $post_id,
+                ':poster_id' => $user_id,
+                ':content' => 'New post from someone you follow.'
+            ]);
+        } catch (Throwable $ignored) {
+            // Intentionally ignored to keep post creation resilient.
+        }
+    }
+
     echo json_encode([
         "success" => true,
         "status" => "success",
