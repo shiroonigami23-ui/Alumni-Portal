@@ -74,7 +74,7 @@ include 'includes/sidebar.php';
     lucide.createIcons();
     let currentUser = null;
     let currentRole = '';
-    const API_BASE = (window.getApiBase ? window.getApiBase() : ((window.PORTAL_BASE_PREFIX || '') + 'api'));
+    const MENTORSHIP_API_BASE = (window.getApiBase ? window.getApiBase() : ((window.PORTAL_BASE_PREFIX || '') + 'api'));
 
     async function loadCurrentUser() {
         try {
@@ -116,14 +116,14 @@ include 'includes/sidebar.php';
         try {
             const token = localStorage.getItem('jwt_token');
             if (!token) return;
-            const mentorsRes = await fetch(`${API_BASE}/mentorship.php?action=list_mentors`, {
+            const mentorsRes = await fetch(`${MENTORSHIP_API_BASE}/mentorship.php?action=list_mentors`, {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
             const mentorsPayload = await mentorsRes.json();
             const mentors = Array.isArray(mentorsPayload?.data) ? mentorsPayload.data : [];
 
             const reqAction = currentRole === 'student' ? 'list_my_requests' : 'list_requests';
-            const reqRes = await fetch(`${API_BASE}/mentorship.php?action=${reqAction}`, {
+            const reqRes = await fetch(`${MENTORSHIP_API_BASE}/mentorship.php?action=${reqAction}`, {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
             const reqPayload = await reqRes.json();
@@ -141,7 +141,7 @@ include 'includes/sidebar.php';
         const listEl = document.getElementById('mentorList');
         try {
             const token = localStorage.getItem('jwt_token');
-            const res = await fetch(`${API_BASE}/mentorship.php?action=list_mentors`, {
+            const res = await fetch(`${MENTORSHIP_API_BASE}/mentorship.php?action=list_mentors`, {
                 headers: token ? { 'Authorization': `Bearer ${token}` } : {}
             });
             const payload = await res.json();
@@ -178,7 +178,7 @@ include 'includes/sidebar.php';
                 return;
             }
             const action = currentRole === 'student' ? 'list_my_requests' : 'list_requests';
-            const res = await fetch(`${API_BASE}/mentorship.php?action=${action}`, {
+            const res = await fetch(`${MENTORSHIP_API_BASE}/mentorship.php?action=${action}`, {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
             const payload = await res.json();
@@ -268,10 +268,10 @@ include 'includes/sidebar.php';
             });
         }
 
-        if (cancelBtn) {
+        if (cancelBtn && modal) {
             cancelBtn.addEventListener('click', () => modal.classList.add('hidden'));
         }
-        if (form) {
+        if (form && modal) {
             form.addEventListener('submit', async (e) => {
                 e.preventDefault();
                 const mentor_id = Number(document.getElementById('requestMentorId').value || 0);

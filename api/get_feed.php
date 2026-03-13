@@ -172,6 +172,12 @@ try {
                 }
             }
         }
+        if ($avatar !== '') {
+            $avatarAbs = dirname(__DIR__) . DIRECTORY_SEPARATOR . str_replace('/', DIRECTORY_SEPARATOR, $avatar);
+            if (!file_exists($avatarAbs)) {
+                $avatar = '';
+            }
+        }
         $row['author_avatar'] = $avatar;
 
         if (!empty($row['content_file_path'])) {

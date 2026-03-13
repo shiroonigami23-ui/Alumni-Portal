@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 // settings.php
 session_start();
 #require_once 'includes/auth_check.php';
@@ -6,7 +6,6 @@ session_start();
 $pageTitle = "Settings - RJIT Alumni Portal";
 include 'includes/header.php';
 ?>
-<script src="includes/auth-check.js"></script>
 <?php include 'includes/sidebar.php'; ?>
 <style>
     .settings-collapsible-btn {

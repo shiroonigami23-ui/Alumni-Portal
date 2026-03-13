@@ -1,5 +1,8 @@
+if (!window.__portalAuthCheckLoaded) {
+window.__portalAuthCheckLoaded = true;
+
 // Authentication and API helper functions
-const IS_ADMIN_ROUTE = window.location.pathname.includes('/admin/');
+var IS_ADMIN_ROUTE = window.location.pathname.includes('/admin/');
 
 function normalizePrefix(prefix) {
     let value = String(prefix || '').trim();
@@ -45,8 +48,8 @@ window.resolvePortalPath = function(path) {
     return `${getPortalPrefix()}${clean}`;
 };
 // Backward-compatible globals used by existing pages.
-const API_BASE = getApiBase();
-const LOGIN_PAGE = getLoginPage();
+var API_BASE = getApiBase();
+var LOGIN_PAGE = getLoginPage();
 window.API_BASE = API_BASE;
 window.LOGIN_PAGE = LOGIN_PAGE;
 
@@ -60,7 +63,7 @@ function checkAuth() {
     return true;
 }
 
-let __csrfFetchPromise = null;
+var __csrfFetchPromise = null;
 async function ensureCsrfToken() {
     const existing = localStorage.getItem('csrf_token');
     if (existing) return existing;
@@ -245,4 +248,6 @@ function logout() {
     localStorage.removeItem('user_data');
     localStorage.removeItem('csrf_token');
     window.location.href = getLoginPage();
+}
+
 }

@@ -18,7 +18,6 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Roboto+Slab:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="assets/css/variety-ui.css">
-    <script src="includes/auth-check.js"></script>
     <script src="assets/js/variety-ui.js" defer></script>
     <script src="assets/js/pwa.js" defer></script>
     
@@ -370,9 +369,9 @@
             postElement.dataset.postId = post.id;
             postElement.id = `post-${post.id}`;
             
-            // Fetch content from file
-            let content = '';
-            if (post.content_file_path) {
+            // Prefer API-provided content so missing legacy storage files do not trigger browser 404s.
+            let content = String(post.content || '');
+            if (!content && post.content_file_path) {
                 try {
                     content = await fetchTextContent(post.content_file_path);
                 } catch (error) {
@@ -398,7 +397,7 @@
                         <div class="flex items-start space-x-3">
                             <div class="flex-shrink-0">
                                 ${post.author_avatar ? 
-                                    `<img src="${post.author_avatar}" alt="${post.author_name}" class="h-10 w-10 rounded-full cursor-pointer" onclick="goToProfile(${Number(post.user_id || 0)})">` : 
+                                    `<img src="${post.author_avatar}" alt="${post.author_name}" class="h-10 w-10 rounded-full cursor-pointer" onerror="this.outerHTML='<div class=&quot;h-10 w-10 bg-blue-100 rounded-full flex items-center justify-center&quot;><i data-lucide=&quot;user&quot; class=&quot;h-5 w-5 text-blue-600&quot;></i></div>'" onclick="goToProfile(${Number(post.user_id || 0)})">` : 
                                     `<div class="h-10 w-10 bg-blue-100 rounded-full flex items-center justify-center">
                                         <i data-lucide="user" class="h-5 w-5 text-blue-600"></i>
                                     </div>`}
@@ -1247,30 +1246,42 @@
         
         function setupEventListeners() {
             // Filter buttons
-            document.getElementById('allPosts').addEventListener('click', () => changeFilter('all'));
-            document.getElementById('announcements').addEventListener('click', () => changeFilter('announcements'));
-            document.getElementById('following').addEventListener('click', () => changeFilter('following'));
+            const allPostsBtn = document.getElementById('allPosts');
+            const announcementsBtn = document.getElementById('announcements');
+            const followingBtn = document.getElementById('following');
+            if (allPostsBtn) allPostsBtn.addEventListener('click', () => changeFilter('all'));
+            if (announcementsBtn) announcementsBtn.addEventListener('click', () => changeFilter('announcements'));
+            if (followingBtn) followingBtn.addEventListener('click', () => changeFilter('following'));
             
             // Sort dropdown
-            document.getElementById('sortBy').addEventListener('change', (e) => {
-                currentSort = e.target.value;
-                reloadFeed();
-            });
+            const sortBySelect = document.getElementById('sortBy');
+            if (sortBySelect) {
+                sortBySelect.addEventListener('change', (e) => {
+                    currentSort = e.target.value;
+                    reloadFeed();
+                });
+            }
             
             // Search input
             let searchTimeout;
-            document.getElementById('searchPosts').addEventListener('input', (e) => {
-                clearTimeout(searchTimeout);
-                searchTimeout = setTimeout(() => {
-                    searchPosts(e.target.value);
-                }, 500);
-            });
+            const searchPostsInput = document.getElementById('searchPosts');
+            if (searchPostsInput) {
+                searchPostsInput.addEventListener('input', (e) => {
+                    clearTimeout(searchTimeout);
+                    searchTimeout = setTimeout(() => {
+                        searchPosts(e.target.value);
+                    }, 500);
+                });
+            }
             
             // Load more button
-            document.getElementById('loadMoreBtn').addEventListener('click', () => {
-                currentPage++;
-                loadFeed();
-            });
+            const loadMoreBtn = document.getElementById('loadMoreBtn');
+            if (loadMoreBtn) {
+                loadMoreBtn.addEventListener('click', () => {
+                    currentPage++;
+                    loadFeed();
+                });
+            }
             
             // Create post form
             const createPostForm = document.getElementById('createPostForm');
@@ -1282,14 +1293,20 @@
             }
             
             // Image upload preview
-            document.getElementById('postImages').addEventListener('change', function() {
-                previewImages(this, 'imagePreviews');
-            });
+            const postImagesInput = document.getElementById('postImages');
+            if (postImagesInput) {
+                postImagesInput.addEventListener('change', function() {
+                    previewImages(this, 'imagePreviews');
+                });
+            }
             
             // File upload preview
-            document.getElementById('postFiles').addEventListener('change', function() {
-                previewFiles(this, 'filePreviews');
-            });
+            const postFilesInput = document.getElementById('postFiles');
+            if (postFilesInput) {
+                postFilesInput.addEventListener('change', function() {
+                    previewFiles(this, 'filePreviews');
+                });
+            }
 
             const toggleMediaBtn = document.getElementById('togglePostMediaBtn');
             const mediaPanel = document.getElementById('postMediaPanel');
