@@ -227,7 +227,6 @@ $pageTitle = "Dashboard - RJIT Alumni Portal";
         const token = localStorage.getItem('jwt_token');
         if (!token) {
             window.location.href = 'login.php';
-            return;
         }
 
         // --- API HELPERS ---
@@ -312,7 +311,7 @@ $pageTitle = "Dashboard - RJIT Alumni Portal";
 
                     // Show quick post section if user can post
                     const quickPostSection = document.getElementById('quickPostSection');
-                    if (user.can_post) {
+                    if (user.can_post && quickPostSection) {
                         quickPostSection.classList.remove('hidden');
                     }
                 }

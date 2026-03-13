@@ -104,8 +104,9 @@
         const userData = localStorage.getItem('user_data');
         if (userData) {
             const user = JSON.parse(userData);
-            if (user.role === 'admin' || user.role === 'faculty') {
-                document.getElementById('createEventSection').classList.remove('hidden');
+            const createEventSection = document.getElementById('createEventSection');
+            if ((user.role === 'admin' || user.role === 'faculty') && createEventSection) {
+                createEventSection.classList.remove('hidden');
             }
         }
 
@@ -157,31 +158,26 @@
         }
     }
 
-    function filterEvents(filter) {
+    function filterEvents(filter, trigger = null) {
         // Update tab styling
         document.querySelectorAll('.event-filter-tab').forEach(tab => {
             tab.classList.remove('border-blue-500', 'text-blue-600');
             tab.classList.add('border-transparent', 'text-gray-500');
         });
-        event.target.classList.remove('border-transparent', 'text-gray-500');
-        event.target.classList.add('border-blue-500', 'text-blue-600');
+        const activeTab = trigger || document.querySelector(`.event-filter-tab[data-filter="${filter}"]`);
+        if (activeTab) {
+            activeTab.classList.remove('border-transparent', 'text-gray-500');
+            activeTab.classList.add('border-blue-500', 'text-blue-600');
+        }
 
         loadEvents(filter);
     }
 
     async function rsvpEvent(eventId) {
         try {
-            const csrfToken = localStorage.getItem('csrf_token');
-            const response = await makeApiCall('events.php?action=rsvp', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRF-TOKEN': csrfToken
-                },
-                body: JSON.stringify({
-                    event_id: eventId,
-                    status: 'attending'
-                })
+            const response = await makeApiCall('events.php?action=rsvp', 'POST', {
+                event_id: eventId,
+                status: 'attending'
             });
 
             if (response && response.message) {
@@ -195,18 +191,21 @@
     }
 
     function showCreateEventModal() {
-        document.getElementById('createEventModal').classList.remove('hidden');
+        const modal = document.getElementById('createEventModal');
+        if (modal) modal.classList.remove('hidden');
     }
 
     function closeCreateEventModal() {
-        document.getElementById('createEventModal').classList.add('hidden');
-        document.getElementById('createEventForm').reset();
+        const modal = document.getElementById('createEventModal');
+        const form = document.getElementById('createEventForm');
+        if (modal) modal.classList.add('hidden');
+        if (form) form.reset();
     }
 
-    document.getElementById('createEventForm').addEventListener('submit', async function(e) {
+    const createEventForm = document.getElementById('createEventForm');
+    if (createEventForm) createEventForm.addEventListener('submit', async function(e) {
         e.preventDefault();
 
-        const csrfToken = localStorage.getItem('csrf_token');
         const formData = {
             title: document.getElementById('eventTitle').value,
             description: document.getElementById('eventDescription').value,
@@ -217,14 +216,7 @@
         };
 
         try {
-            const response = await makeApiCall('events.php?action=create', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRF-TOKEN': csrfToken
-                },
-                body: JSON.stringify(formData)
-            });
+            const response = await makeApiCall('events.php?action=create', 'POST', formData);
 
             if (response && response.message) {
                 alert(response.message);

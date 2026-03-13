@@ -181,7 +181,7 @@ include 'includes/sidebar.php';
     let currentRole = '';
     let canPostJobs = false;
     let canApplyJobs = false;
-    const API_BASE = (window.getApiBase ? window.getApiBase() : ((window.PORTAL_BASE_PREFIX || '') + 'api'));
+    const JOBS_API_BASE = (window.getApiBase ? window.getApiBase() : ((window.PORTAL_BASE_PREFIX || '') + 'api'));
 
     async function initJobsRoleAccess() {
         try {
@@ -201,6 +201,7 @@ include 'includes/sidebar.php';
         const titleEl = document.getElementById('jobsActionTitle');
         const hintEl = document.getElementById('jobsActionHint');
         const postBtn = document.getElementById('openPostJobBtn');
+        if (!titleEl || !hintEl || !postBtn) return;
 
         if (canPostJobs) {
             titleEl.textContent = 'Job Publisher Access';
@@ -220,7 +221,7 @@ include 'includes/sidebar.php';
     async function loadJobs() {
         try {
             const token = localStorage.getItem('jwt_token');
-            const res = await fetch(`${API_BASE}/get_jobs.php`, {
+            const res = await fetch(`${JOBS_API_BASE}/get_jobs.php`, {
                 headers: token ? { 'Authorization': `Bearer ${token}` } : {}
             });
             const payload = await res.json();
@@ -279,10 +280,10 @@ include 'includes/sidebar.php';
         const cancelBtn = document.getElementById('cancelPostJobBtn');
         const form = document.getElementById('postJobForm');
 
-        if (openBtn) {
+        if (openBtn && panel) {
             openBtn.addEventListener('click', () => panel.classList.toggle('hidden'));
         }
-        if (cancelBtn) {
+        if (cancelBtn && panel) {
             cancelBtn.addEventListener('click', () => panel.classList.add('hidden'));
         }
         if (form) {
@@ -333,10 +334,10 @@ include 'includes/sidebar.php';
         const modal = document.getElementById('applyJobModal');
         const cancelBtn = document.getElementById('applyCancelBtn');
         const form = document.getElementById('applyJobForm');
-        if (cancelBtn) {
+        if (cancelBtn && modal) {
             cancelBtn.addEventListener('click', () => modal.classList.add('hidden'));
         }
-        if (form) {
+        if (form && modal) {
             form.addEventListener('submit', async (e) => {
                 e.preventDefault();
                 if (!canApplyJobs) return;
@@ -357,7 +358,7 @@ include 'includes/sidebar.php';
                     fd.append('resume', resume);
                     fd.append('cover_letter', cover);
                     const token = localStorage.getItem('jwt_token');
-                    const res = await fetch(`${API_BASE}/apply_job.php`, {
+                    const res = await fetch(`${JOBS_API_BASE}/apply_job.php`, {
                         method: 'POST',
                         headers: token ? { 'Authorization': `Bearer ${token}` } : {},
                         body: fd
