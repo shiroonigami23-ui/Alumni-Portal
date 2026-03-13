@@ -166,19 +166,35 @@ if (!empty($content) || !empty($attachments)) {
               RETURNING post_id";
 
     $stmt = $db->prepare($query);
+    $stmt->bindValue(':uid', (int)$user_id, PDO::PARAM_INT);
+    $stmt->bindValue(':title', (string)$title, PDO::PARAM_STR);
+    $stmt->bindValue(':path', (string)$relative_path, PDO::PARAM_STR);
+    $stmt->bindValue(':type', (string)($post_type ?: 'text'), PDO::PARAM_STR);
+    $stmt->bindValue(':status', 'published', PDO::PARAM_STR);
+    if ($thumbnail_url === null || $thumbnail_url === '') {
+        $stmt->bindValue(':thumb', null, PDO::PARAM_NULL);
+    } else {
+        $stmt->bindValue(':thumb', (string)$thumbnail_url, PDO::PARAM_STR);
+    }
+    $stmt->bindValue(':comments', (bool)$comments_enabled, PDO::PARAM_BOOL);
+    $stmt->bindValue(':pinned', (bool)$pin_post, PDO::PARAM_BOOL);
 
-    $stmt->execute([
-        ':uid'      => $user_id,
-        ':title'    => $title,
-        ':path'     => $relative_path,
-        ':type'     => $post_type ?: 'text',
-        ':status'   => 'published',
-        ':thumb'    => $thumbnail_url ?: null,
-        ':comments' => $comments_enabled,
-        ':pinned'   => $pin_post
-    ]);
-
-    $post_id = $stmt->fetch(PDO::FETCH_ASSOC)['post_id'];
+    try {
+        $stmt->execute();
+        $createdRow = $stmt->fetch(PDO::FETCH_ASSOC);
+        $post_id = (int)($createdRow['post_id'] ?? 0);
+        if ($post_id <= 0) {
+            throw new RuntimeException('Post creation returned an invalid post id.');
+        }
+    } catch (Throwable $dbError) {
+        http_response_code(500);
+        echo json_encode([
+            "success" => false,
+            "status" => "error",
+            "message" => "Failed to create post."
+        ]);
+        exit;
+    }
 
     // 5. Activity Logging (Section 13)
     Logger::log($user_id, "CREATE_POST", "Post ID: $post_id | Title: " . $title);
