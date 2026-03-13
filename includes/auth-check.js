@@ -62,6 +62,7 @@ function checkAuth() {
     }
     return true;
 }
+window.checkAuth = checkAuth;
 
 var __csrfFetchPromise = null;
 async function ensureCsrfToken() {
@@ -202,6 +203,7 @@ async function makeApiCall(endpoint, method = 'GET', body = null) {
         return { error: true, message: 'Network error occurred' };
     }
 }
+window.makeApiCall = makeApiCall;
 
 // Fetch text content from file path
 async function fetchTextContent(filePath) {
@@ -223,6 +225,7 @@ async function fetchTextContent(filePath) {
         return 'Content could not be loaded';
     }
 }
+window.fetchTextContent = fetchTextContent;
 
 // Format date
 function formatDate(dateString) {
@@ -235,12 +238,14 @@ function formatDate(dateString) {
         minute: '2-digit'
     });
 }
+window.formatDate = formatDate;
 
 // Get user role from localStorage
 function getUserRole() {
     const userData = localStorage.getItem('user_data');
     return userData ? JSON.parse(userData).role : null;
 }
+window.getUserRole = getUserRole;
 
 // Logout function
 function logout() {
@@ -249,5 +254,6 @@ function logout() {
     localStorage.removeItem('csrf_token');
     window.location.href = getLoginPage();
 }
+window.logout = logout;
 
 }
