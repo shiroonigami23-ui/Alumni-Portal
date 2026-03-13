@@ -1,41 +1,11 @@
 <?php
-// messages.php
 session_start();
-
-// Check if user is logged in
-#if (!isset($_SESSION['user_id']) && !isset($_COOKIE['jwt_token'])) {
- #   header('Location: login.php');
-  #  exit();
-#}
-
-$pageTitle = "Messages - RJIT Alumni Portal";
+$pageTitle = 'Messages - RJIT Alumni Portal';
+include 'includes/header.php';
+include 'includes/sidebar.php';
 ?>
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="theme-color" content="#0f172a">
-    <link rel="manifest" href="manifest.webmanifest">
-    <link rel="icon" type="image/png" sizes="192x192" href="assets/icons/app-icon-192.png">
-    <link rel="apple-touch-icon" href="assets/icons/app-icon-192.png">
-    <title><?php echo $pageTitle; ?></title>
-    
-    <!-- Tailwind CSS CDN -->
-    <script src="https://cdn.tailwindcss.com"></script>
-    
-    <!-- Lucide Icons CDN -->
-    <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
-    
-    <!-- Google Fonts -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Roboto+Slab:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="assets/css/variety-ui.css">
-    <script src="assets/js/variety-ui.js" defer></script>
-    <script src="assets/js/pwa.js" defer></script>
-    
-    <style>
+
+<style>
         .message-active {
             background-color: #eff6ff;
             border-left: 4px solid #3b82f6;
@@ -56,15 +26,10 @@ $pageTitle = "Messages - RJIT Alumni Portal";
         .msg-row:hover .msg-actions {
             opacity: 1;
         }
-    </style>
-</head>
-<body class="bg-gray-50 min-h-screen">
-    <!-- Include Header -->
-    <?php include 'includes/header.php'; ?>
-    <?php include 'includes/sidebar.php'; ?>
+</style>
     
-    <!-- Main Content -->
-    <div class="md:pl-64 pb-20 md:pb-0">
+<!-- Main Content -->
+<div class="md:pl-64 pb-20 md:pb-0">
     <div class="container mx-auto px-4 py-8">
         <div class="max-w-6xl mx-auto">
             <!-- Page Header -->
@@ -111,7 +76,7 @@ $pageTitle = "Messages - RJIT Alumni Portal";
                     <!-- Chat Header -->
                     <div id="chatHeader" class="p-4 border-b border-gray-200 hidden">
                         <div class="flex items-center">
-                            <img id="chatUserImage" src="https://via.placeholder.com/40" alt="User" class="h-10 w-10 rounded-full">
+                            <img id="chatUserImage" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='40' height='40' viewBox='0 0 40 40'%3E%3Crect width='40' height='40' fill='%23e2e8f0'/%3E%3Ctext x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' font-family='Arial' font-size='12' fill='%2364748b'%3EU%3C/text%3E%3C/svg%3E" alt="User" class="h-10 w-10 rounded-full">
                             <div class="ml-3">
                                 <h2 id="chatUserName" class="font-bold text-gray-900">Select a conversation</h2>
                                 <p id="chatUserStatus" class="text-sm text-gray-600">Loading...</p>
@@ -944,8 +909,6 @@ $pageTitle = "Messages - RJIT Alumni Portal";
             }
         })();
     </script>
-</body>
-</html>
 
 
 

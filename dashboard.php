@@ -1,38 +1,12 @@
 <?php
-// dashboard.php
 session_start();
-
-// Check authentication
-#if (!isset($_SESSION['user_id']) && !isset($_COOKIE['jwt_token'])) {
-#header('Location: dashboard.php');
-# exit();
-#}
-
-$pageTitle = "Dashboard - RJIT Alumni Portal";
+$pageTitle = 'Dashboard - RJIT Alumni Portal';
+include 'includes/header.php';
+include 'includes/sidebar.php';
 ?>
-<!DOCTYPE html>
-<html lang="en">
 
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title><?php echo $pageTitle; ?></title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Roboto+Slab:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="assets/css/variety-ui.css">
-    <script src="assets/js/variety-ui.js" defer></script>
-</head>
-
-<body class="bg-gray-50">
-    <?php include 'includes/header.php'; ?>
-    <!-- Include sidebar -->
-    <?php include 'includes/sidebar.php'; ?>
-
-    <!-- Main Content -->
-    <div class="md:pl-64">
+<!-- Main Content -->
+<div class="md:pl-64">
         <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
             <!-- Welcome Section -->
             <div class="mb-8">
@@ -573,6 +547,3 @@ $pageTitle = "Dashboard - RJIT Alumni Portal";
             }
         }
     </script>
-</body>
-
-</html>

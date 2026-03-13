@@ -1,27 +1,11 @@
 <?php
-// Check authentication
-
+session_start();
+$pageTitle = 'Feed - RJIT Alumni Portal';
+include 'includes/header.php';
+include 'includes/sidebar.php';
 ?>
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="theme-color" content="#0f172a">
-    <link rel="manifest" href="manifest.webmanifest">
-    <link rel="icon" type="image/png" sizes="192x192" href="assets/icons/app-icon-192.png">
-    <link rel="apple-touch-icon" href="assets/icons/app-icon-192.png">
-    <title>Feed - RJIT Alumni Portal</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Roboto+Slab:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="assets/css/variety-ui.css">
-    <script src="assets/js/variety-ui.js" defer></script>
-    <script src="assets/js/pwa.js" defer></script>
-    
-    <style>
+
+<style>
         .post-card {
             transition: transform 0.2s ease, box-shadow 0.2s ease;
         }
@@ -49,14 +33,10 @@
         .comment-thread-indent {
             border-left: 2px solid #e5e7eb;
         }
-    </style>
-</head>
-<body class="bg-gray-50">
-    <?php include 'includes/header.php'; ?>
-    <?php include 'includes/sidebar.php'; ?>
+</style>
     
-    <!-- Main Content -->
-    <div class="md:pl-64">
+<!-- Main Content -->
+<div class="md:pl-64">
         <main class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
             <!-- Page Header -->
             <div class="mb-8">
@@ -1567,5 +1547,3 @@
             `;
         }
     </script>
-</body>
-</html>

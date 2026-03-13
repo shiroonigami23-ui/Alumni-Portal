@@ -74,7 +74,7 @@ $basePrefix = $isAdminPath ? '../' : '';
     </style>
 
     <!-- Auth Check Script -->
-    <script src="<?php echo $basePrefix; ?>includes/auth-check.js?v=<?php echo @filemtime(__DIR__ . '/auth-check.js') ?: time(); ?>"></script>
+    <script src="<?php echo $basePrefix; ?>includes/auth-check.js?v=20260314b"></script>
     <script src="<?php echo $basePrefix; ?>assets/js/pwa.js" defer></script>
 </head>
 

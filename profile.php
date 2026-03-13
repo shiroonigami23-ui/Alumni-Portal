@@ -1,30 +1,12 @@
 <?php
-// Check authentication
-
-
-// Get user ID from query parameter or use current user
+session_start();
+$pageTitle = 'Profile - RJIT Alumni Portal';
 $userId = isset($_GET['id']) ? $_GET['id'] : null;
+include 'includes/header.php';
+include 'includes/sidebar.php';
 ?>
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="theme-color" content="#0f172a">
-    <link rel="manifest" href="manifest.webmanifest">
-    <link rel="icon" type="image/png" sizes="192x192" href="assets/icons/app-icon-192.png">
-    <link rel="apple-touch-icon" href="assets/icons/app-icon-192.png">
-    <title>Profile - RJIT Alumni Portal</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Roboto+Slab:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="assets/css/variety-ui.css">
-    <script src="assets/js/variety-ui.js" defer></script>
-    <script src="assets/js/pwa.js" defer></script>
-    
-    <style>
+
+<style>
         .cover-image {
             height: 300px;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
@@ -52,14 +34,10 @@ $userId = isset($_GET['id']) ? $_GET['id'] : null;
             background-color: #fef3c7;
             color: #92400e;
         }
-    </style>
-</head>
-<body class="bg-gray-50">
-    <?php include 'includes/header.php'; ?>
-    <?php include 'includes/sidebar.php'; ?>
+</style>
     
-    <!-- Main Content -->
-    <div class="md:pl-64">
+<!-- Main Content -->
+<div class="md:pl-64">
         <!-- Cover Image -->
         <div id="profileCover" class="cover-image relative">
             <div class="absolute inset-0 bg-black bg-opacity-30"></div>
@@ -1329,5 +1307,3 @@ $userId = isset($_GET['id']) ? $_GET['id'] : null;
             `;
         }
     </script>
-</body>
-</html>

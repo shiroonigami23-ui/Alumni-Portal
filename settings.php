@@ -39,7 +39,7 @@ include 'includes/header.php';
                 <div class="bg-white rounded-xl shadow-sm border border-gray-200 sticky top-8">
                     <div class="p-6 border-b border-gray-200">
                         <div class="flex items-center">
-                            <img id="settingsSidebarAvatar" src="https://via.placeholder.com/48" alt="Profile" class="h-12 w-12 rounded-full">
+                            <img id="settingsSidebarAvatar" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='48' height='48' viewBox='0 0 48 48'%3E%3Crect width='48' height='48' fill='%23e2e8f0'/%3E%3Ctext x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' font-family='Arial' font-size='14' fill='%2364748b'%3EU%3C/text%3E%3C/svg%3E" alt="Profile" class="h-12 w-12 rounded-full">
                             <div class="ml-4">
                                 <h3 id="settingsSidebarName" class="font-bold text-gray-900">Loading...</h3>
                                 <p id="settingsSidebarRole" class="text-sm text-gray-600">Member</p>
