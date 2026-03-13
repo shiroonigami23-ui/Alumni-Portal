@@ -2,6 +2,39 @@
 
 class Security
 {
+    private static function readAuthorizationHeader(): string
+    {
+        $candidates = [
+            $_SERVER['HTTP_AUTHORIZATION'] ?? '',
+            $_SERVER['Authorization'] ?? '',
+            $_SERVER['REDIRECT_HTTP_AUTHORIZATION'] ?? ''
+        ];
+
+        foreach ($candidates as $value) {
+            $value = trim((string)$value);
+            if ($value !== '') {
+                return $value;
+            }
+        }
+
+        $headers = [];
+        if (function_exists('getallheaders')) {
+            $headers = getallheaders() ?: [];
+        } elseif (function_exists('apache_request_headers')) {
+            $headers = apache_request_headers() ?: [];
+        }
+
+        foreach ($headers as $key => $value) {
+            if (strtolower((string)$key) === 'authorization') {
+                $value = trim((string)$value);
+                if ($value !== '') {
+                    return $value;
+                }
+            }
+        }
+
+        return '';
+    }
 
     // Start session if not started
     public static function initSession()
@@ -41,7 +74,8 @@ class Security
     {
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             // For authenticated API calls with Bearer token, CSRF is not required.
-            if (!empty($_SERVER['HTTP_AUTHORIZATION']) && stripos($_SERVER['HTTP_AUTHORIZATION'], 'Bearer ') === 0) {
+            $authorization = self::readAuthorizationHeader();
+            if ($authorization !== '' && stripos($authorization, 'Bearer ') === 0) {
                 return;
             }
             $token = $_POST['csrf_token'] ?? $_SERVER['HTTP_X_CSRF_TOKEN'] ?? '';
