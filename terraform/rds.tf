@@ -27,8 +27,12 @@ resource "aws_security_group" "rds" {
 
 # DB Subnet Group
 resource "aws_db_subnet_group" "main" {
-  name       = "${var.project_name}-db-subnet-group"
-  subnet_ids = aws_subnet.private[*].id
+  name       = "${var.project_name}-db-subnet-group-public"
+  subnet_ids = aws_subnet.public[*].id
+
+  lifecycle {
+    create_before_destroy = true
+  }
 
   tags = {
     Name = "${var.project_name}-db-subnet-group"
@@ -54,17 +58,17 @@ resource "aws_db_instance" "postgres" {
   db_subnet_group_name   = aws_db_subnet_group.main.name
   vpc_security_group_ids = [aws_security_group.rds.id]
 
-  multi_az               = var.environment == "production" ? true : false
-  publicly_accessible    = false
-  backup_retention_period = 7
+  multi_az               = false
+  publicly_accessible    = true
+  backup_retention_period = 1
   backup_window          = "03:00-04:00"
   maintenance_window     = "mon:04:00-mon:05:00"
 
   enabled_cloudwatch_logs_exports = ["postgresql", "upgrade"]
   
-  deletion_protection = var.environment == "production" ? true : false
-  skip_final_snapshot = var.environment != "production"
-  final_snapshot_identifier = var.environment == "production" ? "${var.project_name}-final-snapshot-${formatdate("YYYY-MM-DD-hhmm", timestamp())}" : null
+  deletion_protection = false
+  skip_final_snapshot = true
+  final_snapshot_identifier = null
 
   tags = {
     Name = "${var.project_name}-postgres-db"
