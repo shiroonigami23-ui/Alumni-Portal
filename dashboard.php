@@ -236,6 +236,7 @@ $pageTitle = "Dashboard - RJIT Alumni Portal";
             const headers = {
                 'Authorization': `Bearer ${token}`
             };
+            const apiBase = (window.getApiBase ? window.getApiBase() : ((window.PORTAL_BASE_PREFIX || '') + 'api'));
 
             if (body && !(body instanceof FormData)) {
                 headers['Content-Type'] = 'application/json';
@@ -243,7 +244,7 @@ $pageTitle = "Dashboard - RJIT Alumni Portal";
             }
 
             try {
-                const res = await fetch(`api/${endpoint}`, {
+                const res = await fetch(`${apiBase}/${endpoint}`, {
                     method,
                     headers,
                     body

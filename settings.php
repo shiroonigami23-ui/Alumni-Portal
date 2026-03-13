@@ -350,7 +350,8 @@ include 'includes/header.php';
         const formData = new FormData();
         formData.append('avatar', file);
         const token = localStorage.getItem('jwt_token');
-        const response = await fetch(`${window.PORTAL_BASE_PREFIX || ''}api/upload_avatar.php`, {
+        const apiBase = (window.getApiBase ? window.getApiBase() : ((window.PORTAL_BASE_PREFIX || '') + 'api'));
+        const response = await fetch(`${apiBase}/upload_avatar.php`, {
             method: 'POST',
             headers: { 'Authorization': `Bearer ${token}` },
             body: formData

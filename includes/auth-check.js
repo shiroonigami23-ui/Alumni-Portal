@@ -1,13 +1,60 @@
 // Authentication and API helper functions
 const IS_ADMIN_ROUTE = window.location.pathname.includes('/admin/');
-const API_BASE = IS_ADMIN_ROUTE ? '../api' : 'api';
-const LOGIN_PAGE = IS_ADMIN_ROUTE ? '../login.php' : 'login.php';
+
+function normalizePrefix(prefix) {
+    let value = String(prefix || '').trim();
+    if (!value) return '/';
+    if (!value.startsWith('/')) value = '/' + value;
+    if (!value.endsWith('/')) value += '/';
+    return value;
+}
+
+function inferPortalPrefix() {
+    const path = window.location.pathname || '/';
+    const adminIdx = path.indexOf('/admin/');
+    if (adminIdx >= 0) {
+        return normalizePrefix(path.slice(0, adminIdx + 1));
+    }
+    // e.g. /alumni_portal/feed.php => /alumni_portal/
+    const lastSlash = path.lastIndexOf('/');
+    const inferred = lastSlash >= 0 ? path.slice(0, lastSlash + 1) : '/';
+    return normalizePrefix(inferred);
+}
+
+function getPortalPrefix() {
+    const explicit = window.PORTAL_BASE_PREFIX;
+    if (typeof explicit === 'string' && explicit.trim() !== '') {
+        return normalizePrefix(explicit);
+    }
+    return inferPortalPrefix();
+}
+
+function getApiBase() {
+    return `${getPortalPrefix()}api`;
+}
+
+function getLoginPage() {
+    return `${getPortalPrefix()}login.php`;
+}
+
+// Expose shared URL helpers for page scripts.
+window.getPortalPrefix = getPortalPrefix;
+window.getApiBase = getApiBase;
+window.resolvePortalPath = function(path) {
+    const clean = String(path || '').replace(/^\/+/, '');
+    return `${getPortalPrefix()}${clean}`;
+};
+// Backward-compatible globals used by existing pages.
+const API_BASE = getApiBase();
+const LOGIN_PAGE = getLoginPage();
+window.API_BASE = API_BASE;
+window.LOGIN_PAGE = LOGIN_PAGE;
 
 // Check authentication on page load
 function checkAuth() {
     const token = localStorage.getItem('jwt_token');
     if (!token) {
-        window.location.href = LOGIN_PAGE;
+        window.location.href = getLoginPage();
         return false;
     }
     return true;
@@ -39,7 +86,8 @@ async function makeApiCall(endpoint, method = 'GET', body = null) {
     }
 
     try {
-        const response = await fetch(`${API_BASE}/${endpoint}`, config);
+        const cleanEndpoint = String(endpoint || '').replace(/^\/+/, '');
+        const response = await fetch(`${getApiBase()}/${cleanEndpoint}`, config);
         const rawText = await response.text();
         let data = null;
 
@@ -66,7 +114,7 @@ async function makeApiCall(endpoint, method = 'GET', body = null) {
             if (likelyExpiredSession) {
                 localStorage.removeItem('jwt_token');
                 localStorage.removeItem('user_data');
-                window.location.href = LOGIN_PAGE;
+                window.location.href = getLoginPage();
                 return null;
             }
 
@@ -138,5 +186,5 @@ function getUserRole() {
 function logout() {
     localStorage.removeItem('jwt_token');
     localStorage.removeItem('user_data');
-    window.location.href = LOGIN_PAGE;
+    window.location.href = getLoginPage();
 }

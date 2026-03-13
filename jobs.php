@@ -181,6 +181,7 @@ include 'includes/sidebar.php';
     let currentRole = '';
     let canPostJobs = false;
     let canApplyJobs = false;
+    const API_BASE = (window.getApiBase ? window.getApiBase() : ((window.PORTAL_BASE_PREFIX || '') + 'api'));
 
     async function initJobsRoleAccess() {
         try {
@@ -219,7 +220,7 @@ include 'includes/sidebar.php';
     async function loadJobs() {
         try {
             const token = localStorage.getItem('jwt_token');
-            const res = await fetch('api/get_jobs.php', {
+            const res = await fetch(`${API_BASE}/get_jobs.php`, {
                 headers: token ? { 'Authorization': `Bearer ${token}` } : {}
             });
             const payload = await res.json();
@@ -356,7 +357,7 @@ include 'includes/sidebar.php';
                     fd.append('resume', resume);
                     fd.append('cover_letter', cover);
                     const token = localStorage.getItem('jwt_token');
-                    const res = await fetch('api/apply_job.php', {
+                    const res = await fetch(`${API_BASE}/apply_job.php`, {
                         method: 'POST',
                         headers: token ? { 'Authorization': `Bearer ${token}` } : {},
                         body: fd

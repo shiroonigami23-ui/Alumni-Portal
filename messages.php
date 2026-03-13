@@ -373,7 +373,7 @@ $pageTitle = "Messages - RJIT Alumni Portal";
             loadingConversations = true;
             try {
                 const token = localStorage.getItem('jwt_token');
-                const response = await fetch('api/get_conversations.php', {
+                const response = await fetch(`${window.getApiBase ? window.getApiBase() : (window.PORTAL_BASE_PREFIX || '') + 'api'}/get_conversations.php`, {
                     headers: {
                         'Authorization': `Bearer ${token}`
                     }
@@ -435,7 +435,7 @@ $pageTitle = "Messages - RJIT Alumni Portal";
         async function loadUsers(searchTerm = '') {
             try {
                 const token = localStorage.getItem('jwt_token');
-                const response = await fetch(`api/search_users.php?q=${encodeURIComponent(searchTerm)}`, {
+                const response = await fetch(`${window.getApiBase ? window.getApiBase() : (window.PORTAL_BASE_PREFIX || '') + 'api'}/search_users.php?q=${encodeURIComponent(searchTerm)}`, {
                     headers: {
                         'Authorization': `Bearer ${token}`
                     }
@@ -495,7 +495,7 @@ $pageTitle = "Messages - RJIT Alumni Portal";
         async function startNewConversation(userId) {
             try {
                 const token = localStorage.getItem('jwt_token');
-                const response = await fetch('api/create_conversation.php', {
+                const response = await fetch(`${window.getApiBase ? window.getApiBase() : (window.PORTAL_BASE_PREFIX || '') + 'api'}/create_conversation.php`, {
                     method: 'POST',
                     headers: {
                         'Authorization': `Bearer ${token}`,
@@ -548,7 +548,7 @@ $pageTitle = "Messages - RJIT Alumni Portal";
         async function loadConversationDetails(userId) {
             try {
                 const token = localStorage.getItem('jwt_token');
-                const response = await fetch(`api/get_user.php?id=${userId}`, {
+                const response = await fetch(`${window.getApiBase ? window.getApiBase() : (window.PORTAL_BASE_PREFIX || '') + 'api'}/get_user.php?id=${userId}`, {
                     headers: {
                         'Authorization': `Bearer ${token}`
                     }
@@ -572,7 +572,7 @@ $pageTitle = "Messages - RJIT Alumni Portal";
             loadingMessages = true;
             try {
                 const token = localStorage.getItem('jwt_token');
-                const response = await fetch(`api/get_messages.php?conversation_id=${conversationId}`, {
+                const response = await fetch(`${window.getApiBase ? window.getApiBase() : (window.PORTAL_BASE_PREFIX || '') + 'api'}/get_messages.php?conversation_id=${conversationId}`, {
                     headers: {
                         'Authorization': `Bearer ${token}`
                     }
@@ -673,7 +673,7 @@ $pageTitle = "Messages - RJIT Alumni Portal";
                     uploadedAttachment = await uploadMessageAttachment(pendingAttachment);
                 }
                 const token = localStorage.getItem('jwt_token');
-                const response = await fetch('api/send_message.php', {
+                const response = await fetch(`${window.getApiBase ? window.getApiBase() : (window.PORTAL_BASE_PREFIX || '') + 'api'}/send_message.php`, {
                     method: 'POST',
                     headers: {
                         'Authorization': `Bearer ${token}`,
@@ -751,7 +751,7 @@ $pageTitle = "Messages - RJIT Alumni Portal";
             const formData = new FormData();
             formData.append('attachment', file);
             formData.append('context', 'messages');
-            const response = await fetch('api/upload_file.php', {
+            const response = await fetch(`${window.getApiBase ? window.getApiBase() : (window.PORTAL_BASE_PREFIX || '') + 'api'}/upload_file.php`, {
                 method: 'POST',
                 headers: {
                     'Authorization': `Bearer ${token}`
@@ -816,7 +816,7 @@ $pageTitle = "Messages - RJIT Alumni Portal";
             }
             try {
                 const token = localStorage.getItem('jwt_token');
-                const response = await fetch('api/edit_message.php', {
+                const response = await fetch(`${window.getApiBase ? window.getApiBase() : (window.PORTAL_BASE_PREFIX || '') + 'api'}/edit_message.php`, {
                     method: 'POST',
                     headers: {
                         'Authorization': `Bearer ${token}`,
@@ -845,7 +845,7 @@ $pageTitle = "Messages - RJIT Alumni Portal";
             if (!confirm('Delete this message?')) return;
             try {
                 const token = localStorage.getItem('jwt_token');
-                const response = await fetch('api/delete_message.php', {
+                const response = await fetch(`${window.getApiBase ? window.getApiBase() : (window.PORTAL_BASE_PREFIX || '') + 'api'}/delete_message.php`, {
                     method: 'POST',
                     headers: {
                         'Authorization': `Bearer ${token}`,
@@ -872,7 +872,7 @@ $pageTitle = "Messages - RJIT Alumni Portal";
             if (!currentChatUserId) return;
             try {
                 const token = localStorage.getItem('jwt_token');
-                const response = await fetch('api/start_call.php', {
+                const response = await fetch(`${window.getApiBase ? window.getApiBase() : (window.PORTAL_BASE_PREFIX || '') + 'api'}/start_call.php`, {
                     method: 'POST',
                     headers: {
                         'Authorization': `Bearer ${token}`,

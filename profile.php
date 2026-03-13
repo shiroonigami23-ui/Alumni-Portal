@@ -866,7 +866,7 @@ $userId = isset($_GET['id']) ? $_GET['id'] : null;
                 shareBtn.addEventListener('click', async () => {
                     const res = await makeApiCall('create_share_link.php', 'POST', { post_id: post.id });
                     if (res && (res.success || res.status === 'success')) {
-                        const url = `${window.location.origin}/${res.share_path}`.replace(/([^:]\/)\/+/g, '$1');
+                        const url = new URL(String(res.share_path || ''), window.location.href).toString();
                         if (navigator.clipboard && navigator.clipboard.writeText) {
                             await navigator.clipboard.writeText(url);
                         }
@@ -1084,7 +1084,8 @@ $userId = isset($_GET['id']) ? $_GET['id'] : null;
                 formData.append('avatar', file);
 
                 const token = localStorage.getItem('jwt_token');
-                const response = await fetch(`${window.PORTAL_BASE_PREFIX || ''}api/upload_avatar.php`, {
+                const apiBase = (window.getApiBase ? window.getApiBase() : ((window.PORTAL_BASE_PREFIX || '') + 'api'));
+                const response = await fetch(`${apiBase}/upload_avatar.php`, {
                     method: 'POST',
                     headers: token ? { 'Authorization': `Bearer ${token}` } : {},
                     credentials: 'include',
@@ -1109,7 +1110,8 @@ $userId = isset($_GET['id']) ? $_GET['id'] : null;
                 const formData = new FormData();
                 formData.append('cover', file);
                 const token = localStorage.getItem('jwt_token');
-                const response = await fetch(`${window.PORTAL_BASE_PREFIX || ''}api/upload_cover.php`, {
+                const apiBase = (window.getApiBase ? window.getApiBase() : ((window.PORTAL_BASE_PREFIX || '') + 'api'));
+                const response = await fetch(`${apiBase}/upload_cover.php`, {
                     method: 'POST',
                     headers: token ? { 'Authorization': `Bearer ${token}` } : {},
                     credentials: 'include',

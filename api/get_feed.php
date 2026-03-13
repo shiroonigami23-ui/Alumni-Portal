@@ -93,6 +93,7 @@ try {
     $sql = "SELECT 
                 p.post_id AS id,
                 p.user_id,
+                p.title,
                 p.post_type,
                 p.content_file_path,
                 p.thumbnail_url,
@@ -189,11 +190,9 @@ try {
                 $row['content'] = (string)$raw;
             }
         }
-        $contentLower = strtolower(trim((string)$row['content']));
-        $isPlaceholder = in_array($contentLower, ['placeholder post content.', 'content not available', '[content missing]'], true);
-        $isEmptyNoMedia = ($contentLower === '' && empty($row['attachments']));
-        if (($isPlaceholder || $isEmptyNoMedia) && empty($row['attachments'])) {
-            $row['__skip'] = true;
+        // Fallback: keep post visible even if storage file is missing after container/image deploys.
+        if (trim((string)$row['content']) === '' && !empty($row['title'])) {
+            $row['content'] = (string)$row['title'];
         }
 
         $row['is_owner'] = ((int)$row['user_id'] === (int)$user_id);
@@ -201,13 +200,7 @@ try {
         return $row;
     }, $rows);
 
-    $posts = array_values(array_filter($posts, static function (array $p): bool {
-        return empty($p['__skip']);
-    }));
-    foreach ($posts as &$p) {
-        unset($p['__skip']);
-    }
-    unset($p);
+    $posts = array_values($posts);
 
     echo json_encode([
         'success' => true,

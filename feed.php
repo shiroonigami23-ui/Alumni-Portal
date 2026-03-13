@@ -576,7 +576,7 @@
                         if (!(shareRes && (shareRes.success || shareRes.status === 'success'))) {
                             throw new Error(shareRes?.message || 'Unable to create share link');
                         }
-                        const url = `${window.location.origin}/${shareRes.share_path}`.replace(/([^:]\/)\/+/g, '$1');
+                        const url = new URL(String(shareRes.share_path || ''), window.location.href).toString();
                         if (navigator.clipboard && navigator.clipboard.writeText) {
                             await navigator.clipboard.writeText(url);
                         }
