@@ -80,6 +80,16 @@ include 'includes/sidebar.php';
                             <div class="ml-3">
                                 <h2 id="chatUserName" class="font-bold text-gray-900">Select a conversation</h2>
                                 <p id="chatUserStatus" class="text-sm text-gray-600">Loading...</p>
+                                <div id="chatGroupMeta" class="hidden mt-2">
+                                    <div class="flex flex-wrap items-center gap-2 mb-2">
+                                        <span id="chatGroupBadge" class="inline-flex items-center rounded-full bg-blue-100 px-2.5 py-1 text-xs font-semibold text-blue-700">
+                                            <i data-lucide="users" class="mr-1 h-3.5 w-3.5"></i>
+                                            Mentor Group
+                                        </span>
+                                        <span id="chatGroupMemberCount" class="text-xs text-gray-500"></span>
+                                    </div>
+                                    <div id="chatGroupMembers" class="flex flex-wrap gap-2"></div>
+                                </div>
                             </div>
                             <div class="ml-auto flex space-x-2">
                                 <button id="openChatProfileBtn" class="p-2 hover:bg-gray-100 rounded-lg" title="View profile">
@@ -198,6 +208,7 @@ include 'includes/sidebar.php';
         let loadingMessages = false;
         let pendingAttachment = null;
         let conversationMap = {};
+        let currentConversationMeta = null;
         const DEFAULT_AVATAR = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='40' height='40' viewBox='0 0 40 40'%3E%3Crect width='40' height='40' rx='20' fill='%23e2e8f0'/%3E%3Ctext x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' font-family='Arial' font-size='12' fill='%2364748b'%3EU%3C/text%3E%3C/svg%3E";
         
         // DOM Elements
@@ -374,11 +385,14 @@ include 'includes/sidebar.php';
                                      onclick="${conv.is_group ? 'event.stopPropagation();' : `event.stopPropagation(); openProfileFromMessages('${conv.other_user_id}')`}">
                                 <div class="ml-3 flex-1">
                                     <div class="flex justify-between">
-                                        <h3 class="font-semibold text-gray-900 ${conv.is_group ? '' : 'cursor-pointer hover:underline'}" onclick="${conv.is_group ? 'event.stopPropagation();' : `event.stopPropagation(); openProfileFromMessages('${conv.other_user_id}')`}">${conv.full_name}</h3>
+                                        <h3 class="font-semibold text-gray-900 ${conv.is_group ? '' : 'cursor-pointer hover:underline'}" onclick="${conv.is_group ? 'event.stopPropagation();' : `event.stopPropagation(); openProfileFromMessages('${conv.other_user_id}')`}">
+                                            ${conv.is_group ? `<span class="inline-flex items-center gap-1"><i data-lucide="users" class="h-3.5 w-3.5 text-blue-600"></i><span>${conv.full_name}</span></span>` : conv.full_name}
+                                        </h3>
                                         <span class="text-xs text-gray-500">${formatTime(conv.last_message_at)}</span>
                                     </div>
                                     <p class="text-sm text-gray-600 truncate">${conv.last_message || 'No messages yet'}</p>
                                     ${conv.branch ? `<p class="text-xs text-gray-400 truncate mt-0.5">${conv.branch}</p>` : ''}
+                                    ${conv.is_group ? `<div class="mt-1 inline-flex items-center rounded-full bg-blue-50 px-2 py-0.5 text-[11px] font-medium text-blue-700">${conv.group_badge || 'Mentor Group'}${conv.member_count ? ` • ${conv.member_count} members` : ''}</div>` : ''}
                                     ${conv.unread_count > 0 ? `
                                         <span class="inline-block mt-1 px-2 py-0.5 bg-blue-600 text-white text-xs rounded-full">
                                             ${conv.unread_count}
@@ -496,6 +510,7 @@ include 'includes/sidebar.php';
         async function selectConversation(conversationId) {
             const conversation = conversationMap[String(conversationId)] || null;
             currentConversationId = conversationId;
+            currentConversationMeta = null;
             currentChatUserId = conversation && !conversation.is_group ? conversation.other_user_id : null;
             
             // Update UI
@@ -522,15 +537,28 @@ include 'includes/sidebar.php';
         
         async function loadConversationDetails(conversation) {
             if (!conversation) return;
+            const groupMeta = document.getElementById('chatGroupMeta');
+            const groupMembers = document.getElementById('chatGroupMembers');
+            const groupMemberCount = document.getElementById('chatGroupMemberCount');
             if (conversation.is_group) {
                 document.getElementById('chatUserImage').src = conversation.profile_picture_url || DEFAULT_AVATAR;
                 document.getElementById('chatUserName').textContent = conversation.full_name || 'Mentor Group';
                 document.getElementById('chatUserStatus').textContent = conversation.branch || 'Mentor group chat';
+                if (groupMeta) groupMeta.classList.remove('hidden');
+                if (groupMemberCount) groupMemberCount.textContent = conversation.member_count ? `${conversation.member_count} members` : '';
+                if (groupMembers) {
+                    groupMembers.innerHTML = `
+                        <span class="inline-flex items-center rounded-full bg-gray-100 px-2.5 py-1 text-xs text-gray-600">
+                            Loading members...
+                        </span>
+                    `;
+                }
                 if (openChatProfileBtn) openChatProfileBtn.classList.add('hidden');
                 if (audioCallBtn) audioCallBtn.classList.add('hidden');
                 if (videoCallBtn) videoCallBtn.classList.add('hidden');
                 return;
             }
+            if (groupMeta) groupMeta.classList.add('hidden');
             try {
                 const token = localStorage.getItem('jwt_token');
                 const userId = conversation.other_user_id;
@@ -568,12 +596,19 @@ include 'includes/sidebar.php';
                 });
 
                 const payload = await response.json();
+                currentConversationMeta = payload && payload.meta ? payload.meta : null;
                 const messages = Array.isArray(payload) ? payload : (payload && Array.isArray(payload.data) ? payload.data : []);
                 const nextSignature = getMessagesSignature(messages);
                 if (nextSignature === messagesSignature) {
+                    if (currentConversationMeta && currentConversationMeta.is_group) {
+                        renderGroupHeaderMeta(currentConversationMeta);
+                    }
                     return;
                 }
                 messagesSignature = nextSignature;
+                if (currentConversationMeta && currentConversationMeta.is_group) {
+                    renderGroupHeaderMeta(currentConversationMeta);
+                }
 
                 if (messages.length > 0) {
                     const userData = JSON.parse(localStorage.getItem('user_data'));
@@ -651,6 +686,31 @@ include 'includes/sidebar.php';
             } finally {
                 loadingMessages = false;
             }
+        }
+
+        function renderGroupHeaderMeta(meta) {
+            const groupMeta = document.getElementById('chatGroupMeta');
+            const groupMembers = document.getElementById('chatGroupMembers');
+            const groupMemberCount = document.getElementById('chatGroupMemberCount');
+            if (!groupMeta || !groupMembers || !groupMemberCount) return;
+            groupMeta.classList.remove('hidden');
+            const members = Array.isArray(meta.members) ? meta.members : [];
+            groupMemberCount.textContent = `${members.length} members`;
+            groupMembers.innerHTML = members.map((member) => {
+                const avatar = member.profile_picture_url || DEFAULT_AVATAR;
+                const name = escapeHtml(member.full_name || 'Member');
+                const role = escapeHtml(member.role || '');
+                const isAdmin = Number(member.user_id) === Number(meta.admin_user_id) || member.member_role === 'admin';
+                return `
+                    <span class="inline-flex items-center gap-2 rounded-full border border-gray-200 bg-white px-2.5 py-1 text-xs text-gray-700">
+                        <img src="${avatar}" alt="${name}" class="h-5 w-5 rounded-full object-cover" onerror="this.onerror=null;this.src='${DEFAULT_AVATAR}'">
+                        <span>${name}</span>
+                        ${isAdmin ? `<span class="rounded-full bg-blue-100 px-2 py-0.5 text-[10px] font-semibold text-blue-700">Admin</span>` : ''}
+                        ${role ? `<span class="text-[10px] uppercase tracking-wide text-gray-400">${role}</span>` : ''}
+                    </span>
+                `;
+            }).join('');
+            lucide.createIcons();
         }
         async function sendMessage() {
             const message = messageInput.value.trim();

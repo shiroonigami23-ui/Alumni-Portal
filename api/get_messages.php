@@ -81,8 +81,8 @@ if ($isGroupConversation && $groupId <= 0) {
 try {
     if ($isGroupConversation) {
         $membershipCheck = $db->prepare("
-            SELECT 1
-            FROM mentorship_group_members
+            SELECT gm.member_role
+            FROM mentorship_group_members gm
             WHERE group_id = :gid AND user_id = :uid
             LIMIT 1
         ");
@@ -90,7 +90,8 @@ try {
             ':gid' => $groupId,
             ':uid' => $user_id
         ]);
-        if (!$membershipCheck->fetchColumn()) {
+        $currentMemberRole = $membershipCheck->fetchColumn();
+        if (!$currentMemberRole) {
             http_response_code(403);
             echo json_encode(["success" => false, "message" => "You are not a member of this mentor group."]);
             exit;
@@ -115,6 +116,46 @@ try {
         $stmt = $db->prepare($query);
         $stmt->execute([':gid' => $groupId]);
         $messages = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+        $metaStmt = $db->prepare("
+            SELECT
+                g.group_id,
+                g.title,
+                g.admin_user_id,
+                COALESCE(NULLIF(TRIM(p.full_name), ''), split_part(u.email, '@', 1)) AS mentor_name,
+                p.profile_picture_url AS mentor_avatar
+            FROM mentorship_groups g
+            JOIN users u ON u.user_id = g.mentor_user_id
+            LEFT JOIN profiles p ON p.user_id = g.mentor_user_id
+            WHERE g.group_id = :gid
+            LIMIT 1
+        ");
+        $metaStmt->execute([':gid' => $groupId]);
+        $groupMeta = $metaStmt->fetch(PDO::FETCH_ASSOC) ?: [];
+
+        $membersStmt = $db->prepare("
+            SELECT
+                gm.user_id,
+                gm.member_role,
+                COALESCE(NULLIF(TRIM(p.full_name), ''), split_part(u.email, '@', 1)) AS full_name,
+                u.role,
+                p.profile_picture_url
+            FROM mentorship_group_members gm
+            JOIN users u ON u.user_id = gm.user_id
+            LEFT JOIN profiles p ON p.user_id = gm.user_id
+            WHERE gm.group_id = :gid
+            ORDER BY CASE WHEN gm.member_role = 'admin' THEN 0 ELSE 1 END, full_name ASC
+        ");
+        $membersStmt->execute([':gid' => $groupId]);
+        $members = array_map(static function (array $row): array {
+            return [
+                'user_id' => (int)$row['user_id'],
+                'member_role' => (string)($row['member_role'] ?? 'member'),
+                'full_name' => (string)($row['full_name'] ?? 'Member'),
+                'role' => (string)($row['role'] ?? ''),
+                'profile_picture_url' => $row['profile_picture_url'] ? str_replace('\\', '/', (string)$row['profile_picture_url']) : null,
+            ];
+        }, $membersStmt->fetchAll(PDO::FETCH_ASSOC));
 
         $history = [];
         foreach ($messages as $msg) {
@@ -150,9 +191,39 @@ try {
             ];
         }
 
+        $latestMessageId = 0;
+        foreach ($messages as $msg) {
+            $latestMessageId = max($latestMessageId, (int)($msg['message_id'] ?? 0));
+        }
+        if ($latestMessageId > 0) {
+            $readStmt = $db->prepare("
+                INSERT INTO mentorship_group_message_reads (group_id, user_id, last_read_message_id, updated_at)
+                VALUES (:gid, :uid, :last_read_message_id, NOW())
+                ON CONFLICT (group_id, user_id)
+                DO UPDATE SET
+                    last_read_message_id = GREATEST(COALESCE(mentorship_group_message_reads.last_read_message_id, 0), EXCLUDED.last_read_message_id),
+                    updated_at = NOW()
+            ");
+            $readStmt->execute([
+                ':gid' => $groupId,
+                ':uid' => $user_id,
+                ':last_read_message_id' => $latestMessageId
+            ]);
+        }
+
         echo json_encode([
             "success" => true,
-            "data" => $history
+            "data" => $history,
+            "meta" => [
+                'is_group' => true,
+                'group_id' => $groupId,
+                'title' => (string)($groupMeta['title'] ?? 'Mentor Group'),
+                'mentor_name' => (string)($groupMeta['mentor_name'] ?? 'Mentor'),
+                'mentor_avatar' => $groupMeta['mentor_avatar'] ? str_replace('\\', '/', (string)$groupMeta['mentor_avatar']) : null,
+                'admin_user_id' => (int)($groupMeta['admin_user_id'] ?? 0),
+                'current_member_role' => (string)$currentMemberRole,
+                'members' => $members
+            ]
         ]);
         exit;
     }

@@ -5,6 +5,16 @@ header("Content-Type: application/json; charset=UTF-8");
 require_once __DIR__ . '/../config/Database.php';
 require_once __DIR__ . '/../middleware/Auth.php';
 
+function clear_missing_local_asset(?string $path): string
+{
+    $path = str_replace('\\', '/', (string)$path);
+    if ($path === '' || preg_match('#^https?://#i', $path) || stripos($path, 'data:image/') === 0) {
+        return $path;
+    }
+    $abs = dirname(__DIR__) . DIRECTORY_SEPARATOR . str_replace('/', DIRECTORY_SEPARATOR, $path);
+    return is_file($abs) ? $path : '';
+}
+
 try {
     $database = new Database();
     $db = $database->getConnection();
@@ -56,7 +66,7 @@ try {
             'email' => (string)$row['email'],
             'role' => (string)$row['role'],
             'branch' => $row['branch'] ?? null,
-            'profile_picture_url' => $row['profile_picture_url'] ? str_replace('\\', '/', (string)$row['profile_picture_url']) : null
+            'profile_picture_url' => clear_missing_local_asset($row['profile_picture_url'] ? str_replace('\\', '/', (string)$row['profile_picture_url']) : null)
         ]
     ]);
 } catch (Throwable $e) {
@@ -67,4 +77,3 @@ try {
         'error' => $e->getMessage()
     ]);
 }
-

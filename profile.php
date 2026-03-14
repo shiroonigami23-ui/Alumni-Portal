@@ -459,6 +459,24 @@ include 'includes/sidebar.php';
             };
         }
         
+        function getDefaultProfileAvatar(name = 'U') {
+            const initial = encodeURIComponent((String(name || 'U').trim().charAt(0) || 'U').toUpperCase());
+            return `data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='150' height='150' viewBox='0 0 150 150'%3E%3Crect width='150' height='150' rx='75' fill='%23dbeafe'/%3E%3Ctext x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' font-family='Arial' font-size='48' fill='%233b82f6'%3E${initial}%3C/text%3E%3C/svg%3E`;
+        }
+
+        function applyProfileAvatar(avatarUrl, displayName) {
+            const fallback = getDefaultProfileAvatar(displayName);
+            ['profileAvatar', 'timelineAvatar'].forEach((id) => {
+                const img = document.getElementById(id);
+                if (!img) return;
+                img.onerror = function() {
+                    this.onerror = null;
+                    this.src = fallback;
+                };
+                img.src = avatarUrl || fallback;
+            });
+        }
+
         function renderProfile(data) {
             // Update profile header
             document.getElementById('profileName').textContent = data.name || 'User';
@@ -467,10 +485,7 @@ include 'includes/sidebar.php';
             document.getElementById('profileHeadline').textContent = data.headline || 'Member of RJIT Community';
             
             // Update avatar
-            if (data.avatar) {
-                document.getElementById('profileAvatar').src = data.avatar;
-                document.getElementById('timelineAvatar').src = data.avatar;
-            }
+            applyProfileAvatar(data.avatar, data.name);
             applyProfileCover(data);
             
             // Update role badge
@@ -707,8 +722,10 @@ include 'includes/sidebar.php';
                     }
                     
                     // Show create post section for own profile
-                    if (isOwnProfile) {
+                    if (isOwnProfile && String(currentUserRole) !== 'student') {
                         document.getElementById('createPostSection').classList.remove('hidden');
+                    } else {
+                        document.getElementById('createPostSection').classList.add('hidden');
                     }
                     renderTimelineSubtab();
                 } else {
@@ -1179,6 +1196,10 @@ include 'includes/sidebar.php';
         
         let isCreatingTimelinePost = false;
         async function createTimelinePost() {
+            if (String(currentUserRole) === 'student') {
+                alert('Students cannot create posts.');
+                return;
+            }
             if (isCreatingTimelinePost) return;
             const content = document.getElementById('timelinePostContent').value.trim();
             const allowComments = document.getElementById('timelineAllowComments').checked;

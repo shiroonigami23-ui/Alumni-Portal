@@ -33,6 +33,16 @@ function derive_joined_year(?string $rollNumber, ?string $email): ?int
     return null;
 }
 
+function clear_missing_local_asset(?string $path): string
+{
+    $path = str_replace('\\', '/', (string)$path);
+    if ($path === '' || preg_match('#^https?://#i', $path) || stripos($path, 'data:image/') === 0) {
+        return $path;
+    }
+    $abs = dirname(__DIR__) . DIRECTORY_SEPARATOR . str_replace('/', DIRECTORY_SEPARATOR, $path);
+    return is_file($abs) ? $path : '';
+}
+
 // Authenticate user (optional)
 $database = new Database(); $db = $database->getConnection(); $auth = new Auth($db);
 $current_user = $auth->validateRequest();
@@ -171,9 +181,11 @@ try {
             }
         }
     }
+    $profile['profile_picture_url'] = clear_missing_local_asset($profile['profile_picture_url'] ?? '');
     if (!empty($profile['cover_photo_url'])) {
         $profile['cover_photo_url'] = str_replace('\\', '/', (string)$profile['cover_photo_url']);
     }
+    $profile['cover_photo_url'] = clear_missing_local_asset($profile['cover_photo_url'] ?? '');
     if (!isset($profile['is_private'])) {
         $profile['is_private'] = false;
     }

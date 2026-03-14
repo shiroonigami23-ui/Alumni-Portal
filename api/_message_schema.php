@@ -74,8 +74,19 @@ function ensure_group_message_schema(PDO $db): void
         )
     ");
 
+    $db->exec("
+        CREATE TABLE IF NOT EXISTS mentorship_group_message_reads (
+            group_id BIGINT NOT NULL REFERENCES mentorship_groups(group_id) ON DELETE CASCADE,
+            user_id BIGINT NOT NULL REFERENCES users(user_id) ON DELETE CASCADE,
+            last_read_message_id BIGINT NULL,
+            updated_at TIMESTAMP NOT NULL DEFAULT NOW(),
+            PRIMARY KEY (group_id, user_id)
+        )
+    ");
+
     $db->exec("CREATE INDEX IF NOT EXISTS idx_mentorship_group_members_user ON mentorship_group_members(user_id)");
     $db->exec("CREATE INDEX IF NOT EXISTS idx_mentorship_group_messages_group ON mentorship_group_messages(group_id, created_at DESC)");
+    $db->exec("CREATE INDEX IF NOT EXISTS idx_mentorship_group_reads_user ON mentorship_group_message_reads(user_id)");
 
     $done = true;
 }

@@ -120,8 +120,12 @@ try {
             g.group_id,
             g.title,
             g.updated_at,
+            g.admin_user_id,
             COALESCE(NULLIF(TRIM(p.full_name), ''), split_part(u.email, '@', 1)) AS mentor_name,
             p.profile_picture_url AS mentor_avatar,
+            gm.member_role AS current_member_role,
+            member_counts.member_count,
+            COALESCE(group_unread.unread_count, 0) AS unread_count,
             last_msg.message_id,
             last_msg.content_file_path,
             last_msg.deleted_at,
@@ -131,12 +135,28 @@ try {
         JOIN users u ON u.user_id = g.mentor_user_id
         LEFT JOIN profiles p ON p.user_id = g.mentor_user_id
         LEFT JOIN LATERAL (
+            SELECT COUNT(*)::int AS member_count
+            FROM mentorship_group_members mgm
+            WHERE mgm.group_id = g.group_id
+        ) member_counts ON TRUE
+        LEFT JOIN mentorship_group_message_reads gr
+          ON gr.group_id = g.group_id
+         AND gr.user_id = :uid
+        LEFT JOIN LATERAL (
             SELECT mgm.message_id, mgm.content_file_path, mgm.deleted_at, mgm.created_at
             FROM mentorship_group_messages mgm
             WHERE mgm.group_id = g.group_id
             ORDER BY mgm.created_at DESC, mgm.message_id DESC
             LIMIT 1
         ) last_msg ON TRUE
+        LEFT JOIN LATERAL (
+            SELECT COUNT(*)::int AS unread_count
+            FROM mentorship_group_messages mgm
+            WHERE mgm.group_id = g.group_id
+              AND mgm.sender_user_id <> :uid
+              AND mgm.deleted_at IS NULL
+              AND mgm.message_id > COALESCE(gr.last_read_message_id, 0)
+        ) group_unread ON TRUE
         WHERE gm.user_id = :uid
         ORDER BY COALESCE(last_msg.created_at, g.updated_at, g.created_at) DESC
     ");
@@ -157,8 +177,13 @@ try {
             'branch' => (string)($group['mentor_name'] ? ('Led by ' . $group['mentor_name']) : 'Mentor group'),
             'last_message' => $lastMessage,
             'last_message_at' => $group['last_message_at'] ?: $group['updated_at'],
-            'unread_count' => 0,
-            'is_group' => true
+            'unread_count' => (int)$group['unread_count'],
+            'is_group' => true,
+            'group_id' => (int)$group['group_id'],
+            'group_admin_user_id' => (int)($group['admin_user_id'] ?? 0),
+            'member_role' => (string)($group['current_member_role'] ?? 'member'),
+            'member_count' => (int)($group['member_count'] ?? 0),
+            'group_badge' => 'Mentor Group'
         ];
     }
 

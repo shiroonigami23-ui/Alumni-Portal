@@ -142,6 +142,8 @@ When verifying a fresh deploy, append `?refresh=<commit>` to bypass stale browse
   - added feed upload progress / post-button locking
   - polished dashboard quick links and collapse defaults
 - current worktree:
+  - students are now blocked from creating top-level posts on both feed and profile; they can still comment/reply/repost/report
+  - profile now falls back cleanly when legacy local avatar/cover paths are missing instead of rendering a broken image in the UI
   - aligned dashboard upcoming-event APIs with the real `events` schema (`start_datetime` / `event_status`)
   - changed mentorship so:
     - students and alumni can each be under only one active mentor at a time
@@ -154,6 +156,8 @@ When verifying a fresh deploy, append `?refresh=<commit>` to bypass stale browse
     - mentors/admins can ban, unban, or kick group members
     - bans are messaging bans for the mentor group chat
   - surfaced mentor groups inside the existing Messages screen using `group:<id>` conversations
+  - added clearer mentor-group badges in Messages plus member list/header metadata
+  - added unread tracking for mentor-group conversations
   - changed feed so older posts load progressively with a bottom sentinel instead of trying to render everything at once
   - added post draft controls plus upload-progress / upload-lock UI in the feed composer
 
@@ -172,6 +176,8 @@ When verifying a fresh deploy, append `?refresh=<commit>` to bypass stale browse
 - Mentorship should no longer show `Become a Mentor` to students
 - Alumni should move through a pending mentor-application flow instead of becoming mentors instantly
 - Accepted mentor/mentee matches should have a mentor group conversation available in Messages
+- Mentor-group conversations should show a mentor-group badge, member list, and unread counts
+- Students should not be able to create top-level posts from feed or profile
 - A student/alumni should never have more than one active mentor relationship at once
 
 ### Known follow-up items
@@ -180,7 +186,6 @@ When verifying a fresh deploy, append `?refresh=<commit>` to bypass stale browse
 - Tailwind CDN warning still appears in console; this is a production warning, not a runtime blocker
 - Old posts created before the DB-backed attachment/content migrations may still show broken legacy media
 - Messages still need a cleanup pass for placeholder avatar/media fallbacks
-- Group-chat unread counts are not tracked yet; mentor groups show in Messages but currently report `0` unread
 - Mentor-group admin transfer currently falls back to the next available member; there is no separate admin-picker UI yet
 
 ### Verification checklist before calling a deploy good
@@ -205,9 +210,11 @@ When verifying a fresh deploy, append `?refresh=<commit>` to bypass stale browse
    - dashboard cards load counts without 404/API parse errors
    - dashboard upcoming-events panel loads without HTML/PHP warning leakage
    - students do not see `Become a Mentor`
+   - students do not see a top-level post composer on feed/profile
    - alumni mentor applications require faculty/admin approval
    - students/alumni cannot join a second mentor without leaving the current one
    - mentor group moderation actions work: accept, reject, ban, unban, kick, leave
+   - mentor-group conversation list shows unread counts and header member chips
 4. Verify any new API route directly from the live ALB URL.
 
 ### Notes for future work

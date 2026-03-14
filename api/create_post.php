@@ -28,10 +28,10 @@ $permStmt = $db->prepare($permQuery);
 $permStmt->execute([':uid' => $user_id]);
 $userPerms = $permStmt->fetch(PDO::FETCH_ASSOC);
 
-// Students must have can_post = true. Faculty/Admin bypass this.
-if ($userPerms['role'] === 'student' && !$userPerms['can_post']) {
+// Students cannot create top-level posts. They can still comment/reply elsewhere.
+if (($userPerms['role'] ?? '') === 'student') {
     http_response_code(403);
-    echo json_encode(["status" => "error", "message" => "Permission denied: You are not authorized to post."]);
+    echo json_encode(["status" => "error", "message" => "Students cannot create posts."]);
     exit;
 }
 
