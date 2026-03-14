@@ -8,10 +8,33 @@ include 'includes/sidebar.php';
 <!-- Main Content -->
 <div class="md:pl-64">
         <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+            <style>
+                @media (max-width: 767px) {
+                    .dashboard-stats-grid {
+                        gap: 1rem;
+                    }
+
+                    .dashboard-stat-card {
+                        padding: 1.1rem;
+                    }
+
+                    .dashboard-stat-card .dashboard-stat-icon {
+                        padding: 0.8rem;
+                    }
+
+                    .dashboard-mobile-secondary {
+                        display: none;
+                    }
+
+                    .dashboard-hero-copy {
+                        max-width: 17rem;
+                    }
+                }
+            </style>
             <!-- Welcome Section -->
             <div class="mb-8">
                 <div class="flex items-center justify-between">
-                    <div>
+                    <div class="dashboard-hero-copy">
                         <h1 class="text-2xl font-bold text-gray-900" id="welcomeMessage">Welcome back!</h1>
                         <p class="text-gray-600 mt-1">Here's what's happening in your community</p>
                     </div>
@@ -19,10 +42,10 @@ include 'includes/sidebar.php';
             </div>
 
             <!-- Stats Cards -->
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-                <div class="bg-white rounded-xl shadow-sm p-6">
+            <div class="dashboard-stats-grid grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+                <div class="dashboard-stat-card bg-white rounded-xl shadow-sm p-6">
                     <div class="flex items-center">
-                        <div class="p-3 rounded-lg bg-blue-100">
+                        <div class="dashboard-stat-icon p-3 rounded-lg bg-blue-100">
                             <i data-lucide="users" class="h-6 w-6 text-blue-600"></i>
                         </div>
                         <div class="ml-4">
@@ -32,9 +55,9 @@ include 'includes/sidebar.php';
                     </div>
                 </div>
 
-                <div class="bg-white rounded-xl shadow-sm p-6">
+                <div class="dashboard-stat-card bg-white rounded-xl shadow-sm p-6">
                     <div class="flex items-center">
-                        <div class="p-3 rounded-lg bg-green-100">
+                        <div class="dashboard-stat-icon p-3 rounded-lg bg-green-100">
                             <i data-lucide="message-square" class="h-6 w-6 text-green-600"></i>
                         </div>
                         <div class="ml-4">
@@ -44,9 +67,9 @@ include 'includes/sidebar.php';
                     </div>
                 </div>
 
-                <div class="bg-white rounded-xl shadow-sm p-6">
+                <div class="dashboard-stat-card bg-white rounded-xl shadow-sm p-6">
                     <div class="flex items-center">
-                        <div class="p-3 rounded-lg bg-purple-100">
+                        <div class="dashboard-stat-icon p-3 rounded-lg bg-purple-100">
                             <i data-lucide="calendar" class="h-6 w-6 text-purple-600"></i>
                         </div>
                         <div class="ml-4">
@@ -56,9 +79,9 @@ include 'includes/sidebar.php';
                     </div>
                 </div>
 
-                <div class="bg-white rounded-xl shadow-sm p-6">
+                <div class="dashboard-stat-card dashboard-mobile-secondary bg-white rounded-xl shadow-sm p-6">
                     <div class="flex items-center">
-                        <div class="p-3 rounded-lg bg-amber-100">
+                        <div class="dashboard-stat-icon p-3 rounded-lg bg-amber-100">
                             <i data-lucide="bell" class="h-6 w-6 text-amber-600"></i>
                         </div>
                         <div class="ml-4">
@@ -309,11 +332,15 @@ include 'includes/sidebar.php';
         });
 
         function setupDashboardToggles() {
+            const collapseOnMobile = new Set(['dashboardQuickActions', 'recentActivityWrap', 'recentNotificationsWrap']);
             document.querySelectorAll('.dashboard-toggle').forEach((button) => {
                 const targetId = button.getAttribute('data-target');
                 const target = targetId ? document.getElementById(targetId) : null;
                 const icon = button.querySelector('svg, i');
                 if (!target) return;
+                if (window.innerWidth < 768 && collapseOnMobile.has(targetId)) {
+                    target.classList.add('hidden');
+                }
                 if (icon && target.classList.contains('hidden')) {
                     icon.classList.add('-rotate-90');
                 }

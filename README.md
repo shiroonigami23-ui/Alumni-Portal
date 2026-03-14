@@ -167,6 +167,11 @@ When verifying a fresh deploy, append `?refresh=<commit>` to bypass stale browse
   - bare legacy avatar filenames like `avatar_46_...jpg` are treated as stale local media and no longer reused blindly by header/sidebar/feed/profile
   - `get_conversations.php` now includes the mentor owner id for mentor groups, preventing warning-leak / malformed JSON risk in group conversation payloads
   - mobile navigation now uses a bottom-bar-first pattern on small screens with a `More` sheet for secondary destinations instead of a persistent left drawer
+  - mobile polish pass:
+    - bottom-nav icons are larger with tighter labels and touch-feedback states
+    - the mobile `More` sheet opens with a smoother slide-up animation
+    - the mobile header uses a shorter brand treatment and hides the theme button to avoid crowding notification/profile actions
+    - dashboard hides lower-priority blocks by default on phones (`Jump Back In`, `Recent Activity`, `Recent Notifications`) and suppresses the least important stats card to reduce scroll
 
 ### Infra note
 
@@ -178,6 +183,8 @@ When verifying a fresh deploy, append `?refresh=<commit>` to bypass stale browse
 
 - Feed loads on AWS without fatal JS crashes
 - Mobile screens should no longer be dominated by the left navigation; small screens should use the bottom nav plus `More` sheet
+- Mobile header should no longer crowd the brand with theme/notification/profile controls
+- Dashboard should open in a lighter mobile state with fewer sections expanded by default
 - Profile posting no longer double-submits
 - Reporting is limited to one report per account per post
 - Share action exists and should either open native sharing or copy the link

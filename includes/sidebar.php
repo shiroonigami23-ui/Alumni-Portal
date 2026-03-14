@@ -82,6 +82,8 @@ $isAdminDashboardPage = $currentPage === 'dashboard.php' && strpos($_SERVER['REQ
         .mobile-nav-link {
             color: #94a3b8;
             transition: color 0.18s ease, transform 0.18s ease;
+            user-select: none;
+            -webkit-tap-highlight-color: transparent;
         }
 
         .mobile-nav-link.mobile-nav-active {
@@ -95,12 +97,24 @@ $isAdminDashboardPage = $currentPage === 'dashboard.php' && strpos($_SERVER['REQ
 
         .mobile-nav-pill {
             border: 1px solid transparent;
+            transition: transform 0.18s ease, background-color 0.18s ease, border-color 0.18s ease, box-shadow 0.18s ease;
         }
 
         .mobile-nav-sheet {
             background: linear-gradient(180deg, rgba(15, 23, 42, 0.98) 0%, rgba(2, 6, 23, 0.98) 100%);
             border-top: 1px solid rgba(71, 85, 105, 0.4);
             box-shadow: 0 -16px 42px rgba(2, 6, 23, 0.45);
+        }
+
+        .mobile-nav-link:active .mobile-nav-pill,
+        .mobile-nav-link.is-pressed .mobile-nav-pill {
+            transform: scale(0.94) translateY(1px);
+            box-shadow: 0 10px 22px rgba(15, 23, 42, 0.22) inset;
+        }
+
+        .mobile-nav-link:active,
+        .mobile-nav-link.is-pressed {
+            color: #cbd5e1;
         }
     }
 </style>
@@ -227,7 +241,7 @@ $isAdminDashboardPage = $currentPage === 'dashboard.php' && strpos($_SERVER['REQ
 
 <!-- Mobile More Sheet -->
 <div id="mobileSidebarOverlay" class="md:hidden fixed inset-0 bg-black/40 z-40 hidden"></div>
-<aside id="mobileSidebarDrawer" class="mobile-nav-sheet md:hidden fixed inset-x-0 bottom-0 z-50 rounded-t-3xl transform translate-y-full transition-transform duration-200 ease-out">
+<aside id="mobileSidebarDrawer" class="mobile-nav-sheet md:hidden fixed inset-x-0 bottom-0 z-50 rounded-t-3xl transform translate-y-full transition-transform duration-300 ease-[cubic-bezier(0.22,1,0.36,1)]">
     <div class="px-5 pt-3 pb-5">
         <div class="mx-auto mb-4 h-1.5 w-14 rounded-full bg-slate-600/70"></div>
         <div class="mb-4 flex items-center justify-between">
@@ -275,25 +289,25 @@ $isAdminDashboardPage = $currentPage === 'dashboard.php' && strpos($_SERVER['REQ
 <!-- Mobile Bottom Navigation -->
 <div class="mobile-nav-shell md:hidden fixed bottom-0 left-0 right-0 z-40">
     <div class="mx-auto flex h-20 max-w-screen-sm items-center justify-between px-3 pb-[max(0.5rem,env(safe-area-inset-bottom))] pt-2">
-        <a href="<?php echo $basePrefix; ?>dashboard.php" class="mobile-nav-link <?php echo $currentPage === 'dashboard.php' && !$isAdminPath ? 'mobile-nav-active' : ''; ?> flex min-w-0 flex-1 flex-col items-center gap-1 px-1 text-xs font-medium">
-            <span class="mobile-nav-pill inline-flex rounded-2xl px-3 py-2"><i data-lucide="layout-dashboard" class="h-5 w-5"></i></span>
+        <a href="<?php echo $basePrefix; ?>dashboard.php" class="mobile-nav-link <?php echo $currentPage === 'dashboard.php' && !$isAdminPath ? 'mobile-nav-active' : ''; ?> flex min-w-0 flex-1 flex-col items-center gap-1 px-1 text-[11px] font-semibold tracking-tight">
+            <span class="mobile-nav-pill inline-flex rounded-2xl px-3 py-2.5"><i data-lucide="layout-dashboard" class="h-[1.35rem] w-[1.35rem]"></i></span>
             <span>Home</span>
         </a>
-        <a href="<?php echo $basePrefix; ?>feed.php" class="mobile-nav-link <?php echo $currentPage === 'feed.php' ? 'mobile-nav-active' : ''; ?> flex min-w-0 flex-1 flex-col items-center gap-1 px-1 text-xs font-medium">
-            <span class="mobile-nav-pill inline-flex rounded-2xl px-3 py-2"><i data-lucide="newspaper" class="h-5 w-5"></i></span>
+        <a href="<?php echo $basePrefix; ?>feed.php" class="mobile-nav-link <?php echo $currentPage === 'feed.php' ? 'mobile-nav-active' : ''; ?> flex min-w-0 flex-1 flex-col items-center gap-1 px-1 text-[11px] font-semibold tracking-tight">
+            <span class="mobile-nav-pill inline-flex rounded-2xl px-3 py-2.5"><i data-lucide="newspaper" class="h-[1.35rem] w-[1.35rem]"></i></span>
             <span>Feed</span>
         </a>
-        <a href="<?php echo $basePrefix; ?>discovery.php" class="mobile-nav-link <?php echo $currentPage === 'discovery.php' ? 'mobile-nav-active' : ''; ?> flex min-w-0 flex-1 flex-col items-center gap-1 px-1 text-xs font-medium">
-            <span class="mobile-nav-pill inline-flex rounded-2xl px-3 py-2"><i data-lucide="search" class="h-5 w-5"></i></span>
+        <a href="<?php echo $basePrefix; ?>discovery.php" class="mobile-nav-link <?php echo $currentPage === 'discovery.php' ? 'mobile-nav-active' : ''; ?> flex min-w-0 flex-1 flex-col items-center gap-1 px-1 text-[11px] font-semibold tracking-tight">
+            <span class="mobile-nav-pill inline-flex rounded-2xl px-3 py-2.5"><i data-lucide="search" class="h-[1.35rem] w-[1.35rem]"></i></span>
             <span>Discover</span>
         </a>
-        <a href="<?php echo $basePrefix; ?>messages.php" class="mobile-nav-link <?php echo $currentPage === 'messages.php' ? 'mobile-nav-active' : ''; ?> relative flex min-w-0 flex-1 flex-col items-center gap-1 px-1 text-xs font-medium">
-            <span class="mobile-nav-pill inline-flex rounded-2xl px-3 py-2"><i data-lucide="message-square" class="h-5 w-5"></i></span>
+        <a href="<?php echo $basePrefix; ?>messages.php" class="mobile-nav-link <?php echo $currentPage === 'messages.php' ? 'mobile-nav-active' : ''; ?> relative flex min-w-0 flex-1 flex-col items-center gap-1 px-1 text-[11px] font-semibold tracking-tight">
+            <span class="mobile-nav-pill inline-flex rounded-2xl px-3 py-2.5"><i data-lucide="message-square" class="h-[1.35rem] w-[1.35rem]"></i></span>
             <span>Messages</span>
             <span id="mobileUnreadBadge" class="absolute right-5 top-0 hidden h-4 min-w-4 rounded-full bg-red-500 px-1 text-[10px] font-semibold leading-4 text-white"></span>
         </a>
-        <button id="mobileSidebarToggle" type="button" class="mobile-nav-link flex min-w-0 flex-1 flex-col items-center gap-1 px-1 text-xs font-medium">
-            <span class="mobile-nav-pill inline-flex rounded-2xl px-3 py-2"><i data-lucide="ellipsis" class="h-5 w-5"></i></span>
+        <button id="mobileSidebarToggle" type="button" class="mobile-nav-link flex min-w-0 flex-1 flex-col items-center gap-1 px-1 text-[11px] font-semibold tracking-tight">
+            <span class="mobile-nav-pill inline-flex rounded-2xl px-3 py-2.5"><i data-lucide="ellipsis" class="h-[1.35rem] w-[1.35rem]"></i></span>
             <span>More</span>
         </button>
     </div>
@@ -447,6 +461,13 @@ $isAdminDashboardPage = $currentPage === 'dashboard.php' && strpos($_SERVER['REQ
                 link.addEventListener('click', closeDrawer);
             });
         }
+
+        document.querySelectorAll('.mobile-nav-link').forEach((link) => {
+            link.addEventListener('touchstart', () => link.classList.add('is-pressed'), { passive: true });
+            ['touchend', 'touchcancel', 'mouseleave', 'blur'].forEach((eventName) => {
+                link.addEventListener(eventName, () => link.classList.remove('is-pressed'));
+            });
+        });
     });
 
     async function refreshSidebarUser() {

@@ -71,6 +71,45 @@ $basePrefix = $isAdminPath ? '../' : '';
             background-color: #3b82f6;
             color: white;
         }
+
+        @media (max-width: 767px) {
+            .portal-topbar .max-w-7xl {
+                padding-left: 0.75rem;
+                padding-right: 0.75rem;
+            }
+
+            .portal-topbar .h-16 {
+                height: 4.25rem;
+            }
+
+            .portal-brand-wordmark {
+                font-size: 1.45rem;
+                line-height: 1;
+            }
+
+            .portal-brand-mark {
+                width: 2rem;
+                height: 2rem;
+            }
+
+            .portal-topbar-actions {
+                gap: 0.375rem;
+            }
+
+            .portal-topbar-icon-btn {
+                padding: 0.55rem;
+            }
+
+            .portal-topbar-user-btn {
+                gap: 0.25rem;
+                padding-left: 0.35rem;
+                padding-right: 0.35rem;
+            }
+
+            .portal-topbar-user-btn [data-lucide="chevron-down"] {
+                display: none;
+            }
+        }
     </style>
 
     <!-- Auth Check Script -->
@@ -93,11 +132,12 @@ $basePrefix = $isAdminPath ? '../' : '';
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="flex justify-between h-16">
                 <!-- Logo and Brand -->
-                <div class="flex items-center">
-                    <div class="flex-shrink-0 flex items-center">
-                        <a href="#" onclick="goToDashboard(); return false;" class="flex items-center cursor-pointer hover:opacity-80 transition">
-                            <i data-lucide="graduation-cap" class="h-8 w-8 text-blue-600"></i>
-                            <span class="ml-2 text-xl font-bold text-gray-900">RJIT Alumni Portal</span>
+                <div class="flex min-w-0 items-center">
+                    <div class="flex-shrink-0 flex items-center min-w-0">
+                        <a href="#" onclick="goToDashboard(); return false;" class="flex min-w-0 items-center cursor-pointer hover:opacity-80 transition">
+                            <i data-lucide="graduation-cap" class="portal-brand-mark h-8 w-8 flex-shrink-0 text-blue-600"></i>
+                            <span class="portal-brand-wordmark ml-2 hidden truncate text-xl font-bold text-gray-900 sm:inline">RJIT Alumni Portal</span>
+                            <span class="portal-brand-wordmark ml-2 truncate text-lg font-bold text-gray-900 sm:hidden">RJIT Portal</span>
                         </a>
                     </div>
                     <div id="live-indicator-container"></div>
@@ -114,8 +154,8 @@ $basePrefix = $isAdminPath ? '../' : '';
                 </div>
 
                 <!-- Right Side Navigation -->
-                <div class="flex items-center space-x-4">
-                    <button id="themeModeBtn" class="vu-theme-toggle" type="button">
+                <div class="portal-topbar-actions flex items-center space-x-4">
+                    <button id="themeModeBtn" class="vu-theme-toggle hidden sm:inline-flex" type="button">
                         <i data-lucide="palette" class="h-4 w-4"></i>
                     </button>
                     <button id="installAppBtn" class="hidden px-3 py-1.5 border border-gray-300 rounded-full text-sm text-gray-700 hover:bg-gray-100">
@@ -123,7 +163,7 @@ $basePrefix = $isAdminPath ? '../' : '';
                     </button>
                     <!-- Notifications -->
                     <div class="relative">
-                        <button id="notificationBtn" class="p-2 rounded-full hover:bg-gray-100">
+                        <button id="notificationBtn" class="portal-topbar-icon-btn p-2 rounded-full hover:bg-gray-100">
                             <i data-lucide="bell"></i>
                             <span id="notificationCount" class="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center hidden">0</span>
                         </button>
@@ -140,7 +180,7 @@ $basePrefix = $isAdminPath ? '../' : '';
 
                     <!-- User Menu -->
                     <div class="relative">
-                        <button id="userMenuBtn" class="flex items-center space-x-2 p-2 rounded-lg hover:bg-gray-100">
+                        <button id="userMenuBtn" class="portal-topbar-user-btn flex items-center space-x-2 rounded-lg p-2 hover:bg-gray-100">
                             <div class="h-8 w-8 bg-blue-100 rounded-full flex items-center justify-center overflow-hidden">
                                 <img id="userAvatarImage" src="" alt="Profile" class="h-8 w-8 rounded-full object-cover hidden">
                                 <i id="userAvatarIcon" data-lucide="user"></i>
