@@ -144,7 +144,7 @@ try {
     $stmt->execute();
     $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-    $posts = array_map(function (array $row) use ($user_id) {
+    $posts = array_map(function (array $row) use ($db, $user_id) {
         $row['author_name'] = $row['author_name'] ?: 'RJIT Member';
         $avatar = (string)($row['author_avatar'] ?? '');
         if ($avatar !== '') {

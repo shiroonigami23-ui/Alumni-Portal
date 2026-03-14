@@ -72,16 +72,17 @@ include 'includes/sidebar.php';
                                         <div id="filePreviews" class="flex flex-wrap gap-2 mt-2"></div>
                                     </div>
                                 </div>
-                                <div class="mt-3">
-                                    <label class="text-xs text-gray-600">GIF URL (optional)</label>
-                                    <input type="url" id="postGifUrl" class="w-full mt-1 px-2 py-1 border border-gray-300 rounded text-xs" placeholder="https://media.giphy.com/...">
-                                </div>
+                                <input type="hidden" id="postGifUrl">
+                                <div id="postGifPreview" class="hidden mt-3"></div>
                             </div>
 
                             <div class="mt-3 flex items-center justify-between gap-2">
                                 <div class="flex items-center gap-2">
                                     <button id="togglePostMediaBtn" type="button" class="p-2 rounded-full hover:bg-blue-50 text-blue-600" title="Media & files">
                                         <i data-lucide="image-plus" class="h-4 w-4"></i>
+                                    </button>
+                                    <button id="openGifPickerBtn" type="button" class="p-2 rounded-full hover:bg-pink-50 text-pink-600" title="Add GIF">
+                                        <i data-lucide="sticker" class="h-4 w-4"></i>
                                     </button>
                                     <input type="checkbox" id="allowComments" name="allow_comments" checked class="h-4 w-4 text-blue-600 rounded">
                                     <label for="allowComments" class="text-xs text-gray-700">Allow comments</label>
@@ -169,8 +170,10 @@ include 'includes/sidebar.php';
                             <input type="file" class="comment-file hidden">
                             <button type="button" class="comment-add-image p-1.5 rounded-full hover:bg-blue-50 text-blue-600" title="Add image"><i data-lucide="image" class="h-4 w-4"></i></button>
                             <button type="button" class="comment-add-file p-1.5 rounded-full hover:bg-blue-50 text-blue-600" title="Add file"><i data-lucide="paperclip" class="h-4 w-4"></i></button>
-                            <input type="url" class="comment-gif-url flex-1 max-w-xs px-2 py-1 border border-gray-300 rounded text-xs" placeholder="GIF URL (optional)">
+                            <button type="button" class="comment-add-gif p-1.5 rounded-full hover:bg-pink-50 text-pink-600" title="Add GIF"><i data-lucide="sticker" class="h-4 w-4"></i></button>
+                            <input type="hidden" class="comment-gif-url">
                         </div>
+                        <div class="comment-gif-preview hidden mt-2"></div>
                         <div class="mt-2 flex justify-end">
                             <button type="button" class="post-comment-btn bg-blue-600 text-white px-4 py-1.5 rounded-lg text-sm hover:bg-blue-700">
                                 Post Comment
@@ -184,6 +187,30 @@ include 'includes/sidebar.php';
             </div>
         </div>
     </template>
+
+    <div id="gifPickerModal" class="hidden fixed inset-0 z-50 bg-black/60 backdrop-blur-sm">
+        <div class="flex min-h-screen items-center justify-center p-4">
+            <div class="w-full max-w-4xl rounded-2xl border border-slate-700 bg-[#0f172a] shadow-2xl">
+                <div class="flex items-center justify-between border-b border-slate-700 px-5 py-4">
+                    <div>
+                        <h3 class="text-lg font-semibold text-white">Choose a GIF</h3>
+                        <p class="text-sm text-slate-400">Search and attach a GIF without pasting links manually.</p>
+                    </div>
+                    <button id="closeGifPickerBtn" type="button" class="rounded-full p-2 text-slate-300 hover:bg-slate-800 hover:text-white">
+                        <i data-lucide="x" class="h-5 w-5"></i>
+                    </button>
+                </div>
+                <div class="px-5 py-4">
+                    <div class="flex gap-3">
+                        <input id="gifSearchInput" type="text" class="flex-1 rounded-xl border border-slate-700 bg-slate-900 px-4 py-3 text-white placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-pink-500" placeholder="Search GIFs like hello, celebration, wow, anime...">
+                        <button id="gifSearchBtn" type="button" class="rounded-xl bg-pink-600 px-5 py-3 font-medium text-white hover:bg-pink-500">Search</button>
+                    </div>
+                    <div id="gifPickerStatus" class="mt-3 text-sm text-slate-400">Trending GIFs</div>
+                    <div id="gifPickerGrid" class="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4"></div>
+                </div>
+            </div>
+        </div>
+    </div>
 
     <script>
         // Initialize Lucide icons
@@ -211,6 +238,8 @@ include 'includes/sidebar.php';
         let pendingSharedPostId = 0;
         let pendingOpenCommentsPostId = 0;
         const postStateCache = new Map();
+        const GIF_API_KEY = 'dc6zaTOxFJmzC';
+        let gifPickerTarget = null;
         
         // Load feed data
         document.addEventListener('DOMContentLoaded', async function() {
@@ -832,11 +861,16 @@ include 'includes/sidebar.php';
                 const imageInput = commentBox.querySelector('.comment-image');
                 const fileInput = commentBox.querySelector('.comment-file');
                 const gifInput = commentBox.querySelector('.comment-gif-url');
+                const gifPreview = commentBox.querySelector('.comment-gif-preview');
                 const imageBtn = commentBox.querySelector('.comment-add-image');
                 const fileBtn = commentBox.querySelector('.comment-add-file');
+                const gifBtn = commentBox.querySelector('.comment-add-gif');
 
                 if (imageBtn && imageInput) imageBtn.addEventListener('click', () => imageInput.click());
                 if (fileBtn && fileInput) fileBtn.addEventListener('click', () => fileInput.click());
+                if (gifBtn && gifInput) {
+                    gifBtn.addEventListener('click', () => openGifPicker({ input: gifInput, preview: gifPreview }));
+                }
                 if (currentUserRole === 'student') {
                     if (imageBtn) imageBtn.classList.add('hidden');
                     if (fileBtn) fileBtn.classList.add('hidden');
@@ -922,6 +956,7 @@ include 'includes/sidebar.php';
                     if (img) img.value = '';
                     if (file) file.value = '';
                     if (gif) gif.value = '';
+                    clearGifPreview(commentBox.querySelector('.comment-gif-preview'));
                     
                     await loadComments(postId, commentBox.querySelector('.comments-list'), commentBox, true);
                     const postElement = commentBox.closest('.post-card');
@@ -1040,9 +1075,11 @@ include 'includes/sidebar.php';
                                 <input type="file" class="reply-file hidden">
                                 <button type="button" class="reply-add-image p-1 rounded-full hover:bg-blue-50 text-blue-600" title="Add image"><i data-lucide="image" class="h-4 w-4"></i></button>
                                 <button type="button" class="reply-add-file p-1 rounded-full hover:bg-blue-50 text-blue-600" title="Add file"><i data-lucide="paperclip" class="h-4 w-4"></i></button>
-                                <input type="url" class="reply-gif-url min-w-[180px] flex-1 px-2 py-1 border border-gray-300 rounded text-xs" placeholder="GIF URL (optional)">
+                                <button type="button" class="reply-add-gif p-1 rounded-full hover:bg-pink-50 text-pink-600" title="Add GIF"><i data-lucide="sticker" class="h-4 w-4"></i></button>
+                                <input type="hidden" class="reply-gif-url">
                                 <button type="button" class="post-reply-btn bg-blue-600 text-white px-3 py-1 rounded text-xs hover:bg-blue-700">Post Reply</button>
                             </div>
+                            <div class="reply-gif-preview hidden mt-2"></div>
                         </div>
                     </div>
                 </div>
@@ -1054,9 +1091,11 @@ include 'includes/sidebar.php';
             const replyFile = wrapper.querySelector('.reply-file');
             const replyAddImage = wrapper.querySelector('.reply-add-image');
             const replyAddFile = wrapper.querySelector('.reply-add-file');
+            const replyAddGif = wrapper.querySelector('.reply-add-gif');
             const postReplyBtn = wrapper.querySelector('.post-reply-btn');
             const replyInput = wrapper.querySelector('.reply-input');
             const replyGif = wrapper.querySelector('.reply-gif-url');
+            const replyGifPreview = wrapper.querySelector('.reply-gif-preview');
             const likeBtn = wrapper.querySelector('.comment-like-btn');
             const deleteBtn = wrapper.querySelector('.comment-delete-btn');
             const editBtn = wrapper.querySelector('.comment-edit-btn');
@@ -1071,6 +1110,7 @@ include 'includes/sidebar.php';
             }
             if (replyAddImage && replyImage) replyAddImage.addEventListener('click', () => replyImage.click());
             if (replyAddFile && replyFile) replyAddFile.addEventListener('click', () => replyFile.click());
+            if (replyAddGif && replyGif) replyAddGif.addEventListener('click', () => openGifPicker({ input: replyGif, preview: replyGifPreview }));
             if (currentUserRole === 'student') {
                 if (replyAddImage) replyAddImage.classList.add('hidden');
                 if (replyAddFile) replyAddFile.classList.add('hidden');
@@ -1091,6 +1131,7 @@ include 'includes/sidebar.php';
                     );
                     if (replyInput) replyInput.value = '';
                     if (replyGif) replyGif.value = '';
+                    clearGifPreview(replyGifPreview);
                     if (replyImage) replyImage.value = '';
                     if (replyFile) replyFile.value = '';
                     if (replyComposer) replyComposer.classList.add('hidden');
@@ -1326,6 +1367,13 @@ include 'includes/sidebar.php';
             if (toggleMediaBtn && mediaPanel) {
                 toggleMediaBtn.addEventListener('click', () => mediaPanel.classList.toggle('hidden'));
             }
+            const openGifPickerBtn = document.getElementById('openGifPickerBtn');
+            const postGifInput = document.getElementById('postGifUrl');
+            const postGifPreview = document.getElementById('postGifPreview');
+            if (openGifPickerBtn && postGifInput) {
+                openGifPickerBtn.addEventListener('click', () => openGifPicker({ input: postGifInput, preview: postGifPreview }));
+            }
+            setupGifPicker();
 
         }
         
@@ -1488,10 +1536,117 @@ include 'includes/sidebar.php';
             document.getElementById('allowComments').checked = true;
             document.getElementById('imagePreviews').innerHTML = '';
             document.getElementById('filePreviews').innerHTML = '';
+            clearGifPreview(document.getElementById('postGifPreview'));
             document.getElementById('postImages').value = '';
             document.getElementById('postFiles').value = '';
             const mediaPanel = document.getElementById('postMediaPanel');
             if (mediaPanel) mediaPanel.classList.add('hidden');
+        }
+
+        function clearGifPreview(container) {
+            if (!container) return;
+            container.innerHTML = '';
+            container.classList.add('hidden');
+        }
+
+        function renderGifPreview(container, url) {
+            if (!container || !url) return;
+            container.classList.remove('hidden');
+            container.innerHTML = `
+                <div class="relative inline-block overflow-hidden rounded-xl border border-slate-700 bg-slate-900">
+                    <img src="${url}" alt="Selected GIF" class="h-28 w-auto object-cover">
+                    <button type="button" class="absolute right-2 top-2 rounded-full bg-black/70 px-2 py-1 text-xs font-medium text-white hover:bg-black" data-clear-gif>Remove</button>
+                </div>
+            `;
+            const clearBtn = container.querySelector('[data-clear-gif]');
+            if (clearBtn) {
+                clearBtn.addEventListener('click', () => {
+                    const input = container.previousElementSibling && container.previousElementSibling.tagName === 'INPUT'
+                        ? container.previousElementSibling
+                        : null;
+                    if (input) input.value = '';
+                    clearGifPreview(container);
+                });
+            }
+        }
+
+        function openGifPicker(target) {
+            gifPickerTarget = target;
+            const modal = document.getElementById('gifPickerModal');
+            if (!modal) return;
+            modal.classList.remove('hidden');
+            const input = document.getElementById('gifSearchInput');
+            if (input) input.focus();
+            loadGifResults('');
+        }
+
+        function closeGifPicker() {
+            const modal = document.getElementById('gifPickerModal');
+            if (modal) modal.classList.add('hidden');
+            gifPickerTarget = null;
+        }
+
+        async function loadGifResults(query) {
+            const grid = document.getElementById('gifPickerGrid');
+            const status = document.getElementById('gifPickerStatus');
+            if (!grid || !status) return;
+            grid.innerHTML = '<div class="col-span-full py-10 text-center text-slate-400">Loading GIFs...</div>';
+            const endpoint = query.trim()
+                ? `https://api.giphy.com/v1/gifs/search?api_key=${GIF_API_KEY}&limit=24&rating=pg&q=${encodeURIComponent(query.trim())}`
+                : `https://api.giphy.com/v1/gifs/trending?api_key=${GIF_API_KEY}&limit=24&rating=pg`;
+            status.textContent = query.trim() ? `Results for "${query.trim()}"` : 'Trending GIFs';
+            try {
+                const response = await fetch(endpoint);
+                const payload = await response.json();
+                const gifs = Array.isArray(payload?.data) ? payload.data : [];
+                if (!gifs.length) {
+                    grid.innerHTML = '<div class="col-span-full py-10 text-center text-slate-400">No GIFs found.</div>';
+                    return;
+                }
+                grid.innerHTML = gifs.map((gif) => {
+                    const preview = gif?.images?.fixed_height?.url || gif?.images?.downsized?.url || '';
+                    const original = gif?.images?.original?.url || preview;
+                    const title = (gif?.title || 'GIF').replace(/"/g, '&quot;');
+                    return `
+                        <button type="button" class="gif-choice overflow-hidden rounded-xl border border-slate-700 bg-slate-900 hover:border-pink-500" data-gif-url="${original}">
+                            <img src="${preview}" alt="${title}" class="h-40 w-full object-cover">
+                        </button>
+                    `;
+                }).join('');
+                grid.querySelectorAll('.gif-choice').forEach((btn) => {
+                    btn.addEventListener('click', () => {
+                        if (!gifPickerTarget?.input) return;
+                        const url = btn.getAttribute('data-gif-url') || '';
+                        gifPickerTarget.input.value = url;
+                        renderGifPreview(gifPickerTarget.preview, url);
+                        closeGifPicker();
+                    });
+                });
+            } catch (_error) {
+                grid.innerHTML = '<div class="col-span-full py-10 text-center text-slate-400">Unable to load GIFs right now.</div>';
+            }
+        }
+
+        function setupGifPicker() {
+            const closeBtn = document.getElementById('closeGifPickerBtn');
+            const searchBtn = document.getElementById('gifSearchBtn');
+            const searchInput = document.getElementById('gifSearchInput');
+            const modal = document.getElementById('gifPickerModal');
+            if (closeBtn) closeBtn.addEventListener('click', closeGifPicker);
+            if (searchBtn) searchBtn.addEventListener('click', () => loadGifResults(searchInput?.value || ''));
+            if (searchInput) {
+                searchInput.addEventListener('keydown', (event) => {
+                    if (event.key === 'Enter') {
+                        event.preventDefault();
+                        loadGifResults(searchInput.value || '');
+                    }
+                });
+            }
+            if (modal) {
+                modal.addEventListener('click', (event) => {
+                    if (event.target === modal) closeGifPicker();
+                });
+            }
         }
         
         function previewImages(input, previewContainerId) {

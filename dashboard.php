@@ -69,9 +69,16 @@ include 'includes/sidebar.php';
                 </div>
             </div>
 
-            <!-- Quick Actions -->
-            <div class="mb-8">
-                <h2 class="text-lg font-semibold text-gray-900 mb-4">Quick Actions</h2>
+            <!-- Jump Back In -->
+            <div class="mb-8 rounded-xl bg-white shadow-sm">
+                <button type="button" class="dashboard-toggle flex w-full items-center justify-between px-6 py-5 text-left" data-target="dashboardQuickActions">
+                    <div>
+                        <h2 class="text-lg font-semibold text-gray-900">Jump Back In</h2>
+                        <p class="mt-1 text-sm text-gray-500">Shortcuts for the parts of the portal you’ll likely open next.</p>
+                    </div>
+                    <i data-lucide="chevron-down" class="h-5 w-5 text-gray-400 transition-transform"></i>
+                </button>
+                <div id="dashboardQuickActions" class="px-6 pb-6">
                 <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
                     <a href="feed.php" class="bg-white rounded-xl shadow-sm p-4 text-center hover:shadow-md transition duration-300 border border-transparent hover:border-blue-200">
                         <div class="inline-flex items-center justify-center w-12 h-12 bg-blue-100 rounded-lg mb-3">
@@ -105,6 +112,7 @@ include 'includes/sidebar.php';
                         <p class="text-sm text-gray-500 mt-1">Find opportunities</p>
                     </a>
                 </div>
+                </div>
             </div>
 
             <!-- Two Column Layout -->
@@ -112,17 +120,25 @@ include 'includes/sidebar.php';
                 <!-- Left Column: Recent Activity -->
                 <div class="lg:col-span-2">
                     <div class="bg-white rounded-xl shadow-sm p-6">
-                        <div class="flex items-center justify-between mb-6">
-                            <h2 class="text-lg font-semibold text-gray-900">Recent Activity</h2>
+                        <div class="flex items-center justify-between">
+                            <button type="button" class="dashboard-toggle flex items-center gap-3 text-left" data-target="recentActivityWrap">
+                                <div>
+                                    <h2 class="text-lg font-semibold text-gray-900">Recent Activity</h2>
+                                    <p class="text-sm text-gray-500">Posts and engagement worth checking.</p>
+                                </div>
+                                <i data-lucide="chevron-down" class="h-5 w-5 text-gray-400 transition-transform"></i>
+                            </button>
                             <a href="feed.php" class="text-sm text-blue-600 hover:text-blue-800 font-medium">View All</a>
                         </div>
 
+                        <div id="recentActivityWrap" class="mt-6">
                         <div id="recentActivity" class="space-y-4">
                             <!-- Activity items will be loaded here -->
                             <div class="text-center py-8">
                                 <i data-lucide="loader" class="h-8 w-8 animate-spin text-blue-600 mx-auto mb-3"></i>
                                 <p class="text-gray-500">Loading recent activity...</p>
                             </div>
+                        </div>
                         </div>
                     </div>
 
@@ -163,11 +179,15 @@ include 'includes/sidebar.php';
                 <div class="space-y-6">
                     <!-- Upcoming Events -->
                     <div class="bg-white rounded-xl shadow-sm p-6">
-                        <div class="flex items-center justify-between mb-4">
-                            <h3 class="font-semibold text-gray-900">Upcoming Events</h3>
+                        <div class="flex items-center justify-between">
+                            <button type="button" class="dashboard-toggle flex items-center gap-3 text-left" data-target="upcomingEventsWrap">
+                                <h3 class="font-semibold text-gray-900">Upcoming Events</h3>
+                                <i data-lucide="chevron-down" class="h-5 w-5 text-gray-400 transition-transform"></i>
+                            </button>
                             <a href="events.php" class="text-sm text-blue-600 hover:text-blue-800">View All</a>
                         </div>
 
+                        <div id="upcomingEventsWrap" class="mt-4">
                         <div id="upcomingEvents" class="space-y-4">
                             <!-- Events will be loaded here -->
                             <div class="text-center py-4">
@@ -175,21 +195,27 @@ include 'includes/sidebar.php';
                                 <p class="text-sm text-gray-500">Loading events...</p>
                             </div>
                         </div>
+                        </div>
                     </div>
 
                     <!-- Recent Notifications -->
                     <div class="bg-white rounded-xl shadow-sm p-6">
-                        <div class="flex items-center justify-between mb-4">
-                            <h3 class="font-semibold text-gray-900">Recent Notifications</h3>
+                        <div class="flex items-center justify-between">
+                            <button type="button" class="dashboard-toggle flex items-center gap-3 text-left" data-target="recentNotificationsWrap">
+                                <h3 class="font-semibold text-gray-900">Recent Notifications</h3>
+                                <i data-lucide="chevron-down" class="h-5 w-5 text-gray-400 transition-transform"></i>
+                            </button>
                             <a href="#" class="text-sm text-blue-600 hover:text-blue-800">View All</a>
                         </div>
 
+                        <div id="recentNotificationsWrap" class="mt-4">
                         <div id="recentNotifications" class="space-y-3">
                             <!-- Notifications will be loaded here -->
                             <div class="text-center py-4">
                                 <i data-lucide="loader" class="h-6 w-6 animate-spin text-blue-600 mx-auto mb-2"></i>
                                 <p class="text-sm text-gray-500">Loading notifications...</p>
                             </div>
+                        </div>
                         </div>
                     </div>
                 </div>
@@ -271,7 +297,21 @@ include 'includes/sidebar.php';
             await loadUpcomingEvents();
             await loadRecentNotifications();
             setupQuickPost();
+            setupDashboardToggles();
         });
+
+        function setupDashboardToggles() {
+            document.querySelectorAll('.dashboard-toggle').forEach((button) => {
+                const targetId = button.getAttribute('data-target');
+                const target = targetId ? document.getElementById(targetId) : null;
+                const icon = button.querySelector('svg, i');
+                if (!target) return;
+                button.addEventListener('click', () => {
+                    target.classList.toggle('hidden');
+                    if (icon) icon.classList.toggle('rotate-180');
+                });
+            });
+        }
 
         async function loadUserData() {
             try {
