@@ -334,10 +334,14 @@ include 'includes/sidebar.php';
                     const welcomeMessage = document.getElementById('welcomeMessage');
                     welcomeMessage.textContent = `Welcome back, ${user.full_name || user.email}!`;
 
-                    // Show quick post section if user can post
+                    // Show quick post section only for roles allowed to create top-level posts
                     const quickPostSection = document.getElementById('quickPostSection');
-                    if (user.can_post && quickPostSection) {
+                    const role = String(user.role || '').toLowerCase();
+                    const canCreateTopLevelPost = ['admin', 'faculty', 'alumni'].includes(role) && !!user.can_post;
+                    if (canCreateTopLevelPost && quickPostSection) {
                         quickPostSection.classList.remove('hidden');
+                    } else if (quickPostSection) {
+                        quickPostSection.classList.add('hidden');
                     }
                 }
             } catch (error) {
@@ -396,8 +400,8 @@ include 'includes/sidebar.php';
                         postElement.innerHTML = `
                             <div class="flex-shrink-0">
                                 <div class="h-10 w-10 bg-blue-100 rounded-full flex items-center justify-center overflow-hidden">
-                                    ${post.author_profile_picture_url ? 
-                                        `<img src="${post.author_profile_picture_url}" alt="${post.author_name}" class="h-10 w-10 rounded-full">` : 
+                                    ${post.author_avatar ? 
+                                        `<img src="${post.author_avatar}" alt="${post.author_name}" class="h-10 w-10 rounded-full" onerror="this.onerror=null;this.parentElement.innerHTML='&lt;i data-lucide=&quot;user&quot; class=&quot;h-5 w-5 text-blue-600&quot;&gt;&lt;/i&gt;'; lucide.createIcons();">` : 
                                         `<i data-lucide="user" class="h-5 w-5 text-blue-600"></i>`}
                                 </div>
                             </div>

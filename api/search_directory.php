@@ -82,6 +82,37 @@ function deriveJoinedYear(?string $rollNumber): ?int
     return 2000 + $yy;
 }
 
+function clear_missing_local_asset(?string $path): string
+{
+    $path = trim((string)$path);
+    if ($path === '') {
+        return '';
+    }
+
+    if (stripos($path, 'data:image/') === 0) {
+        return $path;
+    }
+
+    if (preg_match('/\.php(?:\?|$)/i', $path)) {
+        return $path;
+    }
+
+    $normalized = str_replace('\\', '/', $path);
+    if (preg_match('#^https?://#i', $normalized)) {
+        $parts = parse_url($normalized);
+        $candidate = isset($parts['path']) ? ltrim((string)$parts['path'], '/') : '';
+        if ($candidate === '') {
+            return $normalized;
+        }
+        $abs = dirname(__DIR__) . DIRECTORY_SEPARATOR . str_replace('/', DIRECTORY_SEPARATOR, $candidate);
+        return file_exists($abs) ? $normalized : '';
+    }
+
+    $candidate = ltrim($normalized, '/');
+    $abs = dirname(__DIR__) . DIRECTORY_SEPARATOR . str_replace('/', DIRECTORY_SEPARATOR, $candidate);
+    return file_exists($abs) ? $normalized : '';
+}
+
 try {
     // Re-using $pdo from above
 
@@ -255,7 +286,7 @@ try {
             'branch' => $row['branch'] ?? null,
             'department' => $row['department'] ?? null,
             'roll_number' => $row['roll_number'] ?? null,
-            'avatar' => $row['profile_picture_url'] ? str_replace('\\', '/', (string)$row['profile_picture_url']) : null,
+            'avatar' => clear_missing_local_asset($row['profile_picture_url'] ? str_replace('\\', '/', (string)$row['profile_picture_url']) : null) ?: null,
             'bio' => $row['bio'] ?? null,
             'skills' => $skills,
             'is_private' => false

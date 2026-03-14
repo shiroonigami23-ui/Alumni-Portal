@@ -210,6 +210,7 @@ include 'includes/sidebar.php';
         let conversationMap = {};
         let currentConversationMeta = null;
         const DEFAULT_AVATAR = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='40' height='40' viewBox='0 0 40 40'%3E%3Crect width='40' height='40' rx='20' fill='%23e2e8f0'/%3E%3Ctext x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' font-family='Arial' font-size='12' fill='%2364748b'%3EU%3C/text%3E%3C/svg%3E";
+        window.DEFAULT_AVATAR = DEFAULT_AVATAR;
         
         // DOM Elements
         const newMessageBtn = document.getElementById('newMessageBtn');
@@ -231,6 +232,13 @@ include 'includes/sidebar.php';
         const openChatProfileBtn = document.getElementById('openChatProfileBtn');
         const audioCallBtn = document.getElementById('audioCallBtn');
         const videoCallBtn = document.getElementById('videoCallBtn');
+        const chatUserImage = document.getElementById('chatUserImage');
+        if (chatUserImage) {
+            chatUserImage.onerror = function() {
+                this.onerror = null;
+                this.src = window.DEFAULT_AVATAR;
+            };
+        }
         
         // Event Listeners
         newMessageBtn.addEventListener('click', () => {
@@ -382,6 +390,7 @@ include 'includes/sidebar.php';
                                 <img src="${conv.profile_picture_url || DEFAULT_AVATAR}" 
                                      alt="${conv.full_name}" 
                                      class="h-10 w-10 rounded-full cursor-pointer"
+                                     onerror="this.onerror=null;this.src=window.DEFAULT_AVATAR;"
                                      onclick="${conv.is_group ? 'event.stopPropagation();' : `event.stopPropagation(); openProfileFromMessages('${conv.other_user_id}')`}">
                                 <div class="ml-3 flex-1">
                                     <div class="flex justify-between">
@@ -440,6 +449,7 @@ include 'includes/sidebar.php';
                             <img src="${user.profile_picture_url || DEFAULT_AVATAR}" 
                                  alt="${user.full_name}" 
                                  class="h-10 w-10 rounded-full cursor-pointer"
+                                 onerror="this.onerror=null;this.src=window.DEFAULT_AVATAR;"
                                  onclick="event.stopPropagation(); openProfileFromMessages('${user.user_id}')">
                             <div class="ml-3">
                                 <h4 class="font-medium text-gray-900 cursor-pointer hover:underline" onclick="event.stopPropagation(); openProfileFromMessages('${user.user_id}')">${user.full_name}</h4>
@@ -641,7 +651,8 @@ include 'includes/sidebar.php';
                                 ${!isCurrentUser ? `
                                     <img src="${msg.sender_profile_picture || DEFAULT_AVATAR}" 
                                          alt="User" 
-                                         class="h-8 w-8 rounded-full mt-1">
+                                         class="h-8 w-8 rounded-full mt-1"
+                                         onerror="this.onerror=null;this.src=window.DEFAULT_AVATAR;">
                                 ` : ''}
                                 
                                 <div class="${isCurrentUser ? 'mr-3 text-right' : 'ml-3'}">
@@ -660,7 +671,8 @@ include 'includes/sidebar.php';
                                 ${isCurrentUser ? `
                                     <img src="${msg.sender_profile_picture || DEFAULT_AVATAR}" 
                                          alt="You" 
-                                         class="h-8 w-8 rounded-full mt-1">
+                                         class="h-8 w-8 rounded-full mt-1"
+                                         onerror="this.onerror=null;this.src=window.DEFAULT_AVATAR;">
                                 ` : ''}
                             </div>
                         `;
@@ -703,7 +715,7 @@ include 'includes/sidebar.php';
                 const isAdmin = Number(member.user_id) === Number(meta.admin_user_id) || member.member_role === 'admin';
                 return `
                     <span class="inline-flex items-center gap-2 rounded-full border border-gray-200 bg-white px-2.5 py-1 text-xs text-gray-700">
-                        <img src="${avatar}" alt="${name}" class="h-5 w-5 rounded-full object-cover" onerror="this.onerror=null;this.src='${DEFAULT_AVATAR}'">
+                        <img src="${avatar}" alt="${name}" class="h-5 w-5 rounded-full object-cover" onerror="this.onerror=null;this.src=window.DEFAULT_AVATAR;">
                         <span>${name}</span>
                         ${isAdmin ? `<span class="rounded-full bg-blue-100 px-2 py-0.5 text-[10px] font-semibold text-blue-700">Admin</span>` : ''}
                         ${role ? `<span class="text-[10px] uppercase tracking-wide text-gray-400">${role}</span>` : ''}

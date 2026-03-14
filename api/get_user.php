@@ -7,10 +7,21 @@ require_once __DIR__ . '/../middleware/Auth.php';
 
 function clear_missing_local_asset(?string $path): string
 {
-    $path = str_replace('\\', '/', (string)$path);
-    if ($path === '' || preg_match('#^https?://#i', $path) || stripos($path, 'data:image/') === 0) {
+    $path = trim(str_replace('\\', '/', (string)$path));
+    if ($path === '' || stripos($path, 'data:image/') === 0) {
         return $path;
     }
+    if (preg_match('#\.php(?:$|\?)#i', $path)) {
+        return $path;
+    }
+    if (preg_match('#^https?://#i', $path)) {
+        $parsedPath = (string)(parse_url($path, PHP_URL_PATH) ?? '');
+        if ($parsedPath === '' || preg_match('#\.php$#i', $parsedPath)) {
+            return $path;
+        }
+        $path = ltrim(str_replace('\\', '/', $parsedPath), '/');
+    }
+    $path = ltrim($path, '/');
     $abs = dirname(__DIR__) . DIRECTORY_SEPARATOR . str_replace('/', DIRECTORY_SEPARATOR, $path);
     return is_file($abs) ? $path : '';
 }

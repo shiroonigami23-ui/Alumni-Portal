@@ -314,6 +314,18 @@ include 'includes/sidebar.php';
             });
             const payload = await res.json();
             const rows = Array.isArray(payload?.data) ? payload.data : [];
+            const acceptedRequest = (mentorStatus?.can_request && !mentorStatus?.mentor_profile?.is_active)
+                ? rows.find((row) => row.status === 'accepted')
+                : null;
+            if (acceptedRequest && !currentActiveMatch) {
+                currentActiveMatch = {
+                    mentor_id: Number(acceptedRequest.mentor_id || 0),
+                    mentor_name: acceptedRequest.mentor_name || 'Current mentor',
+                    mentor_role: acceptedRequest.mentor_role || '',
+                    group_id: Number(acceptedRequest.group_id || 0),
+                    joined_at: acceptedRequest.created_at || new Date().toISOString()
+                };
+            }
             if (!rows.length) {
                 listEl.innerHTML = '<div class="text-sm text-gray-500">No requests yet.</div>';
                 return;
@@ -337,6 +349,16 @@ include 'includes/sidebar.php';
         } catch (e) {
             listEl.innerHTML = '<div class="text-sm text-red-600">Unable to load requests.</div>';
         }
+    }
+
+    async function refreshMentorshipViews() {
+        await loadMentorStatus();
+        initRoleBasedActions();
+        await loadRequestsPanel();
+        await loadActiveMentorshipPanel();
+        await loadMentorList();
+        await loadMentorshipStats();
+        await loadMentorApplications();
     }
 
     async function loadMentorApplications() {
@@ -483,12 +505,7 @@ include 'includes/sidebar.php';
                 if (!confirm('Leave your current mentor? You can request another mentor after this.')) return;
                 const res = await makeApiCall('mentorship.php?action=leave_current', 'POST', {});
                 if (res && res.success) {
-                    await loadMentorStatus();
-                    initRoleBasedActions();
-                    await loadActiveMentorshipPanel();
-                    await loadMentorList();
-                    await loadRequestsPanel();
-                    await loadMentorshipStats();
+                    await refreshMentorshipViews();
                 } else {
                     alert((res && res.message) || 'Failed to leave your current mentor.');
                 }
@@ -504,12 +521,7 @@ include 'includes/sidebar.php';
                 if (!confirm('Leave this mentor group? If you are the admin, ownership will transfer to another member when possible.')) return;
                 const res = await makeApiCall('mentorship.php?action=leave_group', 'POST', { group_id });
                 if (res && res.success) {
-                    await loadMentorStatus();
-                    initRoleBasedActions();
-                    await loadActiveMentorshipPanel();
-                    await loadMentorList();
-                    await loadRequestsPanel();
-                    await loadMentorshipStats();
+                    await refreshMentorshipViews();
                 } else {
                     alert((res && res.message) || 'Failed to leave this mentor group.');
                 }
@@ -529,7 +541,7 @@ include 'includes/sidebar.php';
                 if (moderation_action === 'ban') payload.ban_days = 7;
                 const res = await makeApiCall('mentorship.php?action=moderate_member', 'POST', payload);
                 if (res && res.success) {
-                    await loadActiveMentorshipPanel();
+                    await refreshMentorshipViews();
                 } else {
                     alert((res && res.message) || 'Failed to update member access.');
                 }
@@ -547,10 +559,7 @@ include 'includes/sidebar.php';
                 if (!mentor_user_id || !status) return;
                 const res = await makeApiCall('mentorship.php?action=review_application', 'POST', { mentor_user_id, status });
                 if (res && res.success) {
-                    await loadMentorApplications();
-                    await loadMentorList();
-                    await loadMentorshipStats();
-                    await loadActiveMentorshipPanel();
+                    await refreshMentorshipViews();
                 } else {
                     alert((res && res.message) || 'Failed to review mentor application');
                 }
@@ -568,10 +577,7 @@ include 'includes/sidebar.php';
                 if (!request_id || !status) return;
                 const res = await makeApiCall('mentorship.php?action=respond', 'POST', { request_id, status });
                 if (res && res.success) {
-                    await loadRequestsPanel();
-                    await loadMentorshipStats();
-                    await loadActiveMentorshipPanel();
-                    await loadMentorList();
+                    await refreshMentorshipViews();
                 } else {
                     alert((res && res.message) || 'Failed to update request');
                 }
@@ -601,12 +607,7 @@ include 'includes/sidebar.php';
                 const res = await makeApiCall('mentorship.php?action=become_mentor', 'POST', { headline, expertise });
                 if (res && res.success) {
                     alert(res.message || 'Mentor profile updated.');
-                    await loadMentorStatus();
-                    initRoleBasedActions();
-                    await loadMentorList();
-                    await loadMentorshipStats();
-                    await loadActiveMentorshipPanel();
-                    await loadMentorApplications();
+                    await refreshMentorshipViews();
                 } else {
                     alert((res && res.message) || 'Unable to become mentor');
                 }
@@ -627,12 +628,7 @@ include 'includes/sidebar.php';
                     alert(res.message || 'Mentorship request sent.');
                     form.reset();
                     modal.classList.add('hidden');
-                    await loadMentorStatus();
-                    initRoleBasedActions();
-                    await loadActiveMentorshipPanel();
-                    await loadMentorList();
-                    await loadRequestsPanel();
-                    await loadMentorshipStats();
+                    await refreshMentorshipViews();
                 } else {
                     alert((res && res.message) || 'Failed to send request');
                 }
@@ -642,14 +638,8 @@ include 'includes/sidebar.php';
 
     document.addEventListener('DOMContentLoaded', async () => {
         await loadCurrentUser();
-        await loadMentorStatus();
-        initRoleBasedActions();
         initMentorshipActions();
-        await loadMentorList();
-        await loadRequestsPanel();
-        await loadActiveMentorshipPanel();
-        await loadMentorshipStats();
-        await loadMentorApplications();
+        await refreshMentorshipViews();
     });
 </script>
 

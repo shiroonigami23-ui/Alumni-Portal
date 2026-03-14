@@ -13,6 +13,27 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
 include_once '../config/Database.php';
 include_once '../middleware/Auth.php';
 
+function clear_missing_local_asset(?string $path): string
+{
+    $path = trim(str_replace('\\', '/', (string)$path));
+    if ($path === '' || stripos($path, 'data:image/') === 0) {
+        return $path;
+    }
+    if (preg_match('#\.php(?:$|\?)#i', $path)) {
+        return $path;
+    }
+    if (preg_match('#^https?://#i', $path)) {
+        $parsedPath = (string)(parse_url($path, PHP_URL_PATH) ?? '');
+        if ($parsedPath === '' || preg_match('#\.php$#i', $parsedPath)) {
+            return $path;
+        }
+        $path = ltrim(str_replace('\\', '/', $parsedPath), '/');
+    }
+    $path = ltrim($path, '/');
+    $abs = dirname(__DIR__) . DIRECTORY_SEPARATOR . str_replace('/', DIRECTORY_SEPARATOR, $path);
+    return is_file($abs) ? $path : '';
+}
+
 $database = new Database();
 $db = $database->getConnection();
 
@@ -97,6 +118,7 @@ try {
             }
         }
     }
+    $picture = clear_missing_local_asset($picture);
     $user_data['profile_picture_url'] = $picture;
     $user_data['profile_picture'] = $picture;
 

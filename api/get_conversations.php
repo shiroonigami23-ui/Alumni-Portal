@@ -6,6 +6,27 @@ require_once __DIR__ . '/../config/Database.php';
 require_once __DIR__ . '/../middleware/Auth.php';
 require_once __DIR__ . '/_message_schema.php';
 
+function clear_missing_local_asset(?string $path): string
+{
+    $path = trim(str_replace('\\', '/', (string)$path));
+    if ($path === '' || stripos($path, 'data:image/') === 0) {
+        return $path;
+    }
+    if (preg_match('#\.php(?:$|\?)#i', $path)) {
+        return $path;
+    }
+    if (preg_match('#^https?://#i', $path)) {
+        $parsedPath = (string)(parse_url($path, PHP_URL_PATH) ?? '');
+        if ($parsedPath === '' || preg_match('#\.php$#i', $parsedPath)) {
+            return $path;
+        }
+        $path = ltrim(str_replace('\\', '/', $parsedPath), '/');
+    }
+    $path = ltrim($path, '/');
+    $abs = dirname(__DIR__) . DIRECTORY_SEPARATOR . str_replace('/', DIRECTORY_SEPARATOR, $path);
+    return is_file($abs) ? $path : '';
+}
+
 function read_message_content(string $relativePath): string
 {
     $clean = str_replace(['\\', "\0"], ['/', ''], $relativePath);
@@ -105,7 +126,7 @@ try {
             'conversation_id' => (string)$row['conversation_id'],
             'other_user_id' => (int)$row['other_user_id'],
             'full_name' => (string)$row['full_name'],
-            'profile_picture_url' => $row['profile_picture_url'] ? str_replace('\\', '/', (string)$row['profile_picture_url']) : null,
+            'profile_picture_url' => clear_missing_local_asset($row['profile_picture_url'] ? str_replace('\\', '/', (string)$row['profile_picture_url']) : null),
             'role' => (string)($row['role'] ?? ''),
             'branch' => $row['branch'] ?? null,
             'last_message' => $lastMessage,
@@ -172,7 +193,7 @@ try {
             'conversation_id' => 'group:' . (string)$group['group_id'],
             'other_user_id' => null,
             'full_name' => (string)($group['title'] ?: 'Mentor Group'),
-            'profile_picture_url' => $group['mentor_avatar'] ? str_replace('\\', '/', (string)$group['mentor_avatar']) : null,
+            'profile_picture_url' => clear_missing_local_asset($group['mentor_avatar'] ? str_replace('\\', '/', (string)$group['mentor_avatar']) : null),
             'role' => 'mentor_group',
             'branch' => (string)($group['mentor_name'] ? ('Led by ' . $group['mentor_name']) : 'Mentor group'),
             'last_message' => $lastMessage,

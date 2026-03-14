@@ -160,6 +160,8 @@ When verifying a fresh deploy, append `?refresh=<commit>` to bypass stale browse
   - added unread tracking for mentor-group conversations
   - changed feed so older posts load progressively with a bottom sentinel instead of trying to render everything at once
   - added post draft controls plus upload-progress / upload-lock UI in the feed composer
+  - mentorship page now uses accepted-request state as a fallback source of truth for the current mentor and refreshes requests before rendering mentor actions, so accepted mentees should no longer see `Current Mentor: none` plus extra `Request to Join` buttons
+  - the remaining feed/comment/discovery avatar APIs now scrub dead local `storage/profiles/...` paths, and header/sidebar stop reusing stale cached local avatar URLs
 
 ### Stable behavior we now expect
 

@@ -174,6 +174,23 @@ $basePrefix = $isAdminPath ? '../' : '';
 
     <script>
         window.PORTAL_BASE_PREFIX = "<?php echo $basePrefix; ?>";
+        function sanitizeCachedAvatarUrl(url) {
+            const value = String(url || '').trim();
+            if (!value) return '';
+            if (value.startsWith('data:image/')) return value;
+            if (/\.php(\?|$)/i.test(value)) return value;
+            const normalized = value.replace(/\\/g, '/').toLowerCase();
+            if (normalized.includes('storage/profiles/')) return '';
+            try {
+                const resolved = new URL(value, window.location.origin);
+                if (resolved.origin === window.location.origin && resolved.pathname.toLowerCase().includes('/storage/profiles/')) {
+                    return '';
+                }
+                return resolved.href;
+            } catch (_) {
+                return value;
+            }
+        }
         // Initialize Lucide icons
         lucide.createIcons();
         let __lastNotifKey = '';
@@ -184,10 +201,16 @@ $basePrefix = $isAdminPath ? '../' : '';
             if (userData) {
                 const user = JSON.parse(userData);
                 document.getElementById('userName').textContent = user.email || user.name || 'Member';
-                const avatar = user.profile_picture || user.profile_picture_url || '';
+                const avatar = sanitizeCachedAvatarUrl(user.profile_picture || user.profile_picture_url || '');
                 if (avatar) {
                     const img = document.getElementById('userAvatarImage');
                     const icon = document.getElementById('userAvatarIcon');
+                    img.onerror = function() {
+                        this.onerror = null;
+                        this.src = '';
+                        this.classList.add('hidden');
+                        if (icon) icon.classList.remove('hidden');
+                    };
                     img.src = avatar;
                     img.classList.remove('hidden');
                     if (icon) icon.classList.add('hidden');
@@ -251,13 +274,24 @@ $basePrefix = $isAdminPath ? '../' : '';
                 const user = response.data;
                 localStorage.setItem('user_data', JSON.stringify(user));
                 document.getElementById('userName').textContent = user.email || user.name || 'Member';
-                const avatar = user.profile_picture || user.profile_picture_url || '';
+                const avatar = sanitizeCachedAvatarUrl(user.profile_picture || user.profile_picture_url || '');
                 if (avatar) {
                     const img = document.getElementById('userAvatarImage');
                     const icon = document.getElementById('userAvatarIcon');
+                    img.onerror = function() {
+                        this.onerror = null;
+                        this.src = '';
+                        this.classList.add('hidden');
+                        if (icon) icon.classList.remove('hidden');
+                    };
                     img.src = avatar;
                     img.classList.remove('hidden');
                     if (icon) icon.classList.add('hidden');
+                } else {
+                    const img = document.getElementById('userAvatarImage');
+                    const icon = document.getElementById('userAvatarIcon');
+                    if (img) img.classList.add('hidden');
+                    if (icon) icon.classList.remove('hidden');
                 }
             } catch (e) {
                 console.error('Unable to refresh header user', e);

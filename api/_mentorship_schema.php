@@ -216,8 +216,91 @@ function ensureMentorGroup(PDO $db, int $mentorUserId): int
     return $groupId;
 }
 
+function ensureCurrentMentorshipState(PDO $db, int $menteeId): void
+{
+    $activeStmt = $db->prepare("
+        SELECT match_id, mentor_id, group_id
+        FROM mentorship_matches
+        WHERE mentee_id = :uid
+          AND status = 'active'
+        ORDER BY joined_at DESC, match_id DESC
+        LIMIT 1
+    ");
+    $activeStmt->execute([':uid' => $menteeId]);
+    $activeMatch = $activeStmt->fetch(PDO::FETCH_ASSOC) ?: null;
+
+    if ($activeMatch) {
+        $groupId = (int)($activeMatch['group_id'] ?? 0);
+        if ($groupId <= 0) {
+            $groupId = ensureMentorGroup($db, (int)$activeMatch['mentor_id']);
+            $db->prepare("
+                UPDATE mentorship_matches
+                SET group_id = :gid
+                WHERE match_id = :match_id
+            ")->execute([
+                ':gid' => $groupId,
+                ':match_id' => (int)$activeMatch['match_id']
+            ]);
+        }
+
+        $db->prepare("
+            INSERT INTO mentorship_group_members (group_id, user_id, member_role)
+            VALUES (:group_id, :user_id, 'member')
+            ON CONFLICT (group_id, user_id)
+            DO UPDATE SET member_role = 'member'
+        ")->execute([
+            ':group_id' => $groupId,
+            ':user_id' => $menteeId
+        ]);
+        return;
+    }
+
+    $acceptedStmt = $db->prepare("
+        SELECT r.request_id, r.mentor_id
+        FROM mentorship_requests r
+        JOIN mentorship_profiles mp ON mp.mentor_user_id = r.mentor_id
+        JOIN users u ON u.user_id = r.mentor_id
+        WHERE r.mentee_id = :uid
+          AND r.status = 'accepted'
+          AND mp.is_active = TRUE
+          AND mp.approval_status = 'approved'
+          AND u.status = 'active'
+        ORDER BY r.updated_at DESC, r.request_id DESC
+        LIMIT 1
+    ");
+    $acceptedStmt->execute([':uid' => $menteeId]);
+    $acceptedRequest = $acceptedStmt->fetch(PDO::FETCH_ASSOC) ?: null;
+    if (!$acceptedRequest) {
+        return;
+    }
+
+    $groupId = ensureMentorGroup($db, (int)$acceptedRequest['mentor_id']);
+    $db->prepare("
+        INSERT INTO mentorship_group_members (group_id, user_id, member_role)
+        VALUES (:group_id, :user_id, 'member')
+        ON CONFLICT (group_id, user_id)
+        DO UPDATE SET member_role = 'member'
+    ")->execute([
+        ':group_id' => $groupId,
+        ':user_id' => $menteeId
+    ]);
+
+    $matchInsert = $db->prepare("
+        INSERT INTO mentorship_matches (mentor_id, mentee_id, group_id, status, joined_at)
+        VALUES (:mentor_id, :mentee_id, :group_id, 'active', NOW())
+        ON CONFLICT DO NOTHING
+    ");
+    $matchInsert->execute([
+        ':mentor_id' => (int)$acceptedRequest['mentor_id'],
+        ':mentee_id' => $menteeId,
+        ':group_id' => $groupId
+    ]);
+}
+
 function getCurrentActiveMatch(PDO $db, int $menteeId): ?array
 {
+    ensureCurrentMentorshipState($db, $menteeId);
+
     $stmt = $db->prepare("
         SELECT
             mm.match_id,
