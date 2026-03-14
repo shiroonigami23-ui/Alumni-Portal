@@ -797,6 +797,19 @@ include 'includes/sidebar.php';
                     </div>
                 </div>
                 <p class="profile-post-content text-gray-700 mb-4 whitespace-pre-line">${content}</p>
+                ${Array.isArray(post.attachments) && post.attachments.length > 0 ? `
+                <div class="mb-4">
+                    <div class="grid grid-cols-2 md:grid-cols-3 gap-2">
+                        ${post.attachments.map((attachment) => `
+                            ${(attachment.type === 'image' || attachment.type === 'gif')
+                                ? `<img src="${attachment.url}" alt="Attachment" class="w-full h-32 object-cover rounded-lg cursor-pointer hover:opacity-90" onerror="this.style.display='none'" onclick="window.open('${attachment.url}', '_blank')">`
+                                : `<a href="${attachment.url}" target="_blank" class="flex items-center p-3 border border-gray-200 rounded-lg hover:bg-gray-50">
+                                        <i data-lucide="file" class="h-5 w-5 text-gray-400 mr-3"></i>
+                                        <span class="text-sm text-gray-700 truncate">${attachment.name || 'Attachment'}</span>
+                                   </a>`}
+                        `).join('')}
+                    </div>
+                </div>` : ''}
                 <div class="flex items-center text-sm text-gray-500">
                     <button class="profile-like-btn flex items-center mr-4 hover:text-red-600 ${post.user_has_liked ? 'text-red-600' : ''}">
                         <i data-lucide="heart" class="h-4 w-4 mr-1"></i>
@@ -1170,8 +1183,12 @@ include 'includes/sidebar.php';
             const content = document.getElementById('timelinePostContent').value.trim();
             const allowComments = document.getElementById('timelineAllowComments').checked;
             
-            if (!content) {
-                alert('Please enter some content for your post');
+            const imageInput = document.getElementById('timelineImage');
+            const fileInput = document.getElementById('timelineFile');
+            const hasMedia = !!(imageInput.files[0] || fileInput.files[0]);
+
+            if (!content && !hasMedia) {
+                alert('Please enter some content or attach media for your post');
                 return;
             }
             isCreatingTimelinePost = true;
@@ -1181,13 +1198,11 @@ include 'includes/sidebar.php';
             formData.append('allow_comments', allowComments ? '1' : '0');
             
             // Add image if selected
-            const imageInput = document.getElementById('timelineImage');
             if (imageInput.files[0]) {
                 formData.append('image', imageInput.files[0]);
             }
             
             // Add file if selected
-            const fileInput = document.getElementById('timelineFile');
             if (fileInput.files[0]) {
                 formData.append('file', fileInput.files[0]);
             }

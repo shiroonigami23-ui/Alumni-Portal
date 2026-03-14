@@ -5,6 +5,7 @@ header("Content-Type: application/json; charset=UTF-8");
 include_once '../config/Database.php';
 include_once '../middleware/Auth.php';
 include_once __DIR__ . '/_feed_schema.php';
+include_once __DIR__ . '/_content_store.php';
 
 $database = new Database();
 $db = $database->getConnection();
@@ -183,20 +184,9 @@ try {
         if (!empty($row['content_file_path'])) {
             $row['content_file_path'] = str_replace('\\', '/', (string)$row['content_file_path']);
         }
-        $row['attachments'] = [];
-        $row['content'] = '';
-
-        $abs = dirname(__DIR__) . DIRECTORY_SEPARATOR . str_replace('/', DIRECTORY_SEPARATOR, (string)$row['content_file_path']);
-        if (is_file($abs)) {
-            $raw = file_get_contents($abs);
-            $decoded = json_decode((string)$raw, true);
-            if (is_array($decoded) && array_key_exists('content', $decoded)) {
-                $row['content'] = (string)($decoded['content'] ?? '');
-                $row['attachments'] = is_array($decoded['attachments'] ?? null) ? $decoded['attachments'] : [];
-            } else {
-                $row['content'] = (string)$raw;
-            }
-        }
+        $payload = load_content_payload($db, (string)$row['content_file_path']);
+        $row['attachments'] = $payload['attachments'];
+        $row['content'] = $payload['content'];
         // Fallback: keep post visible even if storage file is missing after container/image deploys.
         if (trim((string)$row['content']) === '' && !empty($row['title'])) {
             $row['content'] = (string)$row['title'];

@@ -9,6 +9,7 @@ include_once '../models/Session.php'; // Required for Security
 include_once '../middleware/Security.php';
 include_once '../helpers/Logger.php'; // Added Logger
 include_once __DIR__ . '/_asset_store.php';
+include_once __DIR__ . '/_content_store.php';
 
 $database = new Database();
 $db = $database->getConnection();
@@ -127,19 +128,11 @@ if ($title === '' && $content === '' && !empty($attachments)) {
 }
 
 if (!empty($content) || !empty($attachments)) {
-    // 3. 3.5NF Architecture: Content to File
-    $filename = "post_body_" . $user_id . "_" . bin2hex(random_bytes(5)) . "_" . time() . ".json";
-    $storage_dir = dirname(__DIR__) . "/storage/posts/";
-    if (!file_exists($storage_dir)) {
-        mkdir($storage_dir, 0777, true);
-    }
-
     $payload = [
         'content' => $content,
         'attachments' => $attachments
     ];
-    file_put_contents($storage_dir . $filename, json_encode($payload, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE));
-    $relative_path = "storage/posts/" . $filename;
+    $relative_path = store_content_payload($db, (int)$user_id, $payload, 'post');
 
     // 4. Database Insertion
     $query = "INSERT INTO posts 

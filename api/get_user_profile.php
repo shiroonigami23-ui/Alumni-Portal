@@ -7,6 +7,7 @@
 require_once '../config/Database.php';
 require_once '../middleware/Auth.php';
 require_once '../helpers/TechStackHelper.php';
+require_once __DIR__ . '/_content_store.php';
 
 header('Content-Type: application/json');
 
@@ -209,7 +210,12 @@ try {
                      ORDER BY pp.pin_order ASC";
     $pinned_stmt = $db->prepare($pinned_query);
     $pinned_stmt->execute(['user_id' => $user_id]);
-    $profile['pinned_posts'] = $pinned_stmt->fetchAll(PDO::FETCH_ASSOC);
+    $profile['pinned_posts'] = array_map(function (array $post) use ($db) {
+        $payload = load_content_payload($db, (string)($post['content_file_path'] ?? ''));
+        $post['content'] = $payload['content'];
+        $post['attachments'] = $payload['attachments'];
+        return $post;
+    }, $pinned_stmt->fetchAll(PDO::FETCH_ASSOC));
     
     // Privacy: Hide sensitive info if needed
     if (!$profile['show_email']) {

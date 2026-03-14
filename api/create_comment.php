@@ -6,6 +6,7 @@ header("Access-Control-Allow-Methods: POST");
 include_once '../config/Database.php';
 include_once '../middleware/Auth.php';
 include_once __DIR__ . '/_asset_store.php';
+include_once __DIR__ . '/_content_store.php';
 
 $database = new Database();
 $db = $database->getConnection();
@@ -110,12 +111,7 @@ try {
         'attachments' => $uploads
     ];
 
-    $filename = "comm_" . $user_id . "_" . time() . ".json";
-    $dir = dirname(__DIR__) . DIRECTORY_SEPARATOR . "storage" . DIRECTORY_SEPARATOR . "comments" . DIRECTORY_SEPARATOR;
-    if (!is_dir($dir)) mkdir($dir, 0777, true);
-
-    file_put_contents($dir . $filename, json_encode($payload, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE));
-    $file_path = "storage/comments/" . $filename;
+    $file_path = store_content_payload($db, (int)$user_id, $payload, 'comment');
 
     $depth_level = 0;
     if ($parent_comment_id !== null && $parent_comment_id > 0) {

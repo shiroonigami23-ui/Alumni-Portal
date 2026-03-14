@@ -3,6 +3,7 @@ header("Access-Control-Allow-Origin: *");
 header("Content-Type: application/json; charset=UTF-8");
 
 include_once '../config/Database.php';
+include_once __DIR__ . '/_content_store.php';
 
 $database = new Database();
 $db = $database->getConnection();
@@ -22,13 +23,8 @@ $results = $stmt->fetchAll(PDO::FETCH_ASSOC);
 $feed = [];
 
 foreach ($results as $row) {
-    // 2. HYDRATION: Read the actual content from the .txt file
-    $content = "Content missing.";
-    $file_path = dirname(__DIR__) . DIRECTORY_SEPARATOR . str_replace('/', DIRECTORY_SEPARATOR, $row['content_file_path']);
-    
-    if (file_exists($file_path)) {
-        $content = file_get_contents($file_path);
-    }
+    $payload = load_content_payload($db, (string)$row['content_file_path']);
+    $content = trim((string)$payload['content']) !== '' ? (string)$payload['content'] : 'Content missing.';
 
     $feed[] = [
         "post_id" => $row['post_id'],

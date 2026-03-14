@@ -5,6 +5,7 @@ header("Access-Control-Allow-Methods: POST");
 
 include_once '../config/Database.php';
 include_once '../middleware/Auth.php';
+include_once __DIR__ . '/_content_store.php';
 
 $database = new Database();
 $db = $database->getConnection();
@@ -60,11 +61,7 @@ if ($user_id == $post['owner_id']) {
 if ($can_delete) {
     $del = $db->prepare("DELETE FROM posts WHERE post_id = :pid");
     if ($del->execute(['pid' => $data->post_id])) {
-        // Purge physical file
-        $file_path = dirname(__DIR__) . DIRECTORY_SEPARATOR . str_replace('/', DIRECTORY_SEPARATOR, $post['content_file_path']);
-        if (file_exists($file_path)) {
-            unlink($file_path);
-        }
+        delete_content_payload($db, (string)$post['content_file_path']);
         echo json_encode(["message" => "Post moderated successfully per blueprint hierarchy."]);
     }
 } else {

@@ -5,6 +5,7 @@ header("Access-Control-Allow-Methods: POST");
 
 include_once '../config/Database.php';
 include_once '../middleware/Auth.php';
+include_once __DIR__ . '/_content_store.php';
 
 $database = new Database();
 $db = $database->getConnection();
@@ -38,10 +39,7 @@ try {
 
     $db->prepare("DELETE FROM comments WHERE comment_id = :cid")->execute([':cid' => $comment_id]);
 
-    $abs = dirname(__DIR__) . DIRECTORY_SEPARATOR . str_replace('/', DIRECTORY_SEPARATOR, (string)$comment['content_file_path']);
-    if (is_file($abs)) {
-        @unlink($abs);
-    }
+    delete_content_payload($db, (string)$comment['content_file_path']);
 
     echo json_encode([
         "success" => true,
@@ -53,4 +51,3 @@ try {
     http_response_code(500);
     echo json_encode(["success" => false, "status" => "error", "message" => $e->getMessage()]);
 }
-

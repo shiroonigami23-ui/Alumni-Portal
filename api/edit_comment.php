@@ -5,6 +5,7 @@ header("Access-Control-Allow-Methods: POST");
 
 include_once '../config/Database.php';
 include_once '../middleware/Auth.php';
+include_once __DIR__ . '/_content_store.php';
 
 $database = new Database();
 $db = $database->getConnection();
@@ -36,20 +37,13 @@ try {
         exit;
     }
 
-    $abs = dirname(__DIR__) . DIRECTORY_SEPARATOR . str_replace('/', DIRECTORY_SEPARATOR, (string)$comment['content_file_path']);
-    $attachments = [];
-    if (is_file($abs)) {
-        $raw = file_get_contents($abs);
-        $decoded = json_decode((string)$raw, true);
-        if (is_array($decoded)) {
-            $attachments = is_array($decoded['attachments'] ?? null) ? $decoded['attachments'] : [];
-        }
-    }
+    $existingPayload = load_content_payload($db, (string)$comment['content_file_path']);
+    $attachments = $existingPayload['attachments'];
     $payload = [
         'content' => $content,
         'attachments' => $attachments
     ];
-    file_put_contents($abs, json_encode($payload, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE));
+    update_content_payload($db, (string)$comment['content_file_path'], $payload, (int)$user_id, 'comment');
 
     $db->prepare("UPDATE comments SET is_edited = true, updated_at = NOW() WHERE comment_id = :cid")
        ->execute([':cid' => $comment_id]);
@@ -68,4 +62,3 @@ try {
     http_response_code(500);
     echo json_encode(["success" => false, "status" => "error", "message" => $e->getMessage()]);
 }
-

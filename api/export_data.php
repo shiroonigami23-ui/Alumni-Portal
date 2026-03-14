@@ -4,6 +4,7 @@ header("Content-Type: application/json; charset=UTF-8");
 
 include_once '../config/Database.php';
 include_once '../middleware/Auth.php';
+include_once __DIR__ . '/_content_store.php';
 
 $database = new Database();
 $db = $database->getConnection();
@@ -32,10 +33,11 @@ try {
 
     // 5. Package Posts Content
     foreach ($posts as $index => $post) {
-        $source = dirname(__DIR__) . "/" . $post['content_file_path'];
-        if (file_exists($source)) {
-            copy($source, $export_path . "/post_" . $index . ".txt");
-        }
+        $payload = load_content_payload($db, (string)$post['content_file_path']);
+        file_put_contents(
+            $export_path . "/post_" . $index . ".json",
+            json_encode($payload, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE)
+        );
     }
 
     // 6. Zip the Archive (GDPR Compliance Section 7.G)

@@ -4,6 +4,7 @@ header("Content-Type: application/json; charset=UTF-8");
 
 include_once '../config/Database.php';
 include_once '../middleware/Auth.php';
+include_once __DIR__ . '/_content_store.php';
 
 $database = new Database();
 $db = $database->getConnection();
@@ -59,19 +60,9 @@ try {
 
     $data = [];
     foreach ($rows as $row) {
-        $content = '';
-        $attachments = [];
-        $filePath = dirname(__DIR__) . DIRECTORY_SEPARATOR . str_replace('/', DIRECTORY_SEPARATOR, (string)$row['content_file_path']);
-        if (is_file($filePath)) {
-            $raw = file_get_contents($filePath);
-            $decoded = json_decode((string)$raw, true);
-            if (is_array($decoded) && array_key_exists('content', $decoded)) {
-                $content = (string)($decoded['content'] ?? '');
-                $attachments = is_array($decoded['attachments'] ?? null) ? $decoded['attachments'] : [];
-            } else {
-                $content = (string)$raw;
-            }
-        }
+        $payload = load_content_payload($db, (string)$row['content_file_path']);
+        $content = $payload['content'];
+        $attachments = $payload['attachments'];
 
         $avatar = (string)($row['profile_picture_url'] ?? '');
         if ($avatar !== '') {

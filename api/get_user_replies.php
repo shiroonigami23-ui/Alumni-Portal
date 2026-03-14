@@ -4,6 +4,7 @@ header("Content-Type: application/json; charset=UTF-8");
 
 require_once __DIR__ . '/../config/Database.php';
 require_once __DIR__ . '/../middleware/Auth.php';
+require_once __DIR__ . '/_content_store.php';
 
 try {
     $database = new Database();
@@ -31,17 +32,8 @@ try {
 
     $items = [];
     foreach ($rows as $row) {
-        $content = '';
-        $path = dirname(__DIR__) . DIRECTORY_SEPARATOR . str_replace('/', DIRECTORY_SEPARATOR, (string)$row['content_file_path']);
-        if (is_file($path)) {
-            $raw = file_get_contents($path);
-            $decoded = json_decode((string)$raw, true);
-            if (is_array($decoded) && array_key_exists('content', $decoded)) {
-                $content = (string)($decoded['content'] ?? '');
-            } else {
-                $content = (string)$raw;
-            }
-        }
+        $payload = load_content_payload($db, (string)$row['content_file_path']);
+        $content = $payload['content'];
         $items[] = [
             'comment_id' => (int)$row['comment_id'],
             'post_id' => (int)$row['post_id'],
@@ -59,4 +51,3 @@ try {
     http_response_code(500);
     echo json_encode(["success" => false, "status" => "error", "message" => $e->getMessage()]);
 }
-

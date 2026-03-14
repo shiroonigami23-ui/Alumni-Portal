@@ -5,6 +5,7 @@ header("Access-Control-Allow-Methods: POST");
 
 include_once '../config/Database.php';
 include_once '../middleware/Auth.php';
+include_once __DIR__ . '/_content_store.php';
 
 $database = new Database();
 $db = $database->getConnection();
@@ -48,10 +49,11 @@ switch ($data->action) {
         $path_stmt->execute(['pid' => $data->post_id]);
         $content_file_path = $path_stmt->fetchColumn();
         if ($content_file_path && isset($data->content)) {
-            $abs_path = dirname(__DIR__) . DIRECTORY_SEPARATOR . str_replace('/', DIRECTORY_SEPARATOR, $content_file_path);
-            if (file_exists($abs_path)) {
-                file_put_contents($abs_path, $data->content);
-            }
+            $existingPayload = load_content_payload($db, (string)$content_file_path);
+            update_content_payload($db, (string)$content_file_path, [
+                'content' => (string)$data->content,
+                'attachments' => is_array($existingPayload['attachments'] ?? null) ? $existingPayload['attachments'] : []
+            ], (int)$user_id, 'post');
         }
 
         $upd = $db->prepare("UPDATE posts SET title = :title, updated_at = NOW() WHERE post_id = :pid");
