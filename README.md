@@ -186,6 +186,10 @@ When verifying a fresh deploy, append `?refresh=<commit>` to bypass stale browse
     - the mobile header uses a shorter brand treatment and hides the theme button to avoid crowding notification/profile actions
     - dashboard hides lower-priority blocks by default on phones (`Jump Back In`, `Recent Activity`, `Recent Notifications`) and suppresses the least important stats card to reduce scroll
     - discovery now defaults to compact list mode on phones, collapses filters by default, trims low-priority card details, and hides the top-companies block on mobile
+  - direct messages call flow is now real instead of placeholder UI:
+    - starting an audio/video call opens a live Jitsi room immediately for the caller
+    - the receiver gets a clickable notification that opens the same room
+    - mentor-group chats hide the direct-call buttons because group calling is not implemented yet
   - forgot-password is now a real email-reset flow:
     - new `forgot-password.php` and `reset.php` pages exist
     - reset tokens are issued securely, expire after 30 minutes, and are invalidated after use
@@ -232,6 +236,8 @@ When verifying a fresh deploy, append `?refresh=<commit>` to bypass stale browse
 - Students should not see or join admin-led mentor groups; faculty/alumni can have at most one normal mentor group plus one admin-led GC
 - Disbanding a mentor group should remove all members, end active matches, and delete the GC/messages by cascade
 - Discovery should open in a compact mobile layout with collapsed filters and list view on phones
+- Direct 1:1 message audio/video calls should open a working Jitsi room for both the caller and the callee
+- Mentor-group chats should not show direct audio/video call buttons until real group calling exists
 
 ### Known follow-up items
 
@@ -273,6 +279,9 @@ When verifying a fresh deploy, append `?refresh=<commit>` to bypass stale browse
    - mentor group moderation actions work: accept, reject, ban, unban, kick, leave
    - disbanding a mentor group removes members, ends active matches, and removes the GC conversation
    - mentor-group conversation list shows unread counts and header member chips
+   - starting an audio/video call from a direct message opens a live Jitsi room without popup-blocker regressions
+   - the receiving user gets a call notification that opens the same room from the header notification tray
+   - mentor-group conversations do not show direct audio/video call buttons
    - discovery on mobile starts in list mode with filters collapsed and the top-companies block hidden
 4. Verify any new API route directly from the live ALB URL.
 

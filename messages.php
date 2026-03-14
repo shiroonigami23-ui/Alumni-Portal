@@ -92,13 +92,13 @@ include 'includes/sidebar.php';
                                 </div>
                             </div>
                             <div class="ml-auto flex space-x-2">
-                                <button id="openChatProfileBtn" class="p-2 hover:bg-gray-100 rounded-lg" title="View profile">
+                                <button id="openChatProfileBtn" class="hidden p-2 hover:bg-gray-100 rounded-lg" title="View profile">
                                     <i data-lucide="user" class="h-5 w-5 text-gray-600"></i>
                                 </button>
-                                <button id="audioCallBtn" class="p-2 hover:bg-gray-100 rounded-lg" title="Audio call">
+                                <button id="audioCallBtn" class="hidden p-2 hover:bg-gray-100 rounded-lg" title="Audio call">
                                     <i data-lucide="phone" class="h-5 w-5 text-gray-600"></i>
                                 </button>
-                                <button id="videoCallBtn" class="p-2 hover:bg-gray-100 rounded-lg" title="Video call">
+                                <button id="videoCallBtn" class="hidden p-2 hover:bg-gray-100 rounded-lg" title="Video call">
                                     <i data-lucide="video" class="h-5 w-5 text-gray-600"></i>
                                 </button>
                                 <button id="groupDisbandBtn" class="hidden p-2 hover:bg-red-50 rounded-lg" title="Disband mentor group">
@@ -362,6 +362,22 @@ include 'includes/sidebar.php';
                 .replace(/'/g, '&#39;');
         }
 
+        function syncChatHeaderActions(conversation = null) {
+            const isDirectConversation = !!(conversation && !conversation.is_group && Number(conversation.other_user_id || 0) > 0);
+            if (openChatProfileBtn) {
+                openChatProfileBtn.classList.toggle('hidden', !isDirectConversation);
+            }
+            if (audioCallBtn) {
+                audioCallBtn.classList.toggle('hidden', !isDirectConversation);
+            }
+            if (videoCallBtn) {
+                videoCallBtn.classList.toggle('hidden', !isDirectConversation);
+            }
+            if (groupDisbandBtn) {
+                groupDisbandBtn.classList.add('hidden');
+            }
+        }
+
         function renderReadTick(msg) {
             if (!msg || !msg.sender_id) return '';
             if (msg.read_at) {
@@ -536,6 +552,7 @@ include 'includes/sidebar.php';
             currentConversationId = conversationId;
             currentConversationMeta = null;
             currentChatUserId = conversation && !conversation.is_group ? conversation.other_user_id : null;
+            syncChatHeaderActions(conversation);
             
             // Update UI
             document.querySelectorAll('.conversation-item').forEach(item => {
@@ -561,6 +578,7 @@ include 'includes/sidebar.php';
         
         async function loadConversationDetails(conversation) {
             if (!conversation) return;
+            syncChatHeaderActions(conversation);
             const groupMeta = document.getElementById('chatGroupMeta');
             const groupMembers = document.getElementById('chatGroupMembers');
             const groupMemberCount = document.getElementById('chatGroupMemberCount');
@@ -995,7 +1013,23 @@ include 'includes/sidebar.php';
         }
 
         async function startCall(callType) {
-            if (!currentChatUserId) return;
+            if (!currentChatUserId || (currentConversationMeta && currentConversationMeta.is_group)) {
+                alert('Audio and video calls are available only in direct conversations.');
+                return;
+            }
+            const callWindow = window.open('', '_blank');
+            if (callWindow) {
+                callWindow.document.write(`
+                    <title>Starting call...</title>
+                    <body style="font-family: Inter, Arial, sans-serif; margin: 0; display: grid; place-items: center; min-height: 100vh; background: #f8fafc; color: #0f172a;">
+                        <div style="text-align: center; padding: 24px;">
+                            <div style="font-size: 18px; font-weight: 700; margin-bottom: 8px;">Starting your ${callType} call...</div>
+                            <div style="font-size: 14px; color: #475569;">We are preparing the secure meeting room.</div>
+                        </div>
+                    </body>
+                `);
+                callWindow.document.close();
+            }
             try {
                 const token = localStorage.getItem('jwt_token');
                 const response = await fetch(`${window.getApiBase ? window.getApiBase() : (window.PORTAL_BASE_PREFIX || '') + 'api'}/start_call.php`, {
@@ -1011,12 +1045,22 @@ include 'includes/sidebar.php';
                 });
                 const data = await response.json();
                 if (!data.success || !data.data || !data.data.room_url) {
+                    if (callWindow && !callWindow.closed) {
+                        callWindow.close();
+                    }
                     alert(data.message || 'Unable to start call');
                     return;
                 }
-                window.open(data.data.room_url, '_blank', 'noopener');
+                if (callWindow && !callWindow.closed) {
+                    callWindow.location.href = data.data.room_url;
+                    return;
+                }
+                window.open(data.data.room_url, '_blank');
             } catch (error) {
                 console.error('Error starting call:', error);
+                if (callWindow && !callWindow.closed) {
+                    callWindow.close();
+                }
                 alert('Error starting call');
             }
         }

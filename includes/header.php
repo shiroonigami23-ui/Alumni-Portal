@@ -372,11 +372,17 @@ $basePrefix = $isAdminPath ? '../' : '';
 
                     if (notifications.length > 0) {
                         notificationList.innerHTML = notifications.map(notif => `
-                            <div class="p-3 bg-gray-50 rounded-lg notification-item cursor-pointer" data-notification-id="${notif.notification_id || ''}">
+                            <div
+                                class="p-3 ${(notif.read_at ? 'bg-gray-50' : 'bg-blue-50/70')} rounded-lg notification-item cursor-pointer"
+                                data-notification-id="${notif.notification_id || ''}"
+                                data-action-type="${notif.action_type || ''}"
+                                data-call-type="${notif.call_type || ''}"
+                                data-target-url="${encodeURIComponent(notif.target_url || '')}">
                                 <div class="flex items-start">
                                     <i data-lucide="${notif.icon || 'bell'}" class="h-4 w-4 mt-1 mr-3 text-blue-600"></i>
                                     <div>
                                         <p class="text-sm text-gray-800">${notif.message}</p>
+                                        ${notif.action_type === 'join-call' ? `<span class="mt-2 inline-flex items-center rounded-full bg-white px-2 py-1 text-[11px] font-semibold text-blue-700 ring-1 ring-blue-100">Join ${(notif.call_type === 'video' ? 'video' : 'audio')} call</span>` : ''}
                                         <p class="text-xs text-gray-500 mt-1">${formatDate(notif.created_at)}</p>
                                     </div>
                                 </div>
@@ -406,8 +412,21 @@ $basePrefix = $isAdminPath ? '../' : '';
                 item.dataset.bound = '1';
                 item.addEventListener('click', async () => {
                     const id = Number(item.getAttribute('data-notification-id') || 0);
-                    if (!id) return;
-                    await makeApiCall('mark_notif_read.php', 'POST', { notification_id: id });
+                    const actionType = String(item.getAttribute('data-action-type') || '');
+                    const encodedTarget = String(item.getAttribute('data-target-url') || '');
+                    const targetUrl = encodedTarget ? decodeURIComponent(encodedTarget) : '';
+                    if (id) {
+                        await makeApiCall('mark_notif_read.php', 'POST', { notification_id: id });
+                    }
+                    if (actionType === 'join-call' && targetUrl) {
+                        window.open(targetUrl, '_blank');
+                        loadNotifications();
+                        return;
+                    }
+                    if (targetUrl) {
+                        window.location.href = targetUrl;
+                        return;
+                    }
                     loadNotifications();
                 });
             });
@@ -427,6 +446,14 @@ $basePrefix = $isAdminPath ? '../' : '';
             });
             n.onclick = () => {
                 window.focus();
+                if (latest.action_type === 'join-call' && latest.target_url) {
+                    window.open(latest.target_url, '_blank');
+                    return;
+                }
+                if (latest.target_url) {
+                    window.location.href = latest.target_url;
+                    return;
+                }
                 window.location.href = `${window.PORTAL_BASE_PREFIX}feed.php`;
             };
         }

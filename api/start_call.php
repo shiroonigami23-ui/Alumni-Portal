@@ -6,6 +6,7 @@ header("Access-Control-Allow-Methods: POST");
 require_once __DIR__ . '/../config/Database.php';
 require_once __DIR__ . '/../middleware/Auth.php';
 require_once __DIR__ . '/_message_schema.php';
+require_once __DIR__ . '/_moderation_schema.php';
 
 function build_room_code(int $a, int $b, string $type): string
 {
@@ -19,6 +20,7 @@ try {
     $database = new Database();
     $db = $database->getConnection();
     ensure_calls_table($db);
+    ensure_user_moderation_schema($db);
     $auth = new Auth($db);
     $initiatorId = (int)$auth->validateRequest();
 
@@ -44,6 +46,26 @@ try {
     if (!$exists->fetchColumn()) {
         http_response_code(404);
         echo json_encode(['success' => false, 'message' => 'Receiver not found']);
+        exit;
+    }
+
+    moderation_assert_messaging_allowed($db, $initiatorId, 'You are restricted from starting calls right now.');
+
+    $initiatorRole = moderation_get_user_role($db, $initiatorId);
+    $receiverRole = moderation_get_user_role($db, $receiverId);
+    if ($initiatorRole !== 'admin' && $receiverRole === 'admin') {
+        http_response_code(403);
+        echo json_encode(['success' => false, 'message' => 'You cannot start direct calls with admin accounts.']);
+        exit;
+    }
+
+    if (
+        $initiatorRole !== 'admin' &&
+        in_array($initiatorRole, ['alumni', 'faculty'], true) &&
+        moderation_is_profile_private($db, $initiatorId)
+    ) {
+        http_response_code(403);
+        echo json_encode(['success' => false, 'message' => 'Private accounts must switch to public before starting direct calls.']);
         exit;
     }
 
@@ -91,4 +113,3 @@ try {
         'error' => $e->getMessage()
     ]);
 }
-
