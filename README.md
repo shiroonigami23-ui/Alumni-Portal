@@ -172,6 +172,16 @@ When verifying a fresh deploy, append `?refresh=<commit>` to bypass stale browse
     - the mobile `More` sheet opens with a smoother slide-up animation
     - the mobile header uses a shorter brand treatment and hides the theme button to avoid crowding notification/profile actions
     - dashboard hides lower-priority blocks by default on phones (`Jump Back In`, `Recent Activity`, `Recent Notifications`) and suppresses the least important stats card to reduce scroll
+  - forgot-password is now a real email-reset flow:
+    - new `forgot-password.php` and `reset.php` pages exist
+    - reset tokens are issued securely, expire after 30 minutes, and are invalidated after use
+    - reset emails are sent through the shared `EmailService`
+    - the old localhost/token-in-response simulation flow is gone
+  - profile timeline now treats reposts as first-class activity:
+    - the profile page fetches both authored posts and reposts
+    - student profiles relabel the first timeline tab to `Activity`
+    - students still cannot create top-level posts, but their repost activity can populate the profile timeline
+    - the dedicated `Reposts` tab now uses the profile owner's repost activity instead of the viewer's repost state
 
 ### Infra note
 
@@ -199,6 +209,8 @@ When verifying a fresh deploy, append `?refresh=<commit>` to bypass stale browse
 - Accepted mentor/mentee matches should have a mentor group conversation available in Messages
 - Mentor-group conversations should show a mentor-group badge, member list, and unread counts
 - Students should not be able to create top-level posts from feed or profile
+- Forgot-password should send a real reset email instead of returning a token/simulation link
+- Reset links should expire after 30 minutes and work through `reset.php`
 - A student/alumni should never have more than one active mentor relationship at once
 
 ### Known follow-up items

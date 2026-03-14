@@ -33,11 +33,12 @@ try {
     $sort = strtolower(trim((string)($_GET['sort'] ?? 'newest')));
     $authorUserId = isset($_GET['user_id']) ? (int)$_GET['user_id'] : 0;
     $profileMode = $authorUserId > 0;
+    $activityUserId = $authorUserId > 0 ? $authorUserId : $user_id;
 
     $where = "WHERE p.status = 'published'";
     $params = [];
 
-    if ($authorUserId > 0) {
+    if ($authorUserId > 0 && $filter !== 'reposts') {
         $where .= " AND p.user_id = :author_uid";
         $params['author_uid'] = $authorUserId;
     }
@@ -50,6 +51,7 @@ try {
     } elseif ($filter === 'reposts') {
         if ($authorUserId > 0) {
             $where .= " AND EXISTS (SELECT 1 FROM reposts rp WHERE rp.post_id = p.post_id AND rp.user_id = :author_uid)";
+            $params['author_uid'] = $authorUserId;
         } else {
             $where .= " AND EXISTS (SELECT 1 FROM reposts rp WHERE rp.post_id = p.post_id AND rp.user_id = :uid)";
             $params['uid'] = $user_id;
@@ -73,7 +75,9 @@ try {
     }
 
     $orderBy = "ORDER BY p.created_at DESC";
-    if ($profileMode) {
+    if ($filter === 'reposts') {
+        $orderBy = "ORDER BY activity_rp.created_at DESC NULLS LAST, p.created_at DESC";
+    } elseif ($profileMode) {
         $orderBy = "ORDER BY CASE WHEN pp.post_id IS NULL THEN 1 ELSE 0 END, pp.pin_order ASC NULLS LAST, p.created_at DESC";
     } elseif ($sort === 'popular') {
         $orderBy = "ORDER BY p.reaction_count DESC, p.comment_count DESC, p.created_at DESC";
@@ -107,6 +111,8 @@ try {
                 COALESCE(p.share_count, 0) AS shares_count,
                 COALESCE(p.view_count, 0) AS view_count,
                 COALESCE(p.repost_count, 0) AS reposts_count,
+                activity_rp.created_at AS activity_reposted_at,
+                (activity_rp.post_id IS NOT NULL) AS activity_user_has_reposted,
                 p.created_at,
                 u.role AS author_role,
                 u.email AS author_email,
@@ -128,6 +134,7 @@ try {
             FROM posts p
             JOIN users u ON p.user_id = u.user_id
             LEFT JOIN profiles pr ON p.user_id = pr.user_id
+            LEFT JOIN reposts activity_rp ON activity_rp.post_id = p.post_id AND activity_rp.user_id = :activity_uid
             LEFT JOIN pinned_posts pp ON pp.post_id = p.post_id AND pp.user_id = :pin_owner
             LEFT JOIN pinned_posts pp_self ON pp_self.post_id = p.post_id AND pp_self.user_id = :viewer_id
             $where
@@ -137,6 +144,7 @@ try {
     $stmt = $db->prepare($sql);
     $stmt->bindValue(':viewer_id', $user_id, PDO::PARAM_INT);
     $stmt->bindValue(':pin_owner', $profileMode ? $authorUserId : 0, PDO::PARAM_INT);
+    $stmt->bindValue(':activity_uid', $activityUserId, PDO::PARAM_INT);
     foreach ($params as $key => $value) {
         $stmt->bindValue(':' . $key, $value);
     }

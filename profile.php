@@ -379,6 +379,7 @@ include 'includes/sidebar.php';
         let isOwnProfile = false;
         let profileData = null;
         let timelinePostsData = [];
+        let timelineRepostsData = [];
         let timelineRepliesData = [];
         let currentTimelineSubtab = 'posts';
         
@@ -471,6 +472,15 @@ include 'includes/sidebar.php';
                 }
             };
         }
+
+        function escapeHtml(value) {
+            return String(value ?? '')
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#39;');
+        }
         
         function getDefaultProfileAvatar(name = 'U') {
             const initial = encodeURIComponent((String(name || 'U').trim().charAt(0) || 'U').toUpperCase());
@@ -519,6 +529,10 @@ include 'includes/sidebar.php';
             document.getElementById('connectionCount').textContent = `${followersCount} followers`;
             document.getElementById('postCount').textContent = `${data.posts_count || 0} posts`;
             document.getElementById('joinedDate').textContent = getJoinedLabel(data);
+            const primaryTimelineTab = document.querySelector('.timeline-subtab[data-subtab="posts"]');
+            if (primaryTimelineTab) {
+                primaryTimelineTab.textContent = String(data.role || '').toLowerCase() === 'student' ? 'Activity' : 'Posts';
+            }
             
             // Update action buttons
             renderActionButtons(data);
@@ -723,15 +737,31 @@ include 'includes/sidebar.php';
         
         async function loadProfilePosts() {
             try {
-                const response = await makeApiCall(`get_feed.php?user_id=${profileUserId}&filter=all`);
+                const [response, repostsResponse] = await Promise.all([
+                    makeApiCall(`get_feed.php?user_id=${profileUserId}&filter=all`),
+                    makeApiCall(`get_feed.php?user_id=${profileUserId}&filter=reposts`)
+                ]);
                 if (response && (response.success || response.status === 'success') && response.data) {
-                    const posts = response.data.filter((p) => !!p && !!p.id);
+                    const posts = response.data.filter((p) => !!p && !!p.id).map((post) => ({
+                        ...post,
+                        activity_kind: 'post',
+                        activity_timestamp: post.created_at || null
+                    }));
                     timelinePostsData = posts;
+                    timelineRepostsData = Array.isArray(repostsResponse?.data)
+                        ? repostsResponse.data.filter((p) => !!p && !!p.id).map((post) => ({
+                            ...post,
+                            activity_kind: 'repost',
+                            activity_timestamp: post.activity_reposted_at || post.created_at || null
+                        }))
+                        : [];
                     
                     // Check for pinned posts
                     const pinnedPosts = posts.filter(post => post.is_pinned);
                     if (pinnedPosts.length > 0) {
                         await loadPinnedPosts(pinnedPosts);
+                    } else {
+                        document.getElementById('pinnedPostsSection')?.classList.add('hidden');
                     }
                     
                     // Show create post section for own profile
@@ -743,10 +773,13 @@ include 'includes/sidebar.php';
                     renderTimelineSubtab();
                 } else {
                     timelinePostsData = [];
+                    timelineRepostsData = [];
                     renderTimelineSubtab();
                 }
             } catch (error) {
                 console.error('Error loading profile posts:', error);
+                timelinePostsData = [];
+                timelineRepostsData = [];
             }
         }
 
@@ -812,6 +845,11 @@ include 'includes/sidebar.php';
             const canReportPost = !canManagePost;
             
             postElement.innerHTML = `
+                ${post.activity_kind === 'repost' ? `
+                <div class="flex items-center text-xs font-medium text-emerald-600 mb-4">
+                    <i data-lucide="repeat-2" class="h-4 w-4 mr-2"></i>
+                    <span>${escapeHtml(profileData?.name || 'This user')} reposted this${post.activity_reposted_at ? ` • ${formatDate(post.activity_reposted_at)}` : ''}</span>
+                </div>` : ''}
                 <div class="flex items-start justify-between mb-4">
                     <div>
                         <h4 class="font-semibold text-gray-900">${post.title || 'Post'}</h4>
@@ -888,6 +926,25 @@ include 'includes/sidebar.php';
                         const countEl = postElement.querySelector('.profile-repost-count');
                         if (countEl && typeof res.reposts_count !== 'undefined') {
                             countEl.textContent = res.reposts_count;
+                        }
+                        if (isOwnProfile) {
+                            if (res.reposted) {
+                                const alreadyPresent = timelineRepostsData.some((item) => Number(item.id) === Number(post.id));
+                                if (!alreadyPresent) {
+                                    timelineRepostsData.unshift({
+                                        ...post,
+                                        activity_kind: 'repost',
+                                        activity_reposted_at: new Date().toISOString(),
+                                        activity_timestamp: new Date().toISOString(),
+                                        activity_user_has_reposted: true,
+                                        user_has_reposted: true,
+                                        reposts_count: Number(res.reposts_count || 0)
+                                    });
+                                }
+                            } else {
+                                timelineRepostsData = timelineRepostsData.filter((item) => Number(item.id) !== Number(post.id));
+                            }
+                            renderTimelineSubtab();
                         }
                     }
                 });
@@ -986,15 +1043,22 @@ include 'includes/sidebar.php';
             repliesContainer.classList.add('hidden');
             postsContainer.classList.remove('hidden');
 
-            let visible = timelinePostsData.filter((p) => !p.is_pinned);
+            const authored = timelinePostsData.filter((p) => !p.is_pinned);
+            const reposts = timelineRepostsData.slice();
+            const combined = mergeTimelineActivity(authored, reposts);
+
+            let visible = combined;
             if (currentTimelineSubtab === 'media') {
-                visible = visible.filter((p) => Array.isArray(p.attachments) && p.attachments.length > 0);
+                visible = combined.filter((p) => Array.isArray(p.attachments) && p.attachments.length > 0);
             } else if (currentTimelineSubtab === 'reposts') {
-                visible = visible.filter((p) => !!p.user_has_reposted);
+                visible = reposts;
             }
 
             if (!visible.length) {
-                postsContainer.innerHTML = `<div class="text-center py-10 text-gray-500">No ${currentTimelineSubtab} yet.</div>`;
+                const emptyLabel = currentTimelineSubtab === 'posts' && String(profileData?.role || '').toLowerCase() === 'student'
+                    ? 'activity'
+                    : currentTimelineSubtab;
+                postsContainer.innerHTML = `<div class="text-center py-10 text-gray-500">No ${emptyLabel} yet.</div>`;
                 return;
             }
             postsContainer.innerHTML = '';
@@ -1003,6 +1067,35 @@ include 'includes/sidebar.php';
                     postsContainer.appendChild(await createPostElement(post));
                 }
             })();
+        }
+
+        function mergeTimelineActivity(authoredPosts, repostPosts) {
+            const merged = [];
+            const seen = new Set();
+
+            for (const post of authoredPosts) {
+                merged.push({
+                    ...post,
+                    activity_kind: post.activity_kind || 'post',
+                    activity_timestamp: post.activity_timestamp || post.created_at || null
+                });
+                seen.add(Number(post.id));
+            }
+
+            for (const repost of repostPosts) {
+                if (seen.has(Number(repost.id))) continue;
+                merged.push({
+                    ...repost,
+                    activity_kind: 'repost',
+                    activity_timestamp: repost.activity_timestamp || repost.activity_reposted_at || repost.created_at || null
+                });
+            }
+
+            return merged.sort((a, b) => {
+                const aTime = Date.parse(a.activity_timestamp || a.created_at || '') || 0;
+                const bTime = Date.parse(b.activity_timestamp || b.created_at || '') || 0;
+                return bTime - aTime;
+            });
         }
 
         function renderRepliesTimeline() {

@@ -203,7 +203,7 @@
                         <li>Click the link and create a new password</li>
                         <li>Log in with your new password</li>
                     </ol>
-                    <p class="mt-3 text-sm text-gray-600">The reset link expires after 24 hours for security.</p>
+                    <p class="mt-3 text-sm text-gray-600">The reset link expires after 30 minutes for security.</p>
                 </div>
             </div>
 
