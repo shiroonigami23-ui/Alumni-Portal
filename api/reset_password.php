@@ -54,6 +54,20 @@ if (!$update->execute(['hash' => $newHash, 'email' => $resetReq['email']])) {
     echo json_encode(["message" => "Failed to update password."]);
     exit;
 }
+if ($update->rowCount() < 1) {
+    http_response_code(500);
+    echo json_encode(["message" => "Password update affected no rows."]);
+    exit;
+}
+
+$verify = $db->prepare("SELECT password_hash FROM users WHERE email = :email LIMIT 1");
+$verify->execute(['email' => $resetReq['email']]);
+$storedHash = (string)($verify->fetchColumn() ?: '');
+if ($storedHash === '' || !password_verify($newPassword, $storedHash)) {
+    http_response_code(500);
+    echo json_encode(["message" => "Password verification failed after update."]);
+    exit;
+}
 
 $db->prepare("UPDATE password_resets SET used_at = NOW(), expires_at = NOW() WHERE email = :email")
    ->execute(['email' => $resetReq['email']]);

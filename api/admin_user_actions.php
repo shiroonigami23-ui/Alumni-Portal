@@ -166,8 +166,19 @@ try {
             }
             $hash = password_hash($newPassword, PASSWORD_BCRYPT);
             $db->beginTransaction();
-            $db->prepare("UPDATE users SET password_hash = :hash WHERE user_id = :uid")
-               ->execute(['hash' => $hash, 'uid' => $targetUserId]);
+            $updateStmt = $db->prepare("UPDATE users SET password_hash = :hash WHERE user_id = :uid");
+            $updateStmt->execute(['hash' => $hash, 'uid' => $targetUserId]);
+            if ($updateStmt->rowCount() < 1) {
+                throw new RuntimeException('Password update affected no rows.');
+            }
+
+            $verifyStmt = $db->prepare("SELECT password_hash FROM users WHERE user_id = :uid LIMIT 1");
+            $verifyStmt->execute(['uid' => $targetUserId]);
+            $storedHash = (string)($verifyStmt->fetchColumn() ?: '');
+            if ($storedHash === '' || !password_verify($newPassword, $storedHash)) {
+                throw new RuntimeException('Stored password verification failed after update.');
+            }
+
             $db->prepare("DELETE FROM password_resets WHERE email = :email")
                ->execute(['email' => (string)$target['email']]);
             $db->prepare("DELETE FROM sessions WHERE user_id = :uid")
