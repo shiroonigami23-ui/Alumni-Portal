@@ -404,14 +404,16 @@ function userCanManageMentorGroup(PDO $db, int $groupId, int $userId): bool
 function getNextGroupAdminCandidate(PDO $db, int $groupId, int $excludeUserId): ?array
 {
     $stmt = $db->prepare("
-        SELECT gm.user_id
+        SELECT gm.user_id, LOWER(u.role) AS role
         FROM mentorship_group_members gm
+        JOIN users u ON u.user_id = gm.user_id
         LEFT JOIN mentorship_group_bans gb
           ON gb.group_id = gm.group_id
          AND gb.user_id = gm.user_id
          AND (gb.is_permanent = TRUE OR gb.banned_until > NOW())
         WHERE gm.group_id = :gid
           AND gm.user_id <> :uid
+          AND LOWER(u.role) <> 'student'
           AND gb.user_id IS NULL
         ORDER BY
             CASE WHEN gm.member_role = 'admin' THEN 0 ELSE 1 END,
@@ -423,15 +425,34 @@ function getNextGroupAdminCandidate(PDO $db, int $groupId, int $excludeUserId): 
         ':gid' => $groupId,
         ':uid' => $excludeUserId
     ]);
-    $userId = $stmt->fetchColumn();
-    if (!$userId) {
+    $row = $stmt->fetch(PDO::FETCH_ASSOC);
+    if (!$row || empty($row['user_id'])) {
         return null;
     }
-    return ['user_id' => (int)$userId];
+    return [
+        'user_id' => (int)$row['user_id'],
+        'role' => (string)($row['role'] ?? '')
+    ];
 }
 
 function transferMentorGroupAdmin(PDO $db, int $groupId, int $newAdminUserId): void
 {
+    $roleStmt = $db->prepare("
+        SELECT LOWER(u.role)
+        FROM mentorship_group_members gm
+        JOIN users u ON u.user_id = gm.user_id
+        WHERE gm.group_id = :gid AND gm.user_id = :uid
+        LIMIT 1
+    ");
+    $roleStmt->execute([
+        ':gid' => $groupId,
+        ':uid' => $newAdminUserId
+    ]);
+    $targetRole = (string)($roleStmt->fetchColumn() ?: '');
+    if ($targetRole === '' || $targetRole === 'student') {
+        throw new RuntimeException('Admin rights can only be transferred to a non-student group member.');
+    }
+
     $db->prepare("
         UPDATE mentorship_groups
         SET admin_user_id = :new_admin,
@@ -450,4 +471,34 @@ function transferMentorGroupAdmin(PDO $db, int $groupId, int $newAdminUserId): v
         ':new_admin' => $newAdminUserId,
         ':gid' => $groupId
     ]);
+}
+
+function disbandMentorGroup(PDO $db, int $groupId, int $actedByUserId, string $reason = 'group_disbanded'): void
+{
+    $db->prepare("
+        UPDATE mentorship_matches
+        SET status = 'removed',
+            ended_at = NOW(),
+            ended_by = :acted_by,
+            ended_reason = :reason
+        WHERE group_id = :gid
+          AND status = 'active'
+    ")->execute([
+        ':acted_by' => $actedByUserId,
+        ':reason' => $reason,
+        ':gid' => $groupId
+    ]);
+
+    $db->prepare("
+        UPDATE mentorship_requests
+        SET status = 'rejected',
+            updated_at = NOW()
+        WHERE mentor_id IN (
+            SELECT mentor_user_id FROM mentorship_groups WHERE group_id = :gid
+        )
+          AND status = 'pending'
+    ")->execute([':gid' => $groupId]);
+
+    $db->prepare("DELETE FROM mentorship_groups WHERE group_id = :gid")
+        ->execute([':gid' => $groupId]);
 }

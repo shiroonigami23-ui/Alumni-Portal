@@ -169,6 +169,8 @@ When verifying a fresh deploy, append `?refresh=<commit>` to bypass stale browse
   - admin user management now loads moderation state per account so action buttons only show the valid next action (`Ban` vs `Unban`, `Shadow` vs `Lift Shadow`, `Mute DM` vs `Unmute DM`)
   - admins can open any profile, including private faculty/alumni profiles, through the same profile API
   - clicking the bell icon now bulk-marks all notifications as read instead of requiring notification-by-notification clearing
+  - admins can delete any post or comment/reply directly from the live feed UI; comment/reply delete now respects admin role too
+  - mentor-group admin transfer is now restricted to non-student members, and a group can be disbanded explicitly; if an admin leaves without an eligible successor, the mentor group is disbanded automatically and its GC/messages are removed via cascade
   - mobile navigation now uses a bottom-bar-first pattern on small screens with a `More` sheet for secondary destinations instead of a persistent left drawer
   - mobile polish pass:
     - bottom-nav icons are larger with tighter labels and touch-feedback states

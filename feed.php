@@ -689,8 +689,10 @@ include 'includes/sidebar.php';
                                         <button class="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 pin-post-btn">
                                             ${post.is_pinned ? 'Unpin Post' : 'Pin to Profile'}
                                         </button>
+                                    ` : currentUserRole === 'admin' ? `
+                                        <button class="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 delete-post-btn">Delete Post</button>
                                     ` : ''}
-                                    <button class="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 report-post-btn">Report Post</button>
+                                    ${currentUserRole !== 'admin' ? '<button class="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 report-post-btn">Report Post</button>' : ''}
                                 </div>
                             </div>
                         </div>

@@ -543,7 +543,11 @@ switch ($action) {
         if (!$memberCheck->fetchColumn()) {
             jsonResponse(['success' => false, 'message' => 'New admin must be an active group member.'], 400);
         }
-        transferMentorGroupAdmin($db, $groupId, $newAdminUserId);
+        try {
+            transferMentorGroupAdmin($db, $groupId, $newAdminUserId);
+        } catch (RuntimeException $e) {
+            jsonResponse(['success' => false, 'message' => $e->getMessage()], 409);
+        }
         jsonResponse(['success' => true, 'message' => 'Group admin transferred.']);
         break;
 
@@ -569,9 +573,15 @@ switch ($action) {
                 $targetUserId = (int)($candidate['user_id'] ?? 0);
             }
             if ($targetUserId <= 0) {
-                jsonResponse(['success' => false, 'message' => 'Transfer admin rights to another member before leaving this group.'], 409);
+                disbandMentorGroup($db, $groupId, $userId, 'group_disbanded_by_admin_leave');
+                jsonResponse(['success' => true, 'message' => 'No eligible alumni/admin member was available, so the mentor group was disbanded.']);
             }
-            transferMentorGroupAdmin($db, $groupId, $targetUserId);
+            try {
+                transferMentorGroupAdmin($db, $groupId, $targetUserId);
+            } catch (RuntimeException $e) {
+                disbandMentorGroup($db, $groupId, $userId, 'group_disbanded_invalid_successor');
+                jsonResponse(['success' => true, 'message' => 'No eligible non-student successor was available, so the mentor group was disbanded.']);
+            }
         }
 
         $db->prepare("DELETE FROM mentorship_group_members WHERE group_id = :gid AND user_id = :uid")
@@ -588,6 +598,18 @@ switch ($action) {
         ]);
 
         jsonResponse(['success' => true, 'message' => 'You left the mentor group.']);
+        break;
+
+    case 'disband_group':
+        $groupId = (int)($data['group_id'] ?? 0);
+        if ($groupId <= 0) {
+            jsonResponse(['success' => false, 'message' => 'group_id is required.'], 400);
+        }
+        if (!userCanManageMentorGroup($db, $groupId, $userId)) {
+            jsonResponse(['success' => false, 'message' => 'Only the group admin can disband this group.'], 403);
+        }
+        disbandMentorGroup($db, $groupId, $userId, 'group_disbanded_by_admin');
+        jsonResponse(['success' => true, 'message' => 'Mentor group disbanded. All members were removed automatically.']);
         break;
 
     case 'moderate_member':

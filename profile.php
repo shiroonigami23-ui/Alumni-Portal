@@ -841,8 +841,8 @@ include 'includes/sidebar.php';
             } else if (post.content_file_path) {
                 try { content = await fetchTextContent(post.content_file_path); } catch (_) {}
             }
-            const canManagePost = !!(post.is_owner || isOwnProfile);
-            const canReportPost = !canManagePost;
+            const canManagePost = !!(post.is_owner || isOwnProfile || currentUserRole === 'admin');
+            const canReportPost = !canManagePost && currentUserRole !== 'admin';
             
             postElement.innerHTML = `
                 ${post.activity_kind === 'repost' ? `

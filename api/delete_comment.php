@@ -13,6 +13,9 @@ $auth = new Auth($db);
 
 try {
     $user_id = $auth->validateRequest();
+    $roleStmt = $db->prepare("SELECT LOWER(role) FROM users WHERE user_id = :uid LIMIT 1");
+    $roleStmt->execute([':uid' => $user_id]);
+    $currentRole = (string)($roleStmt->fetchColumn() ?: '');
     $data = json_decode(file_get_contents("php://input"), true) ?: [];
     $comment_id = isset($data['comment_id']) ? (int)$data['comment_id'] : 0;
 
@@ -31,9 +34,10 @@ try {
         exit;
     }
 
-    if ((int)$comment['user_id'] !== (int)$user_id) {
+    $canDelete = ((int)$comment['user_id'] === (int)$user_id) || ($currentRole === 'admin');
+    if (!$canDelete) {
         http_response_code(403);
-        echo json_encode(["success" => false, "status" => "error", "message" => "You can delete only your own comment."]);
+        echo json_encode(["success" => false, "status" => "error", "message" => "You do not have permission to delete this comment."]);
         exit;
     }
 

@@ -457,7 +457,7 @@ include 'includes/sidebar.php';
                 ` : '';
                 listEl.innerHTML = `
                     ${menteeCard}
-                    ${groupId ? `<div class="flex flex-wrap gap-2 mb-3"><a href="messages.php?group_id=${groupId}" class="text-xs px-3 py-1.5 bg-blue-600 text-white rounded">Open mentor group</a><button class="leave-group-btn text-xs px-3 py-1.5 border border-amber-300 text-amber-700 rounded" data-group-id="${groupId}">Leave group</button></div>` : ''}
+                    ${groupId ? `<div class="flex flex-wrap gap-2 mb-3"><a href="messages.php?group_id=${groupId}" class="text-xs px-3 py-1.5 bg-blue-600 text-white rounded">Open mentor group</a><button class="leave-group-btn text-xs px-3 py-1.5 border border-amber-300 text-amber-700 rounded" data-group-id="${groupId}">Leave group</button>${!mentorStatus?.can_request ? `<button class="disband-group-btn text-xs px-3 py-1.5 border border-red-300 text-red-600 rounded" data-group-id="${groupId}">Disband group</button>` : ''}</div>` : ''}
                     ${activeMentorshipRows.map((row) => `
                         <div class="border border-gray-200 rounded-lg p-4">
                             <div class="flex items-start justify-between gap-3">
@@ -518,7 +518,7 @@ include 'includes/sidebar.php';
             btn.addEventListener('click', async () => {
                 const group_id = Number(btn.getAttribute('data-group-id') || 0);
                 if (!group_id) return;
-                if (!confirm('Leave this mentor group? If you are the admin, ownership will transfer to another member when possible.')) return;
+                if (!confirm('Leave this mentor group? If you are the admin and no eligible non-student successor exists, the group will be disbanded.')) return;
                 const res = await makeApiCall('mentorship.php?action=leave_group', 'POST', { group_id });
                 if (res && res.success) {
                     await refreshMentorshipViews();
@@ -544,6 +544,22 @@ include 'includes/sidebar.php';
                     await refreshMentorshipViews();
                 } else {
                     alert((res && res.message) || 'Failed to update member access.');
+                }
+            });
+        });
+
+        document.querySelectorAll('.disband-group-btn').forEach((btn) => {
+            if (btn.dataset.bound === '1') return;
+            btn.dataset.bound = '1';
+            btn.addEventListener('click', async () => {
+                const group_id = Number(btn.getAttribute('data-group-id') || 0);
+                if (!group_id) return;
+                if (!confirm('Disband this mentor group? All members will be removed and the group chat will be deleted.')) return;
+                const res = await makeApiCall('mentorship.php?action=disband_group', 'POST', { group_id });
+                if (res && res.success) {
+                    await refreshMentorshipViews();
+                } else {
+                    alert((res && res.message) || 'Failed to disband this mentor group.');
                 }
             });
         });

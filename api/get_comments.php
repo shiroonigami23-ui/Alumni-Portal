@@ -13,6 +13,9 @@ $auth = new Auth($db);
 
 try {
     $viewer_id = $auth->validateRequest();
+    $viewerRoleStmt = $db->prepare("SELECT LOWER(role) FROM users WHERE user_id = :uid LIMIT 1");
+    $viewerRoleStmt->execute([':uid' => $viewer_id]);
+    $viewerRole = (string)($viewerRoleStmt->fetchColumn() ?: '');
     $post_id = isset($_GET['post_id']) ? (int)$_GET['post_id'] : 0;
     $since = isset($_GET['since']) ? trim((string)$_GET['since']) : '';
 
@@ -98,6 +101,7 @@ try {
 
         $userHasLikedVal = $row['user_has_liked'] ?? false;
         $userHasLiked = ($userHasLikedVal === true || $userHasLikedVal === 1 || $userHasLikedVal === '1' || $userHasLikedVal === 't');
+        $canDelete = ((int)$row['user_id'] === (int)$viewer_id) || ($viewerRole === 'admin');
         $data[] = [
             "id" => (int)$row['comment_id'],
             "post_id" => (int)$row['post_id'],
@@ -110,7 +114,7 @@ try {
             "attachments" => $attachments,
             "likes_count" => (int)($row['reaction_count'] ?? 0),
             "user_has_liked" => $userHasLiked,
-            "can_delete" => ((int)$row['user_id'] === (int)$viewer_id),
+            "can_delete" => $canDelete,
             "can_edit" => ((int)$row['user_id'] === (int)$viewer_id),
             "is_edited" => (($row['is_edited'] ?? false) === true || ($row['is_edited'] ?? false) === 1 || ($row['is_edited'] ?? false) === '1' || ($row['is_edited'] ?? false) === 't'),
             "created_at" => $row['created_at'],
