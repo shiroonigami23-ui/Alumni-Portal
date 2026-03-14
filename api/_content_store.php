@@ -156,3 +156,16 @@ function delete_content_payload(PDO $db, ?string $pointer): void
         @unlink($abs);
     }
 }
+
+function delete_content_payload_batch(PDO $db, array $pointers): void
+{
+    $seen = [];
+    foreach ($pointers as $pointer) {
+        $clean = trim((string)$pointer);
+        if ($clean === '' || isset($seen[$clean])) {
+            continue;
+        }
+        $seen[$clean] = true;
+        delete_content_payload($db, $clean);
+    }
+}

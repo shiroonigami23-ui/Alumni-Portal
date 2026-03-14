@@ -170,13 +170,22 @@ When verifying a fresh deploy, append `?refresh=<commit>` to bypass stale browse
   - admins can open any profile, including private faculty/alumni profiles, through the same profile API
   - clicking the bell icon now bulk-marks all notifications as read instead of requiring notification-by-notification clearing
   - admins can delete any post or comment/reply directly from the live feed UI; comment/reply delete now respects admin role too
+  - admin delete now also works cleanly from profile and admin report flows, and post/comment deletion removes DB-backed payloads for cascaded comment/reply trees instead of leaving orphaned content rows
+  - post/comment moderation no longer relies on enum-unsafe role SQL such as `LOWER(role)` against PostgreSQL enum columns
   - mentor-group admin transfer is now restricted to non-student members, and a group can be disbanded explicitly; if an admin leaves without an eligible successor, the mentor group is disbanded automatically and its GC/messages are removed via cascade
+  - mentorship now separates one normal mentor-group slot from one admin-led GC slot:
+    - students cannot see or join admin-led mentor groups
+    - faculty can only join admin-led mentor groups, not another normal mentor group
+    - alumni/faculty can keep one normal mentor-group relationship plus one admin-led GC, but no extra regular groups
+    - accepted-request fallback no longer recreates a mentorship after the user left or the group was disbanded
+    - site admins can disband any mentor group / GC from the mentorship or messages flows
   - mobile navigation now uses a bottom-bar-first pattern on small screens with a `More` sheet for secondary destinations instead of a persistent left drawer
   - mobile polish pass:
     - bottom-nav icons are larger with tighter labels and touch-feedback states
     - the mobile `More` sheet opens with a smoother slide-up animation
     - the mobile header uses a shorter brand treatment and hides the theme button to avoid crowding notification/profile actions
     - dashboard hides lower-priority blocks by default on phones (`Jump Back In`, `Recent Activity`, `Recent Notifications`) and suppresses the least important stats card to reduce scroll
+    - discovery now defaults to compact list mode on phones, collapses filters by default, trims low-priority card details, and hides the top-companies block on mobile
   - forgot-password is now a real email-reset flow:
     - new `forgot-password.php` and `reset.php` pages exist
     - reset tokens are issued securely, expire after 30 minutes, and are invalidated after use
@@ -215,10 +224,14 @@ When verifying a fresh deploy, append `?refresh=<commit>` to bypass stale browse
 - Alumni should move through a pending mentor-application flow instead of becoming mentors instantly
 - Accepted mentor/mentee matches should have a mentor group conversation available in Messages
 - Mentor-group conversations should show a mentor-group badge, member list, and unread counts
+- Admin should be able to delete any post/comment/reply from feed, profile, and admin review flows without PostgreSQL enum errors
 - Students should not be able to create top-level posts from feed or profile
 - Forgot-password should send a real reset email instead of returning a token/simulation link
 - Reset links should expire after 30 minutes and work through `reset.php`
 - A student/alumni should never have more than one active mentor relationship at once
+- Students should not see or join admin-led mentor groups; faculty/alumni can have at most one normal mentor group plus one admin-led GC
+- Disbanding a mentor group should remove all members, end active matches, and delete the GC/messages by cascade
+- Discovery should open in a compact mobile layout with collapsed filters and list view on phones
 
 ### Known follow-up items
 
@@ -251,10 +264,16 @@ When verifying a fresh deploy, append `?refresh=<commit>` to bypass stale browse
    - dashboard upcoming-events panel loads without HTML/PHP warning leakage
    - students do not see `Become a Mentor`
    - students do not see a top-level post composer on feed/profile
+   - admin can delete a post from feed, profile, and admin reports without `lower(user_role)` / enum SQL failures
+   - admin can delete comments and replies from the live feed
    - alumni mentor applications require faculty/admin approval
    - students/alumni cannot join a second mentor without leaving the current one
+   - students cannot see or join admin-led mentor groups
+   - faculty/alumni cannot exceed one normal mentor group plus one admin-led GC
    - mentor group moderation actions work: accept, reject, ban, unban, kick, leave
+   - disbanding a mentor group removes members, ends active matches, and removes the GC conversation
    - mentor-group conversation list shows unread counts and header member chips
+   - discovery on mobile starts in list mode with filters collapsed and the top-companies block hidden
 4. Verify any new API route directly from the live ALB URL.
 
 ### Notes for future work

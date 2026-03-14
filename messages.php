@@ -101,6 +101,9 @@ include 'includes/sidebar.php';
                                 <button id="videoCallBtn" class="p-2 hover:bg-gray-100 rounded-lg" title="Video call">
                                     <i data-lucide="video" class="h-5 w-5 text-gray-600"></i>
                                 </button>
+                                <button id="groupDisbandBtn" class="hidden p-2 hover:bg-red-50 rounded-lg" title="Disband mentor group">
+                                    <i data-lucide="shield-x" class="h-5 w-5 text-red-600"></i>
+                                </button>
                                 <button class="p-2 hover:bg-gray-100 rounded-lg">
                                     <i data-lucide="info" class="h-5 w-5 text-gray-600"></i>
                                 </button>
@@ -209,6 +212,7 @@ include 'includes/sidebar.php';
         let pendingAttachment = null;
         let conversationMap = {};
         let currentConversationMeta = null;
+        let currentUserRole = '';
         const DEFAULT_AVATAR = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='40' height='40' viewBox='0 0 40 40'%3E%3Crect width='40' height='40' rx='20' fill='%23e2e8f0'/%3E%3Ctext x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' font-family='Arial' font-size='12' fill='%2364748b'%3EU%3C/text%3E%3C/svg%3E";
         window.DEFAULT_AVATAR = DEFAULT_AVATAR;
         
@@ -232,12 +236,19 @@ include 'includes/sidebar.php';
         const openChatProfileBtn = document.getElementById('openChatProfileBtn');
         const audioCallBtn = document.getElementById('audioCallBtn');
         const videoCallBtn = document.getElementById('videoCallBtn');
+        const groupDisbandBtn = document.getElementById('groupDisbandBtn');
         const chatUserImage = document.getElementById('chatUserImage');
         if (chatUserImage) {
             chatUserImage.onerror = function() {
                 this.onerror = null;
                 this.src = window.DEFAULT_AVATAR;
             };
+        }
+        try {
+            const userData = JSON.parse(localStorage.getItem('user_data') || '{}');
+            currentUserRole = String(userData.role || '').toLowerCase();
+        } catch (error) {
+            currentUserRole = '';
         }
         
         // Event Listeners
@@ -301,6 +312,9 @@ include 'includes/sidebar.php';
         }
         if (videoCallBtn) {
             videoCallBtn.addEventListener('click', () => startCall('video'));
+        }
+        if (groupDisbandBtn) {
+            groupDisbandBtn.addEventListener('click', disbandCurrentGroup);
         }
         document.addEventListener('click', (event) => {
             if (!event.target.closest('[id^="msgMenu-"]') && !event.target.closest('.msg-menu-toggle')) {
@@ -566,9 +580,11 @@ include 'includes/sidebar.php';
                 if (openChatProfileBtn) openChatProfileBtn.classList.add('hidden');
                 if (audioCallBtn) audioCallBtn.classList.add('hidden');
                 if (videoCallBtn) videoCallBtn.classList.add('hidden');
+                if (groupDisbandBtn) groupDisbandBtn.classList.add('hidden');
                 return;
             }
             if (groupMeta) groupMeta.classList.add('hidden');
+            if (groupDisbandBtn) groupDisbandBtn.classList.add('hidden');
             try {
                 const token = localStorage.getItem('jwt_token');
                 const userId = conversation.other_user_id;
@@ -722,8 +738,54 @@ include 'includes/sidebar.php';
                     </span>
                 `;
             }).join('');
+            if (groupDisbandBtn) {
+                const canDisband = currentUserRole === 'admin' || String(meta.current_member_role || '') === 'admin';
+                groupDisbandBtn.classList.toggle('hidden', !canDisband);
+                if (canDisband) {
+                    groupDisbandBtn.dataset.groupId = String(meta.group_id || '');
+                } else {
+                    delete groupDisbandBtn.dataset.groupId;
+                }
+            }
             lucide.createIcons();
         }
+
+        async function disbandCurrentGroup() {
+            const groupId = Number(groupDisbandBtn?.dataset?.groupId || currentConversationMeta?.group_id || 0);
+            if (!groupId) return;
+            if (!confirm('Disband this mentor group? All members will be removed and the group chat will be deleted.')) {
+                return;
+            }
+            try {
+                const res = await makeApiCall('mentorship.php?action=disband_group', 'POST', { group_id: groupId });
+                if (!res || !res.success) {
+                    alert((res && res.message) || 'Failed to disband this mentor group.');
+                    return;
+                }
+                alert(res.message || 'Mentor group disbanded.');
+                currentConversationId = null;
+                currentConversationMeta = null;
+                currentChatUserId = null;
+                messagesSignature = '';
+                chatHeader.classList.add('hidden');
+                messageInputContainer.classList.add('hidden');
+                messagesArea.innerHTML = `
+                    <div class="h-full flex items-center justify-center text-center">
+                        <div>
+                            <i data-lucide="message-square" class="h-16 w-16 text-gray-300 mx-auto mb-4"></i>
+                            <h3 class="text-xl font-semibold text-gray-700 mb-2">Select a conversation</h3>
+                            <p class="text-gray-500">Choose a conversation from the list to start messaging</p>
+                        </div>
+                    </div>
+                `;
+                lucide.createIcons();
+                await loadConversations(true);
+            } catch (error) {
+                console.error('Error disbanding mentor group:', error);
+                alert('Failed to disband this mentor group.');
+            }
+        }
+
         async function sendMessage() {
             const message = messageInput.value.trim();
             if (!currentConversationId) return;

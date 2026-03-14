@@ -6,6 +6,7 @@ header("Access-Control-Allow-Methods: POST");
 include_once '../config/Database.php';
 include_once '../middleware/Auth.php';
 include_once __DIR__ . '/_content_store.php';
+include_once __DIR__ . '/_moderation_schema.php';
 
 $database = new Database();
 $db = $database->getConnection();
@@ -13,9 +14,7 @@ $auth = new Auth($db);
 
 try {
     $user_id = $auth->validateRequest();
-    $roleStmt = $db->prepare("SELECT LOWER(role) FROM users WHERE user_id = :uid LIMIT 1");
-    $roleStmt->execute([':uid' => $user_id]);
-    $currentRole = (string)($roleStmt->fetchColumn() ?: '');
+    $currentRole = strtolower(moderation_get_user_role($db, (int)$user_id));
     $data = json_decode(file_get_contents("php://input"), true) ?: [];
     $post_id = isset($data['post_id']) ? (int)$data['post_id'] : 0;
 
@@ -41,9 +40,13 @@ try {
         exit;
     }
 
+    $commentStmt = $db->prepare("SELECT content_file_path FROM comments WHERE post_id = :pid");
+    $commentStmt->execute([':pid' => $post_id]);
+    $commentPayloads = $commentStmt->fetchAll(PDO::FETCH_COLUMN) ?: [];
+
     $db->prepare("DELETE FROM posts WHERE post_id = :pid")->execute([':pid' => $post_id]);
 
-    delete_content_payload($db, (string)$post['content_file_path']);
+    delete_content_payload_batch($db, array_merge([(string)$post['content_file_path']], $commentPayloads));
 
     echo json_encode(["success" => true, "status" => "success", "message" => "Post deleted."]);
 } catch (Throwable $e) {

@@ -42,6 +42,7 @@ switch ($action) {
                 'can_request' => canRequestMentorship($role),
                 'can_self_activate' => canSelfActivateAsMentor($role),
                 'can_review_applications' => canReviewMentorApplications($role),
+                'admin_group_membership' => getCurrentAdminGroupMembership($db, $userId),
                 'mentor_profile' => $profile ? [
                     'headline' => $profile['headline'],
                     'expertise' => $profile['expertise'],
@@ -56,7 +57,7 @@ switch ($action) {
         break;
 
     case 'list_mentors':
-        $stmt = $db->query("
+        $stmt = $db->prepare("
             SELECT
                 mp.mentor_user_id AS mentor_id,
                 COALESCE(p.full_name, u.email) AS mentor_name,
@@ -74,10 +75,12 @@ switch ($action) {
               AND mp.approval_status = 'approved'
               AND u.role IN ('faculty', 'alumni', 'admin')
               AND u.status = 'active'
+              AND (:viewer_role <> 'student' OR u.role <> 'admin')
             ORDER BY
                 CASE WHEN u.role = 'faculty' THEN 0 WHEN u.role = 'admin' THEN 1 ELSE 2 END,
                 mp.updated_at DESC
         ");
+        $stmt->execute([':viewer_role' => $role]);
         $rows = array_map(function (array $row) use ($db): array {
             $row['avatar'] = resolve_profile_media_url($db, (int)$row['mentor_id'], $row['avatar'] ?? '', 'profile_picture_url', 'profile_avatar');
             return $row;
@@ -93,6 +96,13 @@ switch ($action) {
         $headline = trim((string)($data['headline'] ?? ''));
         $expertise = trim((string)($data['expertise'] ?? ''));
         $existing = getMentorProfile($db, $userId);
+        $regularGroupMembership = getCurrentRegularGroupMembership($db, $userId);
+        if ($regularGroupMembership && (int)($regularGroupMembership['mentor_id'] ?? 0) !== $userId) {
+            jsonResponse([
+                'success' => false,
+                'message' => 'Leave your current regular mentor group before creating or running your own mentor group.'
+            ], 409);
+        }
 
         if (canSelfActivateAsMentor($role)) {
             $stmt = $db->prepare("
@@ -238,7 +248,7 @@ switch ($action) {
 
     case 'request':
         if (!canRequestMentorship($role)) {
-            jsonResponse(['success' => false, 'message' => 'Only students or alumni can request mentorship.'], 403);
+            jsonResponse(['success' => false, 'message' => 'Only students, alumni, or faculty can request mentorship.'], 403);
         }
         $mentorId = (int)($data['mentor_id'] ?? 0);
         $message = trim((string)($data['message'] ?? 'I want to join under your mentorship.'));
@@ -249,24 +259,8 @@ switch ($action) {
             jsonResponse(['success' => false, 'message' => 'You cannot request mentorship from yourself.'], 400);
         }
 
-        $activeMatch = getCurrentActiveMatch($db, $userId);
-        if ($activeMatch && (int)$activeMatch['mentor_id'] !== $mentorId) {
-            jsonResponse([
-                'success' => false,
-                'message' => 'Leave your current mentor first before requesting a new one.',
-                'data' => ['active_match' => $activeMatch]
-            ], 409);
-        }
-        if ($activeMatch && (int)$activeMatch['mentor_id'] === $mentorId) {
-            jsonResponse([
-                'success' => true,
-                'message' => 'You are already under this mentor.',
-                'data' => ['group_id' => (int)($activeMatch['group_id'] ?? 0)]
-            ]);
-        }
-
-        $check = $db->prepare("
-            SELECT g.group_id
+        $mentorInfoStmt = $db->prepare("
+            SELECT u.role, g.group_id
             FROM mentorship_profiles mp
             JOIN users u ON u.user_id = mp.mentor_user_id
             LEFT JOIN mentorship_groups g ON g.mentor_user_id = mp.mentor_user_id
@@ -277,9 +271,72 @@ switch ($action) {
               AND u.status = 'active'
             LIMIT 1
         ");
-        $check->execute([':mid' => $mentorId]);
-        $groupId = (int)($check->fetchColumn() ?: 0);
-        if ($groupId <= 0) {
+        $mentorInfoStmt->execute([':mid' => $mentorId]);
+        $mentorInfo = $mentorInfoStmt->fetch(PDO::FETCH_ASSOC);
+        if (!$mentorInfo) {
+            jsonResponse(['success' => false, 'message' => 'Selected mentor is not available.'], 404);
+        }
+
+        $mentorRole = strtolower((string)($mentorInfo['role'] ?? ''));
+        $groupId = (int)($mentorInfo['group_id'] ?? 0);
+        $isAdminGroup = ($mentorRole === 'admin');
+        $selfMentorProfile = getMentorProfile($db, $userId);
+        $selfMentorActive = $selfMentorProfile && !empty($selfMentorProfile['is_active']) && (($selfMentorProfile['approval_status'] ?? 'approved') === 'approved');
+        $regularGroupMembership = getCurrentRegularGroupMembership($db, $userId);
+
+        if ($role === 'student' && $isAdminGroup) {
+            jsonResponse(['success' => false, 'message' => 'Students cannot join admin-led mentor groups.'], 403);
+        }
+        if ($role === 'faculty' && !$isAdminGroup) {
+            jsonResponse(['success' => false, 'message' => 'Faculty can only join admin-led mentor groups.'], 403);
+        }
+        if (!$isAdminGroup && $selfMentorActive) {
+            jsonResponse(['success' => false, 'message' => 'You already manage your own mentor group. Leave your current regular mentorship before joining another non-admin mentor group.'], 409);
+        }
+        if (!$isAdminGroup && $regularGroupMembership && (int)($regularGroupMembership['mentor_id'] ?? 0) === $mentorId) {
+            jsonResponse([
+                'success' => true,
+                'message' => 'You are already in this mentor group.',
+                'data' => ['group_id' => (int)($regularGroupMembership['group_id'] ?? 0)]
+            ]);
+        }
+        if (!$isAdminGroup && $regularGroupMembership && (int)($regularGroupMembership['mentor_id'] ?? 0) !== $mentorId) {
+            jsonResponse([
+                'success' => false,
+                'message' => 'Leave your current regular mentor group before joining another non-admin mentor group.',
+                'data' => ['current_group' => $regularGroupMembership]
+            ], 409);
+        }
+
+        $activeMatch = getCurrentActiveMatch($db, $userId);
+        if (!$isAdminGroup && $activeMatch && (int)$activeMatch['mentor_id'] !== $mentorId) {
+            jsonResponse([
+                'success' => false,
+                'message' => 'Leave your current mentor first before requesting a new one.',
+                'data' => ['active_match' => $activeMatch]
+            ], 409);
+        }
+        if (!$isAdminGroup && $activeMatch && (int)$activeMatch['mentor_id'] === $mentorId) {
+            jsonResponse([
+                'success' => true,
+                'message' => 'You are already under this mentor.',
+                'data' => ['group_id' => (int)($activeMatch['group_id'] ?? 0)]
+            ]);
+        }
+
+        if ($isAdminGroup) {
+            $adminMembership = getCurrentAdminGroupMembership($db, $userId);
+            if ($adminMembership && (int)$adminMembership['mentor_id'] !== $mentorId) {
+                jsonResponse(['success' => false, 'message' => 'You are already in another admin-led mentor group. Leave it first before joining a new admin group.'], 409);
+            }
+            if ($adminMembership && (int)$adminMembership['mentor_id'] === $mentorId) {
+                jsonResponse([
+                    'success' => true,
+                    'message' => 'You are already in this admin-led mentor group.',
+                    'data' => ['group_id' => (int)($adminMembership['group_id'] ?? 0)]
+                ]);
+            }
+        } elseif ($groupId <= 0) {
             jsonResponse(['success' => false, 'message' => 'Selected mentor is not available.'], 404);
         }
 
@@ -318,9 +375,10 @@ switch ($action) {
         }
 
         $reqStmt = $db->prepare("
-            SELECT r.request_id, r.mentee_id, r.mentor_id, u.role AS mentee_role
+            SELECT r.request_id, r.mentee_id, r.mentor_id, u.role AS mentee_role, mu.role AS mentor_role
             FROM mentorship_requests r
             JOIN users u ON u.user_id = r.mentee_id
+            JOIN users mu ON mu.user_id = r.mentor_id
             WHERE r.request_id = :rid AND r.mentor_id = :mid
             LIMIT 1
         ");
@@ -332,18 +390,31 @@ switch ($action) {
         if (!$requestRow) {
             jsonResponse(['success' => false, 'message' => 'Request not found.'], 404);
         }
-        if (!in_array(strtolower((string)$requestRow['mentee_role']), ['student', 'alumni'], true)) {
-            jsonResponse(['success' => false, 'message' => 'Only student or alumni mentees are supported.'], 400);
+        $menteeRole = strtolower((string)$requestRow['mentee_role']);
+        $mentorRole = strtolower((string)$requestRow['mentor_role']);
+        $isAdminGroup = ($mentorRole === 'admin');
+        $allowedMenteeRoles = $isAdminGroup ? ['faculty', 'alumni'] : ['student', 'alumni'];
+        if (!in_array($menteeRole, $allowedMenteeRoles, true)) {
+            jsonResponse(['success' => false, 'message' => $isAdminGroup ? 'Only faculty or alumni can join admin-led mentor groups.' : 'Only student or alumni mentees are supported.'], 400);
         }
 
         $groupId = null;
         if ($status === 'accepted') {
             $currentMatch = getCurrentActiveMatch($db, (int)$requestRow['mentee_id']);
-            if ($currentMatch && (int)$currentMatch['mentor_id'] !== $userId) {
+            $adminMembership = getCurrentAdminGroupMembership($db, (int)$requestRow['mentee_id']);
+            $regularGroupMembership = getCurrentRegularGroupMembership($db, (int)$requestRow['mentee_id']);
+
+            if (!$isAdminGroup && $currentMatch && (int)$currentMatch['mentor_id'] !== $userId) {
                 jsonResponse(['success' => false, 'message' => 'This user is already under another mentor. They must leave first.'], 409);
+            }
+            if ($isAdminGroup && $adminMembership && (int)$adminMembership['mentor_id'] !== $userId) {
+                jsonResponse(['success' => false, 'message' => 'This user is already in another admin-led mentor group. They must leave first.'], 409);
             }
 
             $groupId = ensureMentorGroup($db, $userId);
+            if (!$isAdminGroup && $regularGroupMembership && (int)($regularGroupMembership['group_id'] ?? 0) !== $groupId) {
+                jsonResponse(['success' => false, 'message' => 'This user is already part of another regular mentor group. They must leave first.'], 409);
+            }
             $activeBan = getActiveGroupBan($db, $groupId, (int)$requestRow['mentee_id']);
             if ($activeBan) {
                 jsonResponse(['success' => false, 'message' => 'This user is banned from the mentor group right now.'], 403);
@@ -359,7 +430,7 @@ switch ($action) {
                 ':user_id' => (int)$requestRow['mentee_id']
             ]);
 
-            if (!$currentMatch) {
+            if (!$isAdminGroup && !$currentMatch) {
                 $matchStmt = $db->prepare("
                     INSERT INTO mentorship_matches (mentor_id, mentee_id, group_id, status, joined_at)
                     VALUES (:mentor_id, :mentee_id, :group_id, 'active', NOW())
@@ -371,16 +442,18 @@ switch ($action) {
                 ]);
             }
 
-            $db->prepare("
-                UPDATE mentorship_requests
-                SET status = 'rejected', updated_at = NOW()
-                WHERE mentee_id = :mentee_id
-                  AND mentor_id <> :mentor_id
-                  AND status = 'pending'
-            ")->execute([
-                ':mentee_id' => (int)$requestRow['mentee_id'],
-                ':mentor_id' => $userId
-            ]);
+            if (!$isAdminGroup) {
+                $db->prepare("
+                    UPDATE mentorship_requests
+                    SET status = 'rejected', updated_at = NOW()
+                    WHERE mentee_id = :mentee_id
+                      AND mentor_id <> :mentor_id
+                      AND status = 'pending'
+                ")->execute([
+                    ':mentee_id' => (int)$requestRow['mentee_id'],
+                    ':mentor_id' => $userId
+                ]);
+            }
         }
 
         $stmt = $db->prepare("
@@ -505,7 +578,7 @@ switch ($action) {
 
     case 'leave_current':
         if (!canRequestMentorship($role)) {
-            jsonResponse(['success' => false, 'message' => 'Only students or alumni can leave a mentorship.'], 403);
+            jsonResponse(['success' => false, 'message' => 'Only students, alumni, or faculty can leave a mentorship.'], 403);
         }
         $currentMatch = getCurrentActiveMatch($db, $userId);
         if (!$currentMatch) {
@@ -574,7 +647,7 @@ switch ($action) {
             }
             if ($targetUserId <= 0) {
                 disbandMentorGroup($db, $groupId, $userId, 'group_disbanded_by_admin_leave');
-                jsonResponse(['success' => true, 'message' => 'No eligible alumni/admin member was available, so the mentor group was disbanded.']);
+                jsonResponse(['success' => true, 'message' => 'No eligible non-student successor was available, so the mentor group was disbanded.']);
             }
             try {
                 transferMentorGroupAdmin($db, $groupId, $targetUserId);
@@ -606,9 +679,9 @@ switch ($action) {
             jsonResponse(['success' => false, 'message' => 'group_id is required.'], 400);
         }
         if (!userCanManageMentorGroup($db, $groupId, $userId)) {
-            jsonResponse(['success' => false, 'message' => 'Only the group admin can disband this group.'], 403);
+            jsonResponse(['success' => false, 'message' => 'Only the group admin or a site admin can disband this group.'], 403);
         }
-        disbandMentorGroup($db, $groupId, $userId, 'group_disbanded_by_admin');
+        disbandMentorGroup($db, $groupId, $userId, getUserRole($db, $userId) === 'admin' ? 'group_disbanded_by_site_admin' : 'group_disbanded_by_admin');
         jsonResponse(['success' => true, 'message' => 'Mentor group disbanded. All members were removed automatically.']);
         break;
 
@@ -625,7 +698,7 @@ switch ($action) {
             jsonResponse(['success' => false, 'message' => 'Use the leave action for your own account.'], 400);
         }
         if (!userCanManageMentorGroup($db, $groupId, $userId)) {
-            jsonResponse(['success' => false, 'message' => 'Only the group admin can moderate members.'], 403);
+            jsonResponse(['success' => false, 'message' => 'Only the group admin or a site admin can moderate members.'], 403);
         }
 
         $memberCheck = $db->prepare("SELECT member_role FROM mentorship_group_members WHERE group_id = :gid AND user_id = :uid LIMIT 1");

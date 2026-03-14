@@ -143,6 +143,7 @@ try {
             SELECT
                 g.group_id,
                 g.title,
+                g.mentor_user_id,
                 g.admin_user_id,
                 COALESCE(NULLIF(TRIM(p.full_name), ''), split_part(u.email, '@', 1)) AS mentor_name,
                 p.profile_picture_url AS mentor_avatar
@@ -169,7 +170,7 @@ try {
             ORDER BY CASE WHEN gm.member_role = 'admin' THEN 0 ELSE 1 END, full_name ASC
         ");
         $membersStmt->execute([':gid' => $groupId]);
-        $members = array_map(static function (array $row): array {
+        $members = array_map(function (array $row) use ($db): array {
             return [
                 'user_id' => (int)$row['user_id'],
                 'member_role' => (string)($row['member_role'] ?? 'member'),

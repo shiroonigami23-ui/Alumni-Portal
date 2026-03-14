@@ -28,6 +28,12 @@
         .filter-section {
             background: linear-gradient(135deg, #667eea15 0%, #764ba215 100%);
         }
+
+        @media (max-width: 767px) {
+            .mobile-compact-card {
+                padding: 1rem;
+            }
+        }
     </style>
 </head>
 
@@ -45,9 +51,9 @@
             </div>
 
             <!-- Search and Filters -->
-            <div class="bg-white rounded-xl shadow-sm p-6 mb-8">
+            <div class="bg-white rounded-xl shadow-sm p-4 md:p-6 mb-6 md:mb-8">
                 <!-- Search Bar -->
-                <div class="mb-6">
+                <div class="mb-4 md:mb-6">
                     <div class="relative">
                         <i data-lucide="search" class="absolute left-4 top-3.5 h-5 w-5 text-gray-400"></i>
                         <input type="text"
@@ -58,6 +64,15 @@
                     </div>
                 </div>
 
+                <div class="mb-4 flex items-center justify-between md:hidden">
+                    <div class="text-sm font-medium text-gray-700">Filters</div>
+                    <button id="toggleFiltersBtn" type="button" class="inline-flex items-center gap-2 rounded-lg border border-gray-300 px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50">
+                        <i data-lucide="sliders-horizontal" class="h-4 w-4"></i>
+                        <span>Show Filters</span>
+                    </button>
+                </div>
+
+                <div id="filterControls">
                 <!-- Filter Row -->
                 <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
                     <!-- Graduation Year -->
@@ -111,11 +126,11 @@
                 </div>
 
                 <!-- Action Buttons -->
-                <div class="flex justify-between items-center mt-6 pt-6 border-t border-gray-200">
+                <div class="mt-5 flex flex-col gap-3 border-t border-gray-200 pt-5 md:mt-6 md:flex-row md:items-center md:justify-between md:pt-6">
                     <div class="text-sm text-gray-500" id="resultCount">
                         Loading alumni...
                     </div>
-                    <div class="flex space-x-3">
+                    <div class="flex flex-col gap-2 sm:flex-row sm:space-x-3 sm:gap-0">
                         <button onclick="resetFilters()" class="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 font-medium">
                             Reset Filters
                         </button>
@@ -124,20 +139,21 @@
                         </button>
                     </div>
                 </div>
+                </div>
             </div>
 
             <!-- Results Grid -->
             <div class="mb-8">
-                <div class="flex items-center justify-between mb-6">
+                <div class="mb-4 flex flex-col gap-3 md:mb-6 md:flex-row md:items-center md:justify-between">
                     <h2 class="text-lg font-semibold text-gray-900">Alumni Directory</h2>
-                    <div class="flex items-center space-x-4">
+                    <div class="flex items-center gap-3 md:space-x-4">
                         <select id="sortBy" class="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm" onchange="loadAlumni()">
                             <option value="name_asc">Name: A-Z</option>
                             <option value="name_desc">Name: Z-A</option>
                             <option value="year_desc">Year: Newest First</option>
                             <option value="year_asc">Year: Oldest First</option>
                         </select>
-                        <div class="flex items-center space-x-2">
+                        <div id="viewToggleWrap" class="hidden md:flex items-center space-x-2">
                             <button id="gridView" class="p-2 rounded-lg bg-blue-100 text-blue-600">
                                 <i data-lucide="grid" class="h-5 w-5"></i>
                             </button>
@@ -155,12 +171,12 @@
                 </div>
 
                 <!-- Grid View -->
-                <div id="gridResults" class="hidden grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <div id="gridResults" class="hidden grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
                     <!-- Alumni cards will be loaded here -->
                 </div>
 
                 <!-- List View -->
-                <div id="listResults" class="hidden space-y-4">
+                <div id="listResults" class="hidden space-y-3 md:space-y-4">
                     <!-- Alumni list items will be loaded here -->
                 </div>
 
@@ -199,7 +215,7 @@
             </div>
 
             <!-- Featured Companies -->
-            <div class="bg-white rounded-xl shadow-sm p-6">
+            <div id="topCompaniesSection" class="hidden md:block bg-white rounded-xl shadow-sm p-6">
                 <h2 class="text-lg font-semibold text-gray-900 mb-6">Top Companies</h2>
                 <div id="topCompanies" class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
                     <!-- Companies will be loaded here -->
@@ -258,7 +274,8 @@
         lucide.createIcons();
 
         // State variables
-        let currentView = 'grid';
+        let currentView = window.innerWidth < 768 ? 'list' : 'grid';
+        let mobileFiltersExpanded = false;
         let currentPage = 1;
         let totalPages = 1;
         let currentRecipientId = null;
@@ -309,9 +326,17 @@
             // Load initial data
             loadAlumni();
             loadTopCompanies();
+            updateMobileDirectoryLayout();
         });
 
         function setupEventListeners() {
+            const toggleFiltersBtn = document.getElementById('toggleFiltersBtn');
+            if (toggleFiltersBtn) {
+                toggleFiltersBtn.addEventListener('click', function() {
+                    setMobileFiltersExpanded(!mobileFiltersExpanded);
+                });
+            }
+
             // Search input
             const searchInput = document.getElementById('searchAlumni');
             let searchTimeout;
@@ -332,6 +357,8 @@
             document.getElementById('listView').addEventListener('click', function() {
                 setView('list');
             });
+
+            window.addEventListener('resize', updateMobileDirectoryLayout);
 
             // Sort change
             document.getElementById('sortBy').addEventListener('change', function() {
@@ -405,6 +432,46 @@
                 document.getElementById('gridResults').classList.add('hidden');
                 document.getElementById('listResults').classList.remove('hidden');
             }
+        }
+
+        function setMobileFiltersExpanded(expanded) {
+            mobileFiltersExpanded = !!expanded;
+            const isMobile = window.innerWidth < 768;
+            const filterControls = document.getElementById('filterControls');
+            const toggleFiltersBtn = document.getElementById('toggleFiltersBtn');
+            if (filterControls) {
+                filterControls.classList.toggle('hidden', isMobile && !mobileFiltersExpanded);
+            }
+            if (toggleFiltersBtn) {
+                const label = toggleFiltersBtn.querySelector('span');
+                if (label) {
+                    label.textContent = mobileFiltersExpanded ? 'Hide Filters' : 'Show Filters';
+                }
+            }
+        }
+
+        function updateMobileDirectoryLayout() {
+            const isMobile = window.innerWidth < 768;
+            const filterControls = document.getElementById('filterControls');
+            const topCompaniesSection = document.getElementById('topCompaniesSection');
+            const viewToggleWrap = document.getElementById('viewToggleWrap');
+            if (filterControls) {
+                filterControls.classList.toggle('hidden', isMobile && !mobileFiltersExpanded);
+            }
+            if (topCompaniesSection) {
+                topCompaniesSection.classList.toggle('hidden', isMobile);
+                topCompaniesSection.classList.toggle('md:block', !isMobile);
+            }
+            if (viewToggleWrap) {
+                viewToggleWrap.classList.toggle('hidden', isMobile);
+                viewToggleWrap.classList.toggle('md:flex', !isMobile);
+            }
+            if (isMobile && currentView === 'grid') {
+                setView('list');
+            } else {
+                setView(currentView);
+            }
+            setMobileFiltersExpanded(isMobile ? mobileFiltersExpanded : true);
         }
 
         function syncGraduationYearFilter() {
@@ -616,7 +683,7 @@
 
         function createListItem(user) {
             const item = document.createElement('div');
-            item.className = 'alumni-card bg-white rounded-xl shadow-sm p-6';
+            item.className = 'alumni-card mobile-compact-card bg-white rounded-xl shadow-sm p-4 md:p-6';
 
             // Determine role color
             let roleColor = 'bg-gray-100 text-gray-800';
@@ -640,59 +707,68 @@
             const isPrivate = user.is_private && user.role !== 'student';
             const canMessage = !isPrivate && user.role !== 'student';
             const yearDisplay = getUserYearDisplay(user);
+            const roleBadge = `<span class="inline-flex items-center rounded-full ${roleColor} px-2 py-0.5 text-xs font-medium">${roleText}</span>`;
+            const summaryParts = [user.current_position, user.current_company].filter(Boolean);
+            const summaryLine = summaryParts.join(' at ');
 
             item.innerHTML = `
-                <div class="flex items-center justify-between">
-                    <div class="flex items-center">
+                <div class="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+                    <div class="flex items-start gap-3 md:items-center">
                         <div class="relative">
                             ${user.avatar ? 
                                 `<img src="${user.avatar}" alt="${user.name}" class="h-12 w-12 rounded-full object-cover">` : 
                                 `<div class="h-12 w-12 bg-blue-100 rounded-full flex items-center justify-center">
                                     <i data-lucide="user" class="h-6 w-6 text-blue-600"></i>
                                 </div>`}
-                            <span class="absolute -bottom-1 -right-1 ${roleColor} text-xs px-2 py-0.5 rounded-full">
-                                ${roleText}
-                            </span>
                         </div>
-                        <div class="ml-4">
-                            <h3 class="font-semibold text-gray-900">${user.name}</h3>
+                        <div class="min-w-0 flex-1">
+                            <div class="flex flex-wrap items-center gap-2">
+                                <h3 class="font-semibold text-gray-900">${user.name}</h3>
+                                ${roleBadge}
+                            </div>
                             <p class="text-sm text-gray-600">
                                 ${user.branch || user.department || 'RJIT'}
                                 ${yearDisplay ? `&bull; ${yearDisplay}` : ''}
                             </p>
+                            ${summaryLine ? `
+                                <p class="mt-1 text-sm text-gray-800">${summaryLine}</p>
+                            ` : ''}
+                            ${user.location ? `
+                                <p class="mt-1 hidden text-xs text-gray-500 md:block">
+                                    <i data-lucide="map-pin" class="mr-1 inline h-3 w-3"></i>
+                                    ${user.location}
+                                </p>
+                            ` : ''}
+                            ${user.skills && user.skills.length > 0 ? `
+                                <div class="mt-2 hidden flex-wrap gap-1 md:flex">
+                                    ${user.skills.slice(0, 3).map(skill => `
+                                        <span class="px-2 py-1 bg-blue-50 text-blue-700 text-xs rounded">${skill}</span>
+                                    `).join('')}
+                                    ${user.skills.length > 3 ? `
+                                        <span class="px-2 py-1 bg-gray-100 text-gray-600 text-xs rounded">+${user.skills.length - 3}</span>
+                                    ` : ''}
+                                </div>
+                            ` : ''}
                         </div>
                     </div>
-                    
-                    <div class="flex items-center space-x-4">
-                        <!-- Current Info -->
-                        <div class="text-right">
-                            ${user.current_position ? `
-                                <p class="font-medium text-gray-900 text-sm">${user.current_position}</p>
-                            ` : ''}
-                            ${user.current_company ? `
-                                <p class="text-gray-600 text-sm">${user.current_company}</p>
-                            ` : ''}
-                        </div>
-                        
-                        <!-- Actions -->
-                        <div class="flex space-x-2">
+
+                    <div class="flex items-center gap-2">
                             <button onclick="viewProfile(${user.id})" 
-                                    class="px-4 py-2 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 font-medium">
+                                    class="flex-1 px-4 py-2 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 font-medium md:flex-none">
                                 View
                             </button>
                             
                             ${canMessage ? `
                                 <button onclick="openMessageModal(${user.id}, '${user.name}')" 
-                                        class="px-4 py-2 border border-gray-300 text-gray-700 text-sm rounded-lg hover:bg-gray-50 font-medium">
+                                        class="flex-1 px-4 py-2 border border-gray-300 text-gray-700 text-sm rounded-lg hover:bg-gray-50 font-medium md:flex-none">
                                     Message
                                 </button>
                             ` : `
                                 <button disabled
-                                        class="px-4 py-2 border border-gray-300 text-gray-400 text-sm rounded-lg opacity-50 cursor-not-allowed">
+                                        class="flex-1 px-4 py-2 border border-gray-300 text-gray-400 text-sm rounded-lg opacity-50 cursor-not-allowed md:flex-none">
                                     ${isPrivate ? 'Private' : 'Message'}
                                 </button>
                             `}
-                        </div>
                     </div>
                 </div>
             `;
@@ -786,6 +862,9 @@
             currentFilters.role = document.getElementById('filterRole').value;
             syncGraduationYearFilter();
             currentPage = 1;
+            if (window.innerWidth < 768) {
+                setMobileFiltersExpanded(false);
+            }
             loadAlumni();
         }
 
@@ -808,6 +887,9 @@
             syncGraduationYearFilter();
 
             currentPage = 1;
+            if (window.innerWidth < 768) {
+                setMobileFiltersExpanded(false);
+            }
             loadAlumni();
         }
 

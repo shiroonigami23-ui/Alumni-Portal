@@ -143,7 +143,61 @@ function canApplyForMentorship(string $role): bool
 
 function canRequestMentorship(string $role): bool
 {
-    return in_array($role, ['student', 'alumni'], true);
+    return in_array($role, ['student', 'alumni', 'faculty'], true);
+}
+
+function getCurrentAdminGroupMembership(PDO $db, int $userId): ?array
+{
+    $stmt = $db->prepare("
+        SELECT
+            g.group_id,
+            g.mentor_user_id AS mentor_id,
+            g.title,
+            COALESCE(NULLIF(TRIM(p.full_name), ''), split_part(u.email, '@', 1)) AS mentor_name,
+            u.role AS mentor_role,
+            gm.member_role,
+            gm.joined_at
+        FROM mentorship_group_members gm
+        JOIN mentorship_groups g ON g.group_id = gm.group_id
+        JOIN users u ON u.user_id = g.mentor_user_id
+        LEFT JOIN profiles p ON p.user_id = u.user_id
+        WHERE gm.user_id = :uid
+          AND g.admin_user_id = g.mentor_user_id
+          AND u.role = 'admin'
+        ORDER BY gm.joined_at DESC, g.group_id DESC
+        LIMIT 1
+    ");
+    $stmt->execute([':uid' => $userId]);
+    $row = $stmt->fetch(PDO::FETCH_ASSOC);
+    return $row ?: null;
+}
+
+function getCurrentRegularGroupMembership(PDO $db, int $userId): ?array
+{
+    $stmt = $db->prepare("
+        SELECT
+            g.group_id,
+            g.mentor_user_id AS mentor_id,
+            g.title,
+            COALESCE(NULLIF(TRIM(p.full_name), ''), split_part(u.email, '@', 1)) AS mentor_name,
+            u.role AS mentor_role,
+            gm.member_role,
+            gm.joined_at
+        FROM mentorship_group_members gm
+        JOIN mentorship_groups g ON g.group_id = gm.group_id
+        JOIN users u ON u.user_id = g.mentor_user_id
+        LEFT JOIN profiles p ON p.user_id = u.user_id
+        WHERE gm.user_id = :uid
+          AND NOT (g.admin_user_id = g.mentor_user_id AND u.role = 'admin')
+        ORDER BY
+            CASE WHEN gm.member_role = 'admin' THEN 0 ELSE 1 END,
+            gm.joined_at DESC,
+            g.group_id DESC
+        LIMIT 1
+    ");
+    $stmt->execute([':uid' => $userId]);
+    $row = $stmt->fetch(PDO::FETCH_ASSOC);
+    return $row ?: null;
 }
 
 function getMentorProfile(PDO $db, int $userId): ?array
@@ -264,7 +318,14 @@ function ensureCurrentMentorshipState(PDO $db, int $menteeId): void
           AND r.status = 'accepted'
           AND mp.is_active = TRUE
           AND mp.approval_status = 'approved'
+          AND u.role <> 'admin'
           AND u.status = 'active'
+          AND NOT EXISTS (
+              SELECT 1
+              FROM mentorship_matches mm
+              WHERE mm.mentee_id = r.mentee_id
+                AND mm.mentor_id = r.mentor_id
+          )
         ORDER BY r.updated_at DESC, r.request_id DESC
         LIMIT 1
     ");
@@ -341,6 +402,13 @@ function getCurrentActiveMatch(PDO $db, int $menteeId): ?array
           AND r.status = 'accepted'
           AND mp.is_active = TRUE
           AND mp.approval_status = 'approved'
+          AND u.role <> 'admin'
+          AND NOT EXISTS (
+              SELECT 1
+              FROM mentorship_matches mm
+              WHERE mm.mentee_id = r.mentee_id
+                AND mm.mentor_id = r.mentor_id
+          )
         ORDER BY COALESCE(r.updated_at, r.created_at) DESC, r.request_id DESC
         LIMIT 1
     ");
@@ -381,6 +449,10 @@ function getActiveGroupBan(PDO $db, int $groupId, int $userId): ?array
 
 function userCanManageMentorGroup(PDO $db, int $groupId, int $userId): bool
 {
+    if (getUserRole($db, $userId) === 'admin') {
+        return true;
+    }
+
     $stmt = $db->prepare("
         SELECT 1
         FROM mentorship_groups g
@@ -404,7 +476,7 @@ function userCanManageMentorGroup(PDO $db, int $groupId, int $userId): bool
 function getNextGroupAdminCandidate(PDO $db, int $groupId, int $excludeUserId): ?array
 {
     $stmt = $db->prepare("
-        SELECT gm.user_id, LOWER(u.role) AS role
+        SELECT gm.user_id, u.role AS role
         FROM mentorship_group_members gm
         JOIN users u ON u.user_id = gm.user_id
         LEFT JOIN mentorship_group_bans gb
@@ -413,7 +485,7 @@ function getNextGroupAdminCandidate(PDO $db, int $groupId, int $excludeUserId): 
          AND (gb.is_permanent = TRUE OR gb.banned_until > NOW())
         WHERE gm.group_id = :gid
           AND gm.user_id <> :uid
-          AND LOWER(u.role) <> 'student'
+          AND u.role <> 'student'
           AND gb.user_id IS NULL
         ORDER BY
             CASE WHEN gm.member_role = 'admin' THEN 0 ELSE 1 END,
@@ -431,14 +503,14 @@ function getNextGroupAdminCandidate(PDO $db, int $groupId, int $excludeUserId): 
     }
     return [
         'user_id' => (int)$row['user_id'],
-        'role' => (string)($row['role'] ?? '')
+        'role' => strtolower((string)($row['role'] ?? ''))
     ];
 }
 
 function transferMentorGroupAdmin(PDO $db, int $groupId, int $newAdminUserId): void
 {
     $roleStmt = $db->prepare("
-        SELECT LOWER(u.role)
+        SELECT u.role
         FROM mentorship_group_members gm
         JOIN users u ON u.user_id = gm.user_id
         WHERE gm.group_id = :gid AND gm.user_id = :uid
@@ -448,7 +520,7 @@ function transferMentorGroupAdmin(PDO $db, int $groupId, int $newAdminUserId): v
         ':gid' => $groupId,
         ':uid' => $newAdminUserId
     ]);
-    $targetRole = (string)($roleStmt->fetchColumn() ?: '');
+    $targetRole = strtolower((string)($roleStmt->fetchColumn() ?: ''));
     if ($targetRole === '' || $targetRole === 'student') {
         throw new RuntimeException('Admin rights can only be transferred to a non-student group member.');
     }
@@ -496,7 +568,7 @@ function disbandMentorGroup(PDO $db, int $groupId, int $actedByUserId, string $r
         WHERE mentor_id IN (
             SELECT mentor_user_id FROM mentorship_groups WHERE group_id = :gid
         )
-          AND status = 'pending'
+          AND status IN ('pending', 'accepted')
     ")->execute([':gid' => $groupId]);
 
     $db->prepare("DELETE FROM mentorship_groups WHERE group_id = :gid")

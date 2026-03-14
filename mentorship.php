@@ -92,6 +92,7 @@ include 'includes/sidebar.php';
     let mentorStatus = null;
     let activeMentorshipRows = [];
     let currentActiveMatch = null;
+    let currentAdminGroupMembership = null;
     const MENTORSHIP_API_BASE = (window.getApiBase ? window.getApiBase() : ((window.PORTAL_BASE_PREFIX || '') + 'api'));
 
     async function loadCurrentUser() {
@@ -146,6 +147,7 @@ include 'includes/sidebar.php';
         const appsPanel = document.getElementById('mentorApplicationsPanel');
         const profile = mentorStatus?.mentor_profile || null;
         currentActiveMatch = mentorStatus?.active_match || null;
+        currentAdminGroupMembership = mentorStatus?.admin_group_membership || null;
 
         if (currentRole === 'student') {
             hint.textContent = 'Students can browse approved mentors and request to join them.';
@@ -166,7 +168,9 @@ include 'includes/sidebar.php';
         }
 
         if (currentRole === 'faculty' || currentRole === 'admin') {
-            hint.textContent = 'Faculty and admins can mentor immediately and review alumni mentor applications.';
+            hint.textContent = currentRole === 'admin'
+                ? 'Admins can mentor immediately, review alumni mentor applications, and manage any mentor group.'
+                : 'Faculty can mentor immediately, review alumni mentor applications, and can also join admin-led mentor groups.';
             becomeBtn.disabled = false;
             becomeBtn.classList.remove('opacity-60', 'cursor-not-allowed');
             becomeBtn.textContent = profile?.is_active ? 'Update Mentor Profile' : 'Become a Mentor';
@@ -204,7 +208,7 @@ include 'includes/sidebar.php';
                 return;
             }
 
-            hint.textContent = 'Alumni can apply to become mentors, and alumni can also request guidance under another approved mentor.';
+            hint.textContent = 'Alumni can apply to become mentors, request one regular mentor at a time, and may also join one admin-led mentor group.';
             becomeBtn.disabled = false;
             becomeBtn.textContent = 'Apply to Become a Mentor';
             becomeBtn.classList.remove('opacity-60', 'cursor-not-allowed');
@@ -287,6 +291,26 @@ include 'includes/sidebar.php';
         if (!mentorStatus?.can_request) {
             return '';
         }
+        const mentorRole = String(mentor.role || '').toLowerCase();
+        const isAdminGroup = mentorRole === 'admin';
+        const selfMentorActive = Boolean(mentorStatus?.mentor_profile?.is_active);
+        if (isAdminGroup && currentRole === 'student') {
+            return '<span class="text-xs text-gray-400 font-medium">Admin-led group is not available to students</span>';
+        }
+        if (currentRole === 'faculty' && !isAdminGroup) {
+            return '<span class="text-xs text-amber-600 font-medium">Faculty can only join admin-led groups</span>';
+        }
+        if (!isAdminGroup && selfMentorActive) {
+            return '<span class="text-xs text-amber-600 font-medium">You already run your own mentor group</span>';
+        }
+        if (currentAdminGroupMembership && Number(currentAdminGroupMembership.mentor_id) === Number(mentor.mentor_id)) {
+            return mentor.group_id
+                ? `<a href="messages.php?group_id=${mentor.group_id}" class="bg-indigo-600 text-white px-3 py-2 rounded-lg hover:bg-indigo-700">Open Admin GC</a>`
+                : '<span class="text-xs text-indigo-600 font-medium">Already in admin group</span>';
+        }
+        if (currentAdminGroupMembership && isAdminGroup) {
+            return '<span class="text-xs text-amber-600 font-medium">Leave your current admin group first</span>';
+        }
         if (currentActiveMatch && Number(currentActiveMatch.mentor_id) === Number(mentor.mentor_id)) {
             return mentor.group_id
                 ? `<a href="messages.php?group_id=${mentor.group_id}" class="bg-green-600 text-white px-3 py-2 rounded-lg hover:bg-green-700">Open Group</a>`
@@ -306,7 +330,7 @@ include 'includes/sidebar.php';
                 listEl.innerHTML = '<div class="text-sm text-gray-500">Sign in to view requests.</div>';
                 return;
             }
-            const action = (currentRole === 'student' || (currentRole === 'alumni' && !mentorStatus?.mentor_profile?.is_active))
+        const action = (mentorStatus?.can_request && !mentorStatus?.mentor_profile?.is_active)
                 ? 'list_my_requests'
                 : 'list_requests';
             const res = await fetch(`${MENTORSHIP_API_BASE}/mentorship.php?action=${action}`, {
@@ -409,8 +433,19 @@ include 'includes/sidebar.php';
             }
 
             if (!activeMentorshipRows.length) {
+                const adminGroupCard = currentAdminGroupMembership ? `
+                    <div class="border border-indigo-200 bg-indigo-50 rounded-lg p-4 mb-3">
+                        <p class="text-xs font-semibold uppercase tracking-wide text-indigo-700">Admin Mentor Group</p>
+                        <p class="mt-2 font-semibold text-gray-900">${currentAdminGroupMembership.mentor_name || 'Admin mentor group'}</p>
+                        <p class="text-sm text-gray-600 capitalize mt-1">${currentAdminGroupMembership.mentor_role || ''}</p>
+                        <div class="mt-3 flex flex-wrap gap-2">
+                            ${currentAdminGroupMembership.group_id ? `<a href="messages.php?group_id=${currentAdminGroupMembership.group_id}" class="text-xs px-3 py-1.5 bg-indigo-600 text-white rounded">Open admin GC</a>` : ''}
+                            <button class="leave-group-btn text-xs px-3 py-1.5 border border-amber-300 text-amber-700 rounded" data-group-id="${currentAdminGroupMembership.group_id}">Leave group</button>
+                        </div>
+                    </div>` : '';
                 if (mentorStatus?.can_request && currentActiveMatch) {
                     listEl.innerHTML = `
+                        ${adminGroupCard}
                         <div class="border border-gray-200 rounded-lg p-4">
                             <p class="font-semibold text-gray-900">${currentActiveMatch.mentor_name || 'Current mentor'}</p>
                             <p class="text-sm text-gray-600 capitalize mt-1">${currentActiveMatch.mentor_role || ''}</p>
@@ -424,7 +459,7 @@ include 'includes/sidebar.php';
                     bindMentorGroupButtons();
                     return;
                 }
-                listEl.innerHTML = `<div class="text-sm text-gray-500">${mentorStatus?.can_request ? 'You are not under any mentor right now.' : 'No active mentor group members yet.'}</div>`;
+                listEl.innerHTML = adminGroupCard || `<div class="text-sm text-gray-500">${mentorStatus?.can_request ? 'You are not under any mentor right now.' : 'No active mentor group members yet.'}</div>`;
                 return;
             }
 
@@ -432,6 +467,16 @@ include 'includes/sidebar.php';
                 const match = activeMentorshipRows[0];
                 currentActiveMatch = match;
                 listEl.innerHTML = `
+                    ${currentAdminGroupMembership ? `
+                    <div class="border border-indigo-200 bg-indigo-50 rounded-lg p-4 mb-3">
+                        <p class="text-xs font-semibold uppercase tracking-wide text-indigo-700">Admin Mentor Group</p>
+                        <p class="mt-2 font-semibold text-gray-900">${currentAdminGroupMembership.mentor_name || 'Admin mentor group'}</p>
+                        <p class="text-sm text-gray-600 capitalize mt-1">${currentAdminGroupMembership.mentor_role || ''}</p>
+                        <div class="mt-3 flex flex-wrap gap-2">
+                            ${currentAdminGroupMembership.group_id ? `<a href="messages.php?group_id=${currentAdminGroupMembership.group_id}" class="text-xs px-3 py-1.5 bg-indigo-600 text-white rounded">Open admin GC</a>` : ''}
+                            <button class="leave-group-btn text-xs px-3 py-1.5 border border-amber-300 text-amber-700 rounded" data-group-id="${currentAdminGroupMembership.group_id}">Leave group</button>
+                        </div>
+                    </div>` : ''}
                     <div class="border border-gray-200 rounded-lg p-4">
                         <p class="font-semibold text-gray-900">${match.mentor_name || 'Current mentor'}</p>
                         <p class="text-sm text-gray-600 capitalize mt-1">${match.mentor_role || ''}</p>
@@ -456,6 +501,16 @@ include 'includes/sidebar.php';
                     </div>
                 ` : '';
                 listEl.innerHTML = `
+                    ${currentAdminGroupMembership ? `
+                    <div class="border border-indigo-200 bg-indigo-50 rounded-lg p-4 mb-3">
+                        <p class="text-xs font-semibold uppercase tracking-wide text-indigo-700">Admin Mentor Group</p>
+                        <p class="mt-2 font-semibold text-gray-900">${currentAdminGroupMembership.mentor_name || 'Admin mentor group'}</p>
+                        <p class="text-sm text-gray-600 capitalize mt-1">${currentAdminGroupMembership.mentor_role || ''}</p>
+                        <div class="mt-3 flex flex-wrap gap-2">
+                            ${currentAdminGroupMembership.group_id ? `<a href="messages.php?group_id=${currentAdminGroupMembership.group_id}" class="text-xs px-3 py-1.5 bg-indigo-600 text-white rounded">Open admin GC</a>` : ''}
+                            <button class="leave-group-btn text-xs px-3 py-1.5 border border-amber-300 text-amber-700 rounded" data-group-id="${currentAdminGroupMembership.group_id}">Leave group</button>
+                        </div>
+                    </div>` : ''}
                     ${menteeCard}
                     ${groupId ? `<div class="flex flex-wrap gap-2 mb-3"><a href="messages.php?group_id=${groupId}" class="text-xs px-3 py-1.5 bg-blue-600 text-white rounded">Open mentor group</a><button class="leave-group-btn text-xs px-3 py-1.5 border border-amber-300 text-amber-700 rounded" data-group-id="${groupId}">Leave group</button>${!mentorStatus?.can_request ? `<button class="disband-group-btn text-xs px-3 py-1.5 border border-red-300 text-red-600 rounded" data-group-id="${groupId}">Disband group</button>` : ''}</div>` : ''}
                     ${activeMentorshipRows.map((row) => `

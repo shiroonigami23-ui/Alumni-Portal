@@ -59,9 +59,13 @@ if ($user_id == $post['owner_id']) {
 
 // 4. Execution
 if ($can_delete) {
+    $commentStmt = $db->prepare("SELECT content_file_path FROM comments WHERE post_id = :pid");
+    $commentStmt->execute(['pid' => $data->post_id]);
+    $commentPayloads = $commentStmt->fetchAll(PDO::FETCH_COLUMN) ?: [];
+
     $del = $db->prepare("DELETE FROM posts WHERE post_id = :pid");
     if ($del->execute(['pid' => $data->post_id])) {
-        delete_content_payload($db, (string)$post['content_file_path']);
+        delete_content_payload_batch($db, array_merge([(string)$post['content_file_path']], $commentPayloads));
         echo json_encode(["message" => "Post moderated successfully per blueprint hierarchy."]);
     }
 } else {

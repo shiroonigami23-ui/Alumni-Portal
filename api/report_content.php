@@ -6,6 +6,7 @@ header("Access-Control-Allow-Methods: POST");
 include_once '../config/Database.php';
 include_once '../middleware/Auth.php';
 include_once __DIR__ . '/_moderation_schema.php';
+include_once __DIR__ . '/_content_store.php';
 
 function ensure_comment_reports_schema(PDO $db): void
 {
@@ -95,8 +96,15 @@ try {
             exit;
         }
         if ($role === 'admin') {
+            $postPayloadStmt = $db->prepare("SELECT content_file_path FROM posts WHERE post_id = :pid LIMIT 1");
+            $postPayloadStmt->execute(['pid' => $post_id]);
+            $postPayload = (string)($postPayloadStmt->fetchColumn() ?: '');
+            $commentPayloadStmt = $db->prepare("SELECT content_file_path FROM comments WHERE post_id = :pid");
+            $commentPayloadStmt->execute(['pid' => $post_id]);
+            $commentPayloads = $commentPayloadStmt->fetchAll(PDO::FETCH_COLUMN) ?: [];
             $db->prepare("DELETE FROM posts WHERE post_id = :pid")->execute(['pid' => $post_id]);
             $db->commit();
+            delete_content_payload_batch($db, array_merge([$postPayload], $commentPayloads));
             echo json_encode(["success" => true, "status" => "success", "message" => "Architect Directive: Post purged."]);
             exit;
         }
@@ -160,8 +168,24 @@ try {
         exit;
     }
     if ($role === 'admin') {
+        $treeStmt = $db->prepare("
+            WITH RECURSIVE comment_tree AS (
+                SELECT comment_id, content_file_path
+                FROM comments
+                WHERE comment_id = :cid
+                UNION ALL
+                SELECT c.comment_id, c.content_file_path
+                FROM comments c
+                JOIN comment_tree ct ON c.parent_comment_id = ct.comment_id
+            )
+            SELECT content_file_path
+            FROM comment_tree
+        ");
+        $treeStmt->execute(['cid' => $comment_id]);
+        $commentPayloads = $treeStmt->fetchAll(PDO::FETCH_COLUMN) ?: [];
         $db->prepare("DELETE FROM comments WHERE comment_id = :cid")->execute(['cid' => $comment_id]);
         $db->commit();
+        delete_content_payload_batch($db, $commentPayloads);
         echo json_encode(["success" => true, "status" => "success", "message" => "Architect Directive: Comment purged."]);
         exit;
     }

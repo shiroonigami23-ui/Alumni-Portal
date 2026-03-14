@@ -324,7 +324,7 @@ include 'includes/sidebar.php';
                     }
                     
                     // Show create post section if user can post
-                    const canPost = (user.role === 'admin' || user.role === 'faculty' || user.role === 'alumni');
+                    const canPost = (currentUserRole === 'admin' || currentUserRole === 'faculty' || currentUserRole === 'alumni');
                     if (canPost) {
                         document.getElementById('createPostSection').classList.remove('hidden');
                     } else if (createPostSection) {
@@ -348,7 +348,7 @@ include 'includes/sidebar.php';
                             this.src = getDefaultAvatarDataUri(user.full_name || user.name || user.email || 'U');
                         };
                     }
-                    const canPost = (user.role === 'admin' || user.role === 'faculty' || user.role === 'alumni');
+                    const canPost = (currentUserRole === 'admin' || currentUserRole === 'faculty' || currentUserRole === 'alumni');
                     if (canPost) {
                         document.getElementById('createPostSection').classList.remove('hidden');
                     } else if (createPostSection) {

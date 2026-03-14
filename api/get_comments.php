@@ -6,6 +6,7 @@ include_once '../config/Database.php';
 include_once '../middleware/Auth.php';
 include_once __DIR__ . '/_content_store.php';
 include_once __DIR__ . '/_profile_media.php';
+include_once __DIR__ . '/_moderation_schema.php';
 
 $database = new Database();
 $db = $database->getConnection();
@@ -13,9 +14,7 @@ $auth = new Auth($db);
 
 try {
     $viewer_id = $auth->validateRequest();
-    $viewerRoleStmt = $db->prepare("SELECT LOWER(role) FROM users WHERE user_id = :uid LIMIT 1");
-    $viewerRoleStmt->execute([':uid' => $viewer_id]);
-    $viewerRole = (string)($viewerRoleStmt->fetchColumn() ?: '');
+    $viewerRole = strtolower(moderation_get_user_role($db, (int)$viewer_id));
     $post_id = isset($_GET['post_id']) ? (int)$_GET['post_id'] : 0;
     $since = isset($_GET['since']) ? trim((string)$_GET['since']) : '';
 

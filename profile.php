@@ -841,8 +841,9 @@ include 'includes/sidebar.php';
             } else if (post.content_file_path) {
                 try { content = await fetchTextContent(post.content_file_path); } catch (_) {}
             }
-            const canManagePost = !!(post.is_owner || isOwnProfile || currentUserRole === 'admin');
-            const canReportPost = !canManagePost && currentUserRole !== 'admin';
+            const canEditPost = !!(post.is_owner || isOwnProfile);
+            const canDeletePost = !!(canEditPost || currentUserRole === 'admin');
+            const canReportPost = !canDeletePost && currentUserRole !== 'admin';
             
             postElement.innerHTML = `
                 ${post.activity_kind === 'repost' ? `
@@ -857,9 +858,9 @@ include 'includes/sidebar.php';
                     </div>
                     <div class="flex items-center gap-3">
                         ${isPinned ? '<span class="text-amber-600 font-medium">Pinned</span>' : ''}
-                        ${canManagePost ? `
+                        ${canDeletePost ? `
                         <div class="flex items-center gap-2">
-                            <button class="profile-edit-post-btn text-sm text-blue-600 hover:text-blue-800 font-medium">Edit</button>
+                            ${canEditPost ? '<button class="profile-edit-post-btn text-sm text-blue-600 hover:text-blue-800 font-medium">Edit</button>' : ''}
                             <button class="profile-delete-post-btn text-sm text-red-600 hover:text-red-800 font-medium">Delete</button>
                         </div>` : ''}
                     </div>
