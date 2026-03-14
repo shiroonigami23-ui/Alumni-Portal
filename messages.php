@@ -391,41 +391,52 @@ include 'includes/sidebar.php';
         }
 
         async function showMessageDialog(message, options = {}) {
-            if (window.portalDialog && typeof window.portalDialog.alert === 'function') {
-                return window.portalDialog.alert({
+            if (window.appAlert) {
+                return window.appAlert(message, {
                     eyebrow: 'Messages',
                     title: options.title || 'Messages',
-                    message: message,
                     confirmText: options.confirmText || 'Okay',
                     icon: options.icon || 'message-square',
                     iconTone: options.iconTone || 'info'
                 });
             }
-            alert(message);
-            return true;
+            return window.portalDialog.alert({
+                eyebrow: 'Messages',
+                title: options.title || 'Messages',
+                message: message,
+                confirmText: options.confirmText || 'Okay',
+                icon: options.icon || 'message-square',
+                iconTone: options.iconTone || 'info'
+            });
         }
 
         async function confirmMessageDialog(message, options = {}) {
-            if (window.portalDialog && typeof window.portalDialog.confirm === 'function') {
-                return window.portalDialog.confirm({
+            if (window.appConfirm) {
+                return window.appConfirm(message, {
                     eyebrow: 'Messages',
                     title: options.title || 'Please confirm',
-                    message: message,
                     confirmText: options.confirmText || 'Confirm',
                     cancelText: options.cancelText || 'Cancel',
                     icon: options.icon || 'shield-alert',
                     iconTone: options.iconTone || 'danger'
                 });
             }
-            return confirm(message);
+            return window.portalDialog.confirm({
+                eyebrow: 'Messages',
+                title: options.title || 'Please confirm',
+                message: message,
+                confirmText: options.confirmText || 'Confirm',
+                cancelText: options.cancelText || 'Cancel',
+                icon: options.icon || 'shield-alert',
+                iconTone: options.iconTone || 'danger'
+            });
         }
 
         async function promptMessageDialog(message, options = {}) {
-            if (window.portalDialog && typeof window.portalDialog.prompt === 'function') {
-                return window.portalDialog.prompt({
+            if (window.appPrompt) {
+                return window.appPrompt(message, {
                     eyebrow: 'Messages',
                     title: options.title || 'Update message',
-                    message: message,
                     confirmText: options.confirmText || 'Save',
                     cancelText: options.cancelText || 'Cancel',
                     icon: options.icon || 'pencil-line',
@@ -433,7 +444,16 @@ include 'includes/sidebar.php';
                     defaultValue: options.defaultValue || ''
                 });
             }
-            return prompt(message, options.defaultValue || '');
+            return window.portalDialog.prompt({
+                eyebrow: 'Messages',
+                title: options.title || 'Update message',
+                message: message,
+                confirmText: options.confirmText || 'Save',
+                cancelText: options.cancelText || 'Cancel',
+                icon: options.icon || 'pencil-line',
+                inputLabel: options.inputLabel || 'Message',
+                defaultValue: options.defaultValue || ''
+            });
         }
 
         function getActiveGroupSpace() {

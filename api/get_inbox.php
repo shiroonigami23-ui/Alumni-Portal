@@ -4,6 +4,7 @@ header("Content-Type: application/json; charset=UTF-8");
 
 include_once '../config/Database.php';
 include_once '../middleware/Auth.php';
+include_once __DIR__ . '/_message_content.php';
 
 $database = new Database();
 $db = $database->getConnection();
@@ -27,11 +28,14 @@ $inbox = [];
 
 foreach ($conversations as $conv) {
     // 2. Hydrate Message Content
-    $msg_content = "Content unavailable.";
-    $file_path = dirname(__DIR__) . DIRECTORY_SEPARATOR . str_replace('/', DIRECTORY_SEPARATOR, $conv['content_file_path']);
-    
-    if (file_exists($file_path)) {
-        $msg_content = file_get_contents($file_path);
+    $parsed = load_message_payload_record($db, (string)($conv['content_file_path'] ?? ''));
+    $msg_content = trim((string)($parsed['message'] ?? ''));
+    if ($msg_content === '' && !empty($parsed['attachment']['name'])) {
+        $msg_content = 'Sent an attachment: ' . (string)$parsed['attachment']['name'];
+    } elseif ($msg_content === '' && !empty($parsed['attachment']['url'])) {
+        $msg_content = 'Sent an attachment';
+    } elseif ($msg_content === '') {
+        $msg_content = "Content unavailable.";
     }
 
     // 3. Robust Profile Fetch (Fixes the Warning)

@@ -193,8 +193,14 @@ When verifying a fresh deploy, append `?refresh=<commit>` to bypass stale browse
       - members can start or join an audio/video mentor space from the group header
       - the active space is reused for all members until it is ended or expires
       - group admins or the person who started the space can end it from Messages
+  - message content payloads are no longer written to task-local `storage/messages/...` files for new sends/edits:
+    - direct and mentor-group messages now store content in the DB-backed content store
+    - legacy message payload pointers are auto-migrated to DB-backed storage on successful read
+    - this fixes the live AWS `[Content Missing]` flicker caused by different app tasks disagreeing about local files
   - the shared header theme toggle is now visible on small screens across pages instead of disappearing outside Discovery
-  - Messages now use app-styled custom dialogs for edit/delete/disband/error flows instead of browser alert/confirm/prompt popups
+  - browser `alert` / `confirm` / `prompt` dialogs are being replaced with the shared in-app portal dialog layer:
+    - Messages uses custom dialogs for edit/delete/disband/call flows
+    - mentorship, feed, profile, settings, dashboard, discovery, jobs, events, and admin moderation pages now use the same app-styled modal system instead of native browser popups
   - forgot-password is now a real email-reset flow:
     - new `forgot-password.php` and `reset.php` pages exist
     - reset tokens are issued securely, expire after 30 minutes, and are invalidated after use
@@ -244,7 +250,8 @@ When verifying a fresh deploy, append `?refresh=<commit>` to bypass stale browse
 - Direct 1:1 message audio/video calls should open a working Jitsi room for both the caller and the callee
 - Mentor-group chats should support one active shared mentor space that members can join safely from the chat header
 - The theme toggle should remain visible in the shared mobile header, not just on Discovery
-- Messages should use custom in-app dialogs for edit/delete/disband/call errors instead of browser popups
+- Custom in-app dialogs should appear across the portal instead of native browser `alert` / `confirm` / `prompt` popups
+- New and edited messages should survive AWS task changes without briefly rendering `[Content Missing]`
 
 ### Known follow-up items
 

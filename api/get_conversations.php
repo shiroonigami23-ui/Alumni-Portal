@@ -6,6 +6,7 @@ require_once __DIR__ . '/../config/Database.php';
 require_once __DIR__ . '/../middleware/Auth.php';
 require_once __DIR__ . '/_message_schema.php';
 require_once __DIR__ . '/_profile_media.php';
+require_once __DIR__ . '/_message_content.php';
 
 function clear_missing_local_asset(?string $path): string
 {
@@ -28,33 +29,21 @@ function clear_missing_local_asset(?string $path): string
     return is_file($abs) ? $path : '';
 }
 
-function read_message_content(string $relativePath): string
+function read_message_content(PDO $db, ?string $pointer): string
 {
-    $clean = str_replace(['\\', "\0"], ['/', ''], $relativePath);
-    $abs = dirname(__DIR__) . DIRECTORY_SEPARATOR . str_replace('/', DIRECTORY_SEPARATOR, $clean);
-    if (!is_file($abs)) {
-        return '';
+    $payload = load_message_payload_record($db, $pointer);
+    $message = trim((string)($payload['message'] ?? ''));
+    $attachment = is_array($payload['attachment'] ?? null) ? $payload['attachment'] : null;
+    if ($message !== '') {
+        return $message;
     }
-    $content = @file_get_contents($abs);
-    if ($content === false) {
-        return '';
+    if ($attachment && !empty($attachment['name'])) {
+        return 'Sent an attachment: ' . (string)$attachment['name'];
     }
-    $decoded = json_decode($content, true);
-    if (is_array($decoded)) {
-        $message = trim((string)($decoded['message'] ?? ''));
-        $attachment = is_array($decoded['attachment'] ?? null) ? $decoded['attachment'] : null;
-        if ($message !== '') {
-            return $message;
-        }
-        if ($attachment && !empty($attachment['name'])) {
-            return 'Sent an attachment: ' . (string)$attachment['name'];
-        }
-        if ($attachment && !empty($attachment['url'])) {
-            return 'Sent an attachment';
-        }
-        return '';
+    if ($attachment && !empty($attachment['url'])) {
+        return 'Sent an attachment';
     }
-    return trim($content);
+    return '';
 }
 
 try {
@@ -118,7 +107,7 @@ try {
 
     $data = [];
     foreach ($rows as $row) {
-        $lastMessage = !empty($row['deleted_at']) ? 'Message deleted' : read_message_content((string)($row['content_file_path'] ?? ''));
+        $lastMessage = !empty($row['deleted_at']) ? 'Message deleted' : read_message_content($db, (string)($row['content_file_path'] ?? ''));
         if ($lastMessage === '') {
             $lastMessage = 'Sent a message';
         }
@@ -187,7 +176,7 @@ try {
     $groups = $groupStmt->fetchAll(PDO::FETCH_ASSOC);
 
     foreach ($groups as $group) {
-        $lastMessage = !empty($group['deleted_at']) ? 'Message deleted' : read_message_content((string)($group['content_file_path'] ?? ''));
+        $lastMessage = !empty($group['deleted_at']) ? 'Message deleted' : read_message_content($db, (string)($group['content_file_path'] ?? ''));
         if ($lastMessage === '') {
             $lastMessage = 'Mentor group is ready';
         }

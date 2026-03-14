@@ -585,7 +585,11 @@ include 'includes/sidebar.php';
                     const allowComments = document.getElementById('allowComments').checked;
 
                     if (!content) {
-                        alert('Please enter some content');
+                        await window.appAlert('Please enter some content', {
+                            title: 'Post content required',
+                            icon: 'triangle-alert',
+                            iconTone: 'danger'
+                        });
                         return;
                     }
 
@@ -607,15 +611,27 @@ include 'includes/sidebar.php';
                         const response = await makeApiCall('create_post.php', 'POST', formData);
 
                         if (response && response.success) {
-                            alert('Post created successfully!');
+                            await window.appAlert('Post created successfully!', {
+                                title: 'Post published',
+                                icon: 'badge-check',
+                                iconTone: 'success'
+                            });
                             quickPostForm.reset();
                             loadRecentActivity(); // Refresh activity feed
                         } else {
-                            alert(response.message || 'Failed to create post');
+                            await window.appAlert(response.message || 'Failed to create post', {
+                                title: 'Post failed',
+                                icon: 'triangle-alert',
+                                iconTone: 'danger'
+                            });
                         }
                     } catch (error) {
                         console.error('Error creating post:', error);
-                        alert('Error creating post');
+                        await window.appAlert('Error creating post', {
+                            title: 'Post failed',
+                            icon: 'triangle-alert',
+                            iconTone: 'danger'
+                        });
                     }
                 });
             }

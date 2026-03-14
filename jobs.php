@@ -316,12 +316,20 @@ include 'includes/sidebar.php';
                     if (!ok) {
                         throw new Error((res && res.message) || 'Failed to post job');
                     }
-                    alert('Job posted successfully.');
+                    await window.appAlert('Job posted successfully.', {
+                        title: 'Job posted',
+                        icon: 'briefcase-business',
+                        iconTone: 'success'
+                    });
                     form.reset();
                     panel.classList.add('hidden');
                     await loadJobs();
                 } catch (err) {
-                    alert(err.message || 'Failed to post job');
+                    await window.appAlert(err.message || 'Failed to post job', {
+                        title: 'Job post failed',
+                        icon: 'triangle-alert',
+                        iconTone: 'danger'
+                    });
                 } finally {
                     btn.disabled = false;
                     btn.textContent = original;
@@ -345,7 +353,11 @@ include 'includes/sidebar.php';
                 const resume = document.getElementById('applyResumeInput').files[0];
                 const cover = document.getElementById('applyCoverInput').value.trim();
                 if (!jobId || !resume) {
-                    alert('Please select resume and try again.');
+                    await window.appAlert('Please select resume and try again.', {
+                        title: 'Resume required',
+                        icon: 'triangle-alert',
+                        iconTone: 'danger'
+                    });
                     return;
                 }
                 const btn = document.getElementById('applySubmitBtn');
@@ -367,11 +379,19 @@ include 'includes/sidebar.php';
                     if (!res.ok) {
                         throw new Error(payload?.message || 'Failed to apply');
                     }
-                    alert('Application submitted.');
+                    await window.appAlert('Application submitted.', {
+                        title: 'Application submitted',
+                        icon: 'send',
+                        iconTone: 'success'
+                    });
                     form.reset();
                     modal.classList.add('hidden');
                 } catch (err) {
-                    alert(err.message || 'Failed to apply');
+                    await window.appAlert(err.message || 'Failed to apply', {
+                        title: 'Application failed',
+                        icon: 'triangle-alert',
+                        iconTone: 'danger'
+                    });
                 } finally {
                     btn.disabled = false;
                     btn.textContent = original;

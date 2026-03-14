@@ -338,6 +338,8 @@ $basePrefix = $isAdminPath ? '../' : '';
             inputWrap.classList.toggle('hidden', mode !== 'prompt');
             inputLabel.textContent = String(options.inputLabel || 'Update');
             input.value = String(options.defaultValue || '');
+            input.readOnly = !!options.inputReadonly;
+            input.placeholder = String(options.inputPlaceholder || '');
             root.classList.remove('hidden');
             root.classList.add('flex');
             lucide.createIcons();
@@ -383,6 +385,84 @@ $basePrefix = $isAdminPath ? '../' : '';
                     return value;
                 });
             }
+        };
+        window.appAlert = function(message, options = {}) {
+            const payload = typeof message === 'object' && message !== null ? message : { ...options, message };
+            if (window.portalDialog && typeof window.portalDialog.alert === 'function') {
+                return window.portalDialog.alert({
+                    eyebrow: payload.eyebrow || 'RJIT Portal',
+                    title: payload.title || 'Notice',
+                    message: payload.message || '',
+                    confirmText: payload.confirmText || 'Okay',
+                    icon: payload.icon || 'message-square',
+                    iconTone: payload.iconTone || 'info'
+                });
+            }
+            return openPortalDialog({
+                eyebrow: payload.eyebrow || 'RJIT Portal',
+                title: payload.title || 'Notice',
+                message: payload.message || '',
+                confirmText: payload.confirmText || 'Okay',
+                icon: payload.icon || 'message-square',
+                iconTone: payload.iconTone || 'info',
+                mode: 'alert'
+            }).then(() => true);
+        };
+        window.appConfirm = function(message, options = {}) {
+            const payload = typeof message === 'object' && message !== null ? message : { ...options, message };
+            if (window.portalDialog && typeof window.portalDialog.confirm === 'function') {
+                return window.portalDialog.confirm({
+                    eyebrow: payload.eyebrow || 'RJIT Portal',
+                    title: payload.title || 'Please confirm',
+                    message: payload.message || '',
+                    confirmText: payload.confirmText || 'Confirm',
+                    cancelText: payload.cancelText || 'Cancel',
+                    icon: payload.icon || 'shield-alert',
+                    iconTone: payload.iconTone || 'danger'
+                });
+            }
+            return openPortalDialog({
+                eyebrow: payload.eyebrow || 'RJIT Portal',
+                title: payload.title || 'Please confirm',
+                message: payload.message || '',
+                confirmText: payload.confirmText || 'Confirm',
+                cancelText: payload.cancelText || 'Cancel',
+                icon: payload.icon || 'shield-alert',
+                iconTone: payload.iconTone || 'danger',
+                mode: 'confirm'
+            }).then((value) => value === true);
+        };
+        window.appPrompt = function(message, options = {}) {
+            const payload = typeof message === 'object' && message !== null ? message : { ...options, message };
+            if (window.portalDialog && typeof window.portalDialog.prompt === 'function') {
+                return window.portalDialog.prompt({
+                    eyebrow: payload.eyebrow || 'RJIT Portal',
+                    title: payload.title || 'Input required',
+                    message: payload.message || '',
+                    confirmText: payload.confirmText || 'Continue',
+                    cancelText: payload.cancelText || 'Cancel',
+                    icon: payload.icon || 'pencil-line',
+                    iconTone: payload.iconTone || 'info',
+                    inputLabel: payload.inputLabel || 'Value',
+                    defaultValue: payload.defaultValue || '',
+                    inputReadonly: !!payload.inputReadonly,
+                    inputPlaceholder: payload.inputPlaceholder || ''
+                });
+            }
+            return openPortalDialog({
+                eyebrow: payload.eyebrow || 'RJIT Portal',
+                title: payload.title || 'Input required',
+                message: payload.message || '',
+                confirmText: payload.confirmText || 'Continue',
+                cancelText: payload.cancelText || 'Cancel',
+                icon: payload.icon || 'pencil-line',
+                iconTone: payload.iconTone || 'info',
+                inputLabel: payload.inputLabel || 'Value',
+                defaultValue: payload.defaultValue || '',
+                inputReadonly: !!payload.inputReadonly,
+                inputPlaceholder: payload.inputPlaceholder || '',
+                mode: 'prompt'
+            }).then((value) => typeof value === 'string' ? value : null);
         };
 
         // Load user data

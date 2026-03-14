@@ -954,7 +954,11 @@
             const content = document.getElementById('messageContent').value.trim();
 
             if (!content) {
-                alert('Please enter a message');
+                await window.appAlert('Please enter a message', {
+                    title: 'Message required',
+                    icon: 'triangle-alert',
+                    iconTone: 'danger'
+                });
                 return;
             }
 
@@ -965,14 +969,26 @@
                 });
 
                 if (response && (response.success || response.status === 'success')) {
-                    alert('Message sent successfully!');
+                    await window.appAlert('Message sent successfully!', {
+                        title: 'Message sent',
+                        icon: 'send',
+                        iconTone: 'success'
+                    });
                     closeMessageModal();
                 } else {
-                    alert(response.message || 'Failed to send message');
+                    await window.appAlert(response.message || 'Failed to send message', {
+                        title: 'Message failed',
+                        icon: 'triangle-alert',
+                        iconTone: 'danger'
+                    });
                 }
             } catch (error) {
                 console.error('Error sending message:', error);
-                alert('Error sending message');
+                await window.appAlert('Error sending message', {
+                    title: 'Message failed',
+                    icon: 'triangle-alert',
+                    iconTone: 'danger'
+                });
             }
         }
     </script>

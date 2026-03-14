@@ -157,11 +157,18 @@ if (session_status() === PHP_SESSION_NONE) {
         }
 
         async function updateUser(userId, action) {
-            const ok = confirm(`Confirm ${action} for user #${userId}?`);
+            const ok = await window.appConfirm(`Confirm ${action} for user #${userId}?`, {
+                title: 'Confirm user action',
+                confirmText: 'Continue'
+            });
             if (!ok) return;
             const res = await makeApiCall('approve_user.php', 'POST', { target_user_id: userId, action });
             if (!res || res.success === false) {
-                alert((res && res.message) ? res.message : 'Failed to update user');
+                await window.appAlert((res && res.message) ? res.message : 'Failed to update user', {
+                    title: 'Update failed',
+                    icon: 'triangle-alert',
+                    iconTone: 'danger'
+                });
                 return;
             }
             loadUsers(currentPage);
@@ -172,18 +179,29 @@ if (session_status() === PHP_SESSION_NONE) {
             if (action === 'shadow_ban' || action === 'restrict_messaging' || action === 'restrict_posting') {
                 payload.duration_hours = 168;
             }
-            const ok = confirm(`Run ${action} for user #${userId}?`);
+            const ok = await window.appConfirm(`Run ${action} for user #${userId}?`, {
+                title: 'Confirm admin action',
+                confirmText: 'Run action'
+            });
             if (!ok) return;
             const res = await makeApiCall('admin_user_actions.php', 'POST', payload);
             if (!res || res.success === false) {
-                alert((res && res.message) ? res.message : 'Admin action failed');
+                await window.appAlert((res && res.message) ? res.message : 'Admin action failed', {
+                    title: 'Admin action failed',
+                    icon: 'triangle-alert',
+                    iconTone: 'danger'
+                });
                 return;
             }
             loadUsers(currentPage);
         }
 
         async function resetUserPassword(userId, email) {
-            const newPassword = prompt(`Enter a new password for ${email}:`);
+            const newPassword = await window.appPrompt(`Enter a new password for ${email}:`, {
+                title: 'Reset user password',
+                inputLabel: 'New password',
+                confirmText: 'Reset password'
+            });
             if (!newPassword) return;
             const res = await makeApiCall('admin_user_actions.php', 'POST', {
                 action: 'reset_password',
@@ -191,10 +209,18 @@ if (session_status() === PHP_SESSION_NONE) {
                 new_password: newPassword
             });
             if (!res || res.success === false) {
-                alert((res && res.message) ? res.message : 'Password reset failed');
+                await window.appAlert((res && res.message) ? res.message : 'Password reset failed', {
+                    title: 'Reset failed',
+                    icon: 'triangle-alert',
+                    iconTone: 'danger'
+                });
                 return;
             }
-            alert('Password reset successfully.');
+            await window.appAlert('Password reset successfully.', {
+                title: 'Password reset',
+                icon: 'shield-check',
+                iconTone: 'success'
+            });
         }
 
         function fmt(v) {

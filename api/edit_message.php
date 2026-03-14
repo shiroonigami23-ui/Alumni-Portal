@@ -6,31 +6,7 @@ header("Access-Control-Allow-Methods: POST");
 require_once __DIR__ . '/../config/Database.php';
 require_once __DIR__ . '/../middleware/Auth.php';
 require_once __DIR__ . '/_message_schema.php';
-
-function resolve_absolute_path(string $relativePath): string
-{
-    $clean = str_replace(['\\', "\0"], ['/', ''], $relativePath);
-    return dirname(__DIR__) . DIRECTORY_SEPARATOR . str_replace('/', DIRECTORY_SEPARATOR, $clean);
-}
-
-function read_message_payload_from_file(string $absolutePath): array
-{
-    if (!is_file($absolutePath)) {
-        return ['message' => '', 'attachment' => null];
-    }
-    $raw = @file_get_contents($absolutePath);
-    if ($raw === false) {
-        return ['message' => '', 'attachment' => null];
-    }
-    $decoded = json_decode($raw, true);
-    if (is_array($decoded)) {
-        return [
-            'message' => (string)($decoded['message'] ?? ''),
-            'attachment' => is_array($decoded['attachment'] ?? null) ? $decoded['attachment'] : null
-        ];
-    }
-    return ['message' => (string)$raw, 'attachment' => null];
-}
+require_once __DIR__ . '/_message_content.php';
 
 try {
     $database = new Database();
@@ -87,20 +63,26 @@ try {
         exit;
     }
 
-    $absPath = resolve_absolute_path((string)$row['content_file_path']);
-    $existing = read_message_payload_from_file($absPath);
-    $nextPayload = [
-        'message' => $message
-    ];
-    if (!empty($existing['attachment']) && is_array($existing['attachment'])) {
-        $nextPayload['attachment'] = $existing['attachment'];
-    }
-    $serialized = json_encode($nextPayload, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
-    if (!is_file($absPath) || $serialized === false || file_put_contents($absPath, $serialized) === false) {
+    $existing = load_message_payload_record($db, (string)$row['content_file_path']);
+    $nextPointer = update_message_payload_record(
+        $db,
+        (string)$row['content_file_path'],
+        $message,
+        !empty($existing['attachment']) && is_array($existing['attachment']) ? $existing['attachment'] : null,
+        $userId
+    );
+
+    if ($nextPointer === '') {
         http_response_code(500);
         echo json_encode(['success' => false, 'message' => 'Failed to update message content']);
         exit;
     }
+
+    $pathStmt = $db->prepare("UPDATE {$table} SET content_file_path = :path WHERE message_id = :mid");
+    $pathStmt->execute([
+        ':path' => $nextPointer,
+        ':mid' => $messageId
+    ]);
 
     $upd = $db->prepare("UPDATE {$table} SET edited_at = NOW() WHERE message_id = :mid");
     $upd->execute([':mid' => $messageId]);

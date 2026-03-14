@@ -95,10 +95,17 @@ if (session_status() === PHP_SESSION_NONE) {
         }
 
         async function deleteReportedPost(postId, reportId) {
-            if (!confirm(`Delete post #${postId} and resolve related reports?`)) return;
+            if (!await window.appConfirm(`Delete post #${postId} and resolve related reports?`, {
+                title: 'Delete reported post',
+                confirmText: 'Delete post'
+            })) return;
             const del = await makeApiCall('moderate_post.php', 'POST', { post_id: postId });
             if (!del || del.message?.toLowerCase().includes('permission denied')) {
-                alert((del && del.message) ? del.message : 'Failed to delete post');
+                await window.appAlert((del && del.message) ? del.message : 'Failed to delete post', {
+                    title: 'Delete failed',
+                    icon: 'triangle-alert',
+                    iconTone: 'danger'
+                });
                 return;
             }
             await makeApiCall('admin_report_action.php', 'POST', { action: 'resolve_post_reports', report_id: reportId, post_id: postId });
@@ -106,14 +113,21 @@ if (session_status() === PHP_SESSION_NONE) {
         }
 
         async function banReportedAuthor(authorId, reportId) {
-            if (!confirm(`Permanently ban user #${authorId}?`)) return;
+            if (!await window.appConfirm(`Permanently ban user #${authorId}?`, {
+                title: 'Ban reported author',
+                confirmText: 'Ban user'
+            })) return;
             const res = await makeApiCall('admin_user_actions.php', 'POST', {
                 action: 'ban_user',
                 target_user_id: authorId,
                 reason: 'Banned from reported content review.'
             });
             if (!res || res.success === false) {
-                alert((res && res.message) ? res.message : 'Failed to ban user');
+                await window.appAlert((res && res.message) ? res.message : 'Failed to ban user', {
+                    title: 'Ban failed',
+                    icon: 'triangle-alert',
+                    iconTone: 'danger'
+                });
                 return;
             }
             await makeApiCall('admin_report_action.php', 'POST', { action: 'resolve', report_id: reportId });
@@ -121,7 +135,10 @@ if (session_status() === PHP_SESSION_NONE) {
         }
 
         async function shadowBanAuthor(authorId, reportId) {
-            if (!confirm(`Shadow-ban user #${authorId} from posting and messaging for 7 days?`)) return;
+            if (!await window.appConfirm(`Shadow-ban user #${authorId} from posting and messaging for 7 days?`, {
+                title: 'Shadow-ban author',
+                confirmText: 'Shadow-ban'
+            })) return;
             const res = await makeApiCall('admin_user_actions.php', 'POST', {
                 action: 'shadow_ban',
                 target_user_id: authorId,
@@ -129,7 +146,11 @@ if (session_status() === PHP_SESSION_NONE) {
                 reason: 'Shadow banned by admin after content review.'
             });
             if (!res || res.success === false) {
-                alert((res && res.message) ? res.message : 'Failed to shadow-ban user');
+                await window.appAlert((res && res.message) ? res.message : 'Failed to shadow-ban user', {
+                    title: 'Shadow-ban failed',
+                    icon: 'triangle-alert',
+                    iconTone: 'danger'
+                });
                 return;
             }
             await makeApiCall('admin_report_action.php', 'POST', { action: 'resolve', report_id: reportId });
@@ -137,10 +158,17 @@ if (session_status() === PHP_SESSION_NONE) {
         }
 
         async function dismissReport(reportId) {
-            if (!confirm(`Dismiss report #${reportId}?`)) return;
+            if (!await window.appConfirm(`Dismiss report #${reportId}?`, {
+                title: 'Dismiss report',
+                confirmText: 'Dismiss'
+            })) return;
             const res = await makeApiCall('admin_report_action.php', 'POST', { action: 'dismiss', report_id: reportId });
             if (!res || res.success === false) {
-                alert((res && res.message) ? res.message : 'Failed to dismiss report');
+                await window.appAlert((res && res.message) ? res.message : 'Failed to dismiss report', {
+                    title: 'Dismiss failed',
+                    icon: 'triangle-alert',
+                    iconTone: 'danger'
+                });
                 return;
             }
             await loadReportsPage();

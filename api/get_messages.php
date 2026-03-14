@@ -6,6 +6,7 @@ include_once '../config/Database.php';
 include_once '../middleware/Auth.php';
 include_once __DIR__ . '/_message_schema.php';
 include_once __DIR__ . '/_profile_media.php';
+include_once __DIR__ . '/_message_content.php';
 
 function clear_missing_local_asset(?string $path): string
 {
@@ -37,43 +38,6 @@ expire_stale_group_calls($db);
 $auth = new Auth($db);
 
 $user_id = $auth->validateRequest();
-
-function read_message_payload(string $relativePath): array
-{
-    $clean = str_replace(['\\', "\0"], ['/', ''], $relativePath);
-    $fullPath = dirname(__DIR__) . DIRECTORY_SEPARATOR . str_replace('/', DIRECTORY_SEPARATOR, $clean);
-    if (!is_file($fullPath)) {
-        return [
-            'message' => '[Content Missing]',
-            'attachment' => null
-        ];
-    }
-    $content = @file_get_contents($fullPath);
-    if ($content === false) {
-        return [
-            'message' => '[Content Missing]',
-            'attachment' => null
-        ];
-    }
-
-    $decoded = json_decode($content, true);
-    if (is_array($decoded)) {
-        $message = (string)($decoded['message'] ?? '');
-        $attachment = is_array($decoded['attachment'] ?? null) ? $decoded['attachment'] : null;
-        if ($attachment && !empty($attachment['url'])) {
-            $attachment['url'] = str_replace('\\', '/', (string)$attachment['url']);
-        }
-        return [
-            'message' => $message,
-            'attachment' => $attachment
-        ];
-    }
-
-    return [
-        'message' => $content,
-        'attachment' => null
-    ];
-}
 
 $conversationId = trim((string)($_GET['conversation_id'] ?? ''));
 $isConversationMode = $conversationId !== '';
@@ -216,7 +180,10 @@ try {
         $history = [];
         foreach ($messages as $msg) {
             $isDeleted = !empty($msg['deleted_at']);
-            $parsed = read_message_payload((string)$msg['content_file_path']);
+            $parsed = load_message_payload_record($db, (string)$msg['content_file_path']);
+            if (($parsed['source'] ?? '') === 'file') {
+                maybe_migrate_message_payload($db, 'mentorship_group_messages', (int)$msg['message_id'], (int)$msg['sender_user_id'], (string)$msg['content_file_path'], $parsed);
+            }
             $attachment = $isDeleted ? null : ($parsed['attachment'] ?? null);
             $history[] = [
                 "message_id" => (int)$msg['message_id'],
@@ -308,10 +275,13 @@ try {
     $stmt->execute([':uid' => $user_id, ':cid' => $contact_id]);
     $messages = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-    $history = [];
+        $history = [];
     foreach ($messages as $msg) {
         $isDeleted = !empty($msg['deleted_at']);
-        $parsed = read_message_payload((string)$msg['content_file_path']);
+        $parsed = load_message_payload_record($db, (string)$msg['content_file_path']);
+        if (($parsed['source'] ?? '') === 'file') {
+            maybe_migrate_message_payload($db, 'messages', (int)$msg['message_id'], (int)$msg['sender_user_id'], (string)$msg['content_file_path'], $parsed);
+        }
         $attachment = $isDeleted ? null : ($parsed['attachment'] ?? null);
         $history[] = [
             "message_id" => (int)$msg['message_id'],

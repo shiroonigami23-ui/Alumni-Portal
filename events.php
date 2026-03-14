@@ -181,12 +181,20 @@
             });
 
             if (response && response.message) {
-                alert(response.message);
+                await window.appAlert(response.message, {
+                    title: 'RSVP updated',
+                    icon: 'calendar-check',
+                    iconTone: 'success'
+                });
                 loadEvents(currentFilter);
             }
         } catch (error) {
             console.error('Error RSVPing to event:', error);
-            alert('Failed to RSVP. Please try again.');
+            await window.appAlert('Failed to RSVP. Please try again.', {
+                title: 'RSVP failed',
+                icon: 'triangle-alert',
+                iconTone: 'danger'
+            });
         }
     }
 
@@ -219,13 +227,21 @@
             const response = await makeApiCall('events.php?action=create', 'POST', formData);
 
             if (response && response.message) {
-                alert(response.message);
+                await window.appAlert(response.message, {
+                    title: 'Event created',
+                    icon: 'calendar-plus',
+                    iconTone: 'success'
+                });
                 closeCreateEventModal();
                 loadEvents(currentFilter);
             }
         } catch (error) {
             console.error('Error creating event:', error);
-            alert('Failed to create event. Please try again.');
+            await window.appAlert('Failed to create event. Please try again.', {
+                title: 'Event creation failed',
+                icon: 'triangle-alert',
+                iconTone: 'danger'
+            });
         }
     });
 </script>

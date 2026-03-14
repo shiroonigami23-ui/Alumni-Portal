@@ -784,19 +784,36 @@ include 'includes/sidebar.php';
         }
 
         async function reportUser(targetUserId) {
-            if (!confirm('Report this user for harassment/spam?')) return;
+            if (!await window.appConfirm('Report this user for harassment/spam?', {
+                title: 'Report user',
+                confirmText: 'Report',
+                icon: 'shield-alert',
+                iconTone: 'danger'
+            })) return;
             try {
                 const res = await makeApiCall('report_user.php', 'POST', {
                     target_user_id: targetUserId,
                     reason: 'harassment'
                 });
                 if (res && (res.success || res.status === 'success' || res.message)) {
-                    alert(res.message || 'User reported.');
+                    await window.appAlert(res.message || 'User reported.', {
+                        title: 'Report submitted',
+                        icon: 'shield-check',
+                        iconTone: 'success'
+                    });
                 } else {
-                    alert((res && res.message) || 'Failed to report user.');
+                    await window.appAlert((res && res.message) || 'Failed to report user.', {
+                        title: 'Report failed',
+                        icon: 'triangle-alert',
+                        iconTone: 'danger'
+                    });
                 }
             } catch (e) {
-                alert('Failed to report user.');
+                await window.appAlert('Failed to report user.', {
+                    title: 'Report failed',
+                    icon: 'triangle-alert',
+                    iconTone: 'danger'
+                });
             }
         }
 
@@ -968,10 +985,19 @@ include 'includes/sidebar.php';
             const reportBtn = postElement.querySelector('.profile-report-btn');
             if (reportBtn) {
                 reportBtn.addEventListener('click', async () => {
-                    if (!confirm('Report this post?')) return;
+                    if (!await window.appConfirm('Report this post?', {
+                        title: 'Report post',
+                        confirmText: 'Report',
+                        icon: 'shield-alert',
+                        iconTone: 'danger'
+                    })) return;
                     const res = await makeApiCall('report_content.php', 'POST', { post_id: post.id, reason: 'spam' });
                     if (res && (res.success || res.status === 'success' || res.message)) {
-                        alert(res.message || 'Post reported.');
+                        await window.appAlert(res.message || 'Post reported.', {
+                            title: 'Report submitted',
+                            icon: 'shield-check',
+                            iconTone: 'success'
+                        });
                     }
                 });
             }
@@ -981,18 +1007,31 @@ include 'includes/sidebar.php';
                 editPostBtn.addEventListener('click', async () => {
                     const contentEl = postElement.querySelector('.profile-post-content');
                     const currentContent = (contentEl?.textContent || '').trim();
-                    const edited = prompt('Edit your post:', currentContent);
+                    const edited = await window.appPrompt('Edit your post:', {
+                        title: 'Edit post',
+                        inputLabel: 'Post content',
+                        confirmText: 'Save changes',
+                        defaultValue: currentContent
+                    });
                     if (edited === null) return;
                     const nextContent = edited.trim();
                     if (!nextContent) {
-                        alert('Post content cannot be empty.');
+                        await window.appAlert('Post content cannot be empty.', {
+                            title: 'Empty post',
+                            icon: 'triangle-alert',
+                            iconTone: 'danger'
+                        });
                         return;
                     }
                     const res = await makeApiCall('edit_post.php', 'POST', { post_id: post.id, content: nextContent });
                     if (res && (res.success || res.status === 'success')) {
                         if (contentEl) contentEl.textContent = nextContent;
                     } else {
-                        alert((res && res.message) || 'Failed to edit post.');
+                        await window.appAlert((res && res.message) || 'Failed to edit post.', {
+                            title: 'Edit failed',
+                            icon: 'triangle-alert',
+                            iconTone: 'danger'
+                        });
                     }
                 });
             }
@@ -1000,7 +1039,12 @@ include 'includes/sidebar.php';
             const deletePostBtn = postElement.querySelector('.profile-delete-post-btn');
             if (deletePostBtn) {
                 deletePostBtn.addEventListener('click', async () => {
-                    if (!confirm('Delete this post?')) return;
+                    if (!await window.appConfirm('Delete this post?', {
+                        title: 'Delete post',
+                        confirmText: 'Delete',
+                        icon: 'trash-2',
+                        iconTone: 'danger'
+                    })) return;
                     const res = await makeApiCall('delete_post.php', 'POST', { post_id: post.id });
                     if (res && (res.success || res.status === 'success')) {
                         timelinePostsData = timelinePostsData.filter((item) => Number(item.id) !== Number(post.id));
@@ -1013,7 +1057,11 @@ include 'includes/sidebar.php';
                         }
                         postElement.remove();
                     } else {
-                        alert((res && res.message) || 'Failed to delete post.');
+                        await window.appAlert((res && res.message) || 'Failed to delete post.', {
+                            title: 'Delete failed',
+                            icon: 'triangle-alert',
+                            iconTone: 'danger'
+                        });
                     }
                 });
             }
@@ -1269,14 +1317,26 @@ include 'includes/sidebar.php';
                         cached.profile_picture = nextUrl;
                         localStorage.setItem('user_data', JSON.stringify(cached));
                     } catch (_error) {}
-                    alert('Profile picture updated successfully!');
+                    await window.appAlert('Profile picture updated successfully!', {
+                        title: 'Profile updated',
+                        icon: 'image-up',
+                        iconTone: 'success'
+                    });
                     window.location.reload();
                 } else {
-                    alert((result && result.message) || 'Failed to update profile picture');
+                    await window.appAlert((result && result.message) || 'Failed to update profile picture', {
+                        title: 'Upload failed',
+                        icon: 'triangle-alert',
+                        iconTone: 'danger'
+                    });
                 }
             } catch (error) {
                 console.error('Error uploading avatar:', error);
-                alert('Error uploading profile picture');
+                await window.appAlert('Error uploading profile picture', {
+                    title: 'Upload failed',
+                    icon: 'triangle-alert',
+                    iconTone: 'danger'
+                });
             }
         }
 
@@ -1303,20 +1363,36 @@ include 'includes/sidebar.php';
                         cached.cover_photo_url = result.cover_url;
                         localStorage.setItem('user_data', JSON.stringify(cached));
                     } catch (_error) {}
-                    alert('Cover photo updated successfully!');
+                    await window.appAlert('Cover photo updated successfully!', {
+                        title: 'Cover updated',
+                        icon: 'image-up',
+                        iconTone: 'success'
+                    });
                 } else {
-                    alert((result && result.message) || 'Failed to update cover photo');
+                    await window.appAlert((result && result.message) || 'Failed to update cover photo', {
+                        title: 'Upload failed',
+                        icon: 'triangle-alert',
+                        iconTone: 'danger'
+                    });
                 }
             } catch (error) {
                 console.error('Error uploading cover:', error);
-                alert('Error uploading cover photo');
+                await window.appAlert('Error uploading cover photo', {
+                    title: 'Upload failed',
+                    icon: 'triangle-alert',
+                    iconTone: 'danger'
+                });
             }
         }
         
         let isCreatingTimelinePost = false;
         async function createTimelinePost() {
             if (String(currentUserRole) === 'student') {
-                alert('Students cannot create posts.');
+                await window.appAlert('Students cannot create posts.', {
+                    title: 'Posting unavailable',
+                    icon: 'ban',
+                    iconTone: 'danger'
+                });
                 return;
             }
             if (isCreatingTimelinePost) return;
@@ -1328,7 +1404,11 @@ include 'includes/sidebar.php';
             const hasMedia = !!(imageInput.files[0] || fileInput.files[0]);
 
             if (!content && !hasMedia) {
-                alert('Please enter some content or attach media for your post');
+                await window.appAlert('Please enter some content or attach media for your post', {
+                    title: 'Post content required',
+                    icon: 'triangle-alert',
+                    iconTone: 'danger'
+                });
                 return;
             }
             isCreatingTimelinePost = true;
@@ -1351,7 +1431,11 @@ include 'includes/sidebar.php';
                 const response = await makeApiCall('create_post.php', 'POST', formData);
                 
                 if (response && (response.success || response.status === 'success')) {
-                    alert('Post created successfully!');
+                    await window.appAlert('Post created successfully!', {
+                        title: 'Post published',
+                        icon: 'circle-check',
+                        iconTone: 'success'
+                    });
                     document.getElementById('timelinePostContent').value = '';
                     document.getElementById('timelineImage').value = '';
                     document.getElementById('timelineFile').value = '';
@@ -1359,11 +1443,19 @@ include 'includes/sidebar.php';
                     // Reload posts
                     await loadProfilePosts();
                 } else {
-                    alert(response.message || 'Failed to create post');
+                    await window.appAlert(response.message || 'Failed to create post', {
+                        title: 'Post publish failed',
+                        icon: 'triangle-alert',
+                        iconTone: 'danger'
+                    });
                 }
             } catch (error) {
                 console.error('Error creating post:', error);
-                alert('Error creating post');
+                await window.appAlert('Error creating post', {
+                    title: 'Post publish failed',
+                    icon: 'triangle-alert',
+                    iconTone: 'danger'
+                });
             } finally {
                 isCreatingTimelinePost = false;
             }
@@ -1386,7 +1478,11 @@ include 'includes/sidebar.php';
             }
             
             if (Object.keys(updateData).length === 0) {
-                alert('No changes to save');
+                await window.appAlert('No changes to save', {
+                    title: 'Nothing to update',
+                    icon: 'info',
+                    iconTone: 'info'
+                });
                 return;
             }
             
@@ -1394,17 +1490,29 @@ include 'includes/sidebar.php';
                 const response = await makeApiCall('update_profile.php', 'POST', updateData);
                 
                 if (response && (response.success || response.status === 'success')) {
-                    alert('Profile settings updated successfully!');
+                    await window.appAlert('Profile settings updated successfully!', {
+                        title: 'Profile updated',
+                        icon: 'circle-check',
+                        iconTone: 'success'
+                    });
                     
                     // Clear password fields
                     document.getElementById('currentPassword').value = '';
                     document.getElementById('newPassword').value = '';
                 } else {
-                    alert(response.message || 'Failed to update profile settings');
+                    await window.appAlert(response.message || 'Failed to update profile settings', {
+                        title: 'Profile update failed',
+                        icon: 'triangle-alert',
+                        iconTone: 'danger'
+                    });
                 }
             } catch (error) {
                 console.error('Error saving profile settings:', error);
-                alert('Error saving profile settings');
+                await window.appAlert('Error saving profile settings', {
+                    title: 'Profile update failed',
+                    icon: 'triangle-alert',
+                    iconTone: 'danger'
+                });
             }
         }
         
@@ -1426,7 +1534,11 @@ include 'includes/sidebar.php';
                         lucide.createIcons();
                     }
                 } else {
-                    alert((response && response.message) || 'Failed to update follow state');
+                    await window.appAlert((response && response.message) || 'Failed to update follow state', {
+                        title: 'Follow update failed',
+                        icon: 'triangle-alert',
+                        iconTone: 'danger'
+                    });
                 }
             } catch (error) {
                 console.error('Error sending connection request:', error);
@@ -1437,15 +1549,27 @@ include 'includes/sidebar.php';
             window.location.href = 'settings.php#profile';
         }
         
-        function exportData() {
+        async function exportData() {
             // Implement data export
-            alert('Data export feature coming soon!');
+            await window.appAlert('Data export feature coming soon!', {
+                title: 'Coming soon',
+                icon: 'download',
+                iconTone: 'info'
+            });
         }
         
-        function deactivateAccount() {
-            if (confirm('Are you sure you want to deactivate your account? This action can be reversed later.')) {
-                alert('Account deactivation feature coming soon!');
-            }
+        async function deactivateAccount() {
+            if (!await window.appConfirm('Are you sure you want to deactivate your account? This action can be reversed later.', {
+                title: 'Deactivate account',
+                confirmText: 'Deactivate',
+                icon: 'triangle-alert',
+                iconTone: 'danger'
+            })) return;
+            await window.appAlert('Account deactivation feature coming soon!', {
+                title: 'Coming soon',
+                icon: 'clock-3',
+                iconTone: 'info'
+            });
         }
         
         function showProfileError() {

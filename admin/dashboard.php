@@ -721,44 +721,79 @@ if (session_status() === PHP_SESSION_NONE) {
         }
 
         async function approveUser(userId) {
-            if (!confirm('Are you sure you want to approve this user?')) return;
+            if (!await window.appConfirm('Are you sure you want to approve this user?', {
+                title: 'Approve user',
+                confirmText: 'Approve'
+            })) return;
             try {
                 const response = await makeApiCall('approve_user.php', 'POST', { target_user_id: userId, action: 'approve' });
                 if (response && response.message && !response.error) {
-                    alert('User approved successfully!');
+                    await window.appAlert('User approved successfully!', {
+                        title: 'User approved',
+                        icon: 'shield-check',
+                        iconTone: 'success'
+                    });
                     loadPendingUsers();
                     loadAdminStats();
                 } else {
-                    alert(response?.message || 'Failed to approve user');
+                    await window.appAlert(response?.message || 'Failed to approve user', {
+                        title: 'Approval failed',
+                        icon: 'triangle-alert',
+                        iconTone: 'danger'
+                    });
                 }
             } catch (error) {
                 console.error('Error approving user:', error);
-                alert('Error approving user');
+                await window.appAlert('Error approving user', {
+                    title: 'Approval failed',
+                    icon: 'triangle-alert',
+                    iconTone: 'danger'
+                });
             }
         }
 
         async function rejectUser(userId) {
-            const reason = prompt('Please enter reason for rejection:', '');
+            const reason = await window.appPrompt('Please enter reason for rejection:', {
+                title: 'Reject user',
+                inputLabel: 'Reason',
+                confirmText: 'Reject'
+            });
             if (reason === null) return;
             try {
                 const response = await makeApiCall('approve_user.php', 'POST', { target_user_id: userId, action: 'reject', reason });
                 if (response && response.message && !response.error) {
-                    alert('User rejected successfully!');
+                    await window.appAlert('User rejected successfully!', {
+                        title: 'User rejected',
+                        icon: 'shield-check',
+                        iconTone: 'success'
+                    });
                     loadPendingUsers();
                     loadAdminStats();
                 } else {
-                    alert(response?.message || 'Failed to reject user');
+                    await window.appAlert(response?.message || 'Failed to reject user', {
+                        title: 'Rejection failed',
+                        icon: 'triangle-alert',
+                        iconTone: 'danger'
+                    });
                 }
             } catch (error) {
                 console.error('Error rejecting user:', error);
-                alert('Error rejecting user');
+                await window.appAlert('Error rejecting user', {
+                    title: 'Rejection failed',
+                    icon: 'triangle-alert',
+                    iconTone: 'danger'
+                });
             }
         }
 
         async function generateToken() {
             const email = document.getElementById('tokenEmail').value.trim();
             if (!email || !validateEmail(email)) {
-                alert('Please enter a valid email address');
+                await window.appAlert('Please enter a valid email address', {
+                    title: 'Invalid email',
+                    icon: 'triangle-alert',
+                    iconTone: 'danger'
+                });
                 return;
             }
             try {
@@ -772,21 +807,37 @@ if (session_status() === PHP_SESSION_NONE) {
                     loadRecentTokens();
                     document.getElementById('tokenResult').scrollIntoView({ behavior: 'smooth' });
                 } else {
-                    alert(response?.message || 'Failed to generate token');
+                    await window.appAlert(response?.message || 'Failed to generate token', {
+                        title: 'Token generation failed',
+                        icon: 'triangle-alert',
+                        iconTone: 'danger'
+                    });
                 }
             } catch (error) {
                 console.error('Error generating token:', error);
-                alert('Error generating token');
+                await window.appAlert('Error generating token', {
+                    title: 'Token generation failed',
+                    icon: 'triangle-alert',
+                    iconTone: 'danger'
+                });
             }
         }
 
         function copyToken() {
             const token = document.getElementById('generatedToken').textContent;
             navigator.clipboard.writeText(token).then(() => {
-                alert('Token copied to clipboard!');
+                window.appAlert('Token copied to clipboard!', {
+                    title: 'Copied',
+                    icon: 'clipboard-check',
+                    iconTone: 'success'
+                });
             }).catch((err) => {
                 console.error('Failed to copy token:', err);
-                alert('Failed to copy token');
+                window.appAlert('Failed to copy token', {
+                    title: 'Copy failed',
+                    icon: 'triangle-alert',
+                    iconTone: 'danger'
+                });
             });
         }
 
@@ -838,7 +889,11 @@ if (session_status() === PHP_SESSION_NONE) {
         async function exportPendingUsers() {
             const response = await makeApiCall('admin_stats.php?type=pending');
             if (!response || !response.success || !Array.isArray(response.data)) {
-                alert('Failed to export pending users.');
+                await window.appAlert('Failed to export pending users.', {
+                    title: 'Export failed',
+                    icon: 'triangle-alert',
+                    iconTone: 'danger'
+                });
                 return;
             }
             const header = ['id', 'name', 'email', 'role', 'status', 'branch', 'graduation_year', 'created_at'];

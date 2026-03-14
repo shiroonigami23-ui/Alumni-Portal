@@ -64,7 +64,11 @@ if (session_status() === PHP_SESSION_NONE) {
         async function generateToken() {
             const res = await makeApiCall('generate_token.php', 'POST', {});
             if (!res || res.success === false) {
-                alert((res && res.message) ? res.message : 'Failed to generate token');
+                await window.appAlert((res && res.message) ? res.message : 'Failed to generate token', {
+                    title: 'Token generation failed',
+                    icon: 'triangle-alert',
+                    iconTone: 'danger'
+                });
                 return;
             }
             const token = (res.data && res.data.token) || res.token || '';

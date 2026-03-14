@@ -557,12 +557,19 @@ include 'includes/sidebar.php';
             if (btn.dataset.bound === '1') return;
             btn.dataset.bound = '1';
             btn.addEventListener('click', async () => {
-                if (!confirm('Leave your current mentor? You can request another mentor after this.')) return;
+                if (!await window.appConfirm('Leave your current mentor? You can request another mentor after this.', {
+                    title: 'Leave current mentor',
+                    confirmText: 'Leave mentor'
+                })) return;
                 const res = await makeApiCall('mentorship.php?action=leave_current', 'POST', {});
                 if (res && res.success) {
                     await refreshMentorshipViews();
                 } else {
-                    alert((res && res.message) || 'Failed to leave your current mentor.');
+                    await window.appAlert((res && res.message) || 'Failed to leave your current mentor.', {
+                        title: 'Leave failed',
+                        icon: 'triangle-alert',
+                        iconTone: 'danger'
+                    });
                 }
             });
         });
@@ -573,12 +580,19 @@ include 'includes/sidebar.php';
             btn.addEventListener('click', async () => {
                 const group_id = Number(btn.getAttribute('data-group-id') || 0);
                 if (!group_id) return;
-                if (!confirm('Leave this mentor group? If you are the admin and no eligible non-student successor exists, the group will be disbanded.')) return;
+                if (!await window.appConfirm('Leave this mentor group? If you are the admin and no eligible non-student successor exists, the group will be disbanded.', {
+                    title: 'Leave mentor group',
+                    confirmText: 'Leave group'
+                })) return;
                 const res = await makeApiCall('mentorship.php?action=leave_group', 'POST', { group_id });
                 if (res && res.success) {
                     await refreshMentorshipViews();
                 } else {
-                    alert((res && res.message) || 'Failed to leave this mentor group.');
+                    await window.appAlert((res && res.message) || 'Failed to leave this mentor group.', {
+                        title: 'Leave failed',
+                        icon: 'triangle-alert',
+                        iconTone: 'danger'
+                    });
                 }
             });
         });
@@ -591,14 +605,21 @@ include 'includes/sidebar.php';
                 const member_user_id = Number(btn.getAttribute('data-member-id') || 0);
                 const moderation_action = btn.getAttribute('data-action') || '';
                 if (!group_id || !member_user_id || !moderation_action) return;
-                if (!confirm(`Proceed with ${moderation_action} for this member?`)) return;
+                if (!await window.appConfirm(`Proceed with ${moderation_action} for this member?`, {
+                    title: 'Moderate member',
+                    confirmText: 'Continue'
+                })) return;
                 const payload = { group_id, member_user_id, moderation_action };
                 if (moderation_action === 'ban') payload.ban_days = 7;
                 const res = await makeApiCall('mentorship.php?action=moderate_member', 'POST', payload);
                 if (res && res.success) {
                     await refreshMentorshipViews();
                 } else {
-                    alert((res && res.message) || 'Failed to update member access.');
+                    await window.appAlert((res && res.message) || 'Failed to update member access.', {
+                        title: 'Member update failed',
+                        icon: 'triangle-alert',
+                        iconTone: 'danger'
+                    });
                 }
             });
         });
@@ -609,12 +630,19 @@ include 'includes/sidebar.php';
             btn.addEventListener('click', async () => {
                 const group_id = Number(btn.getAttribute('data-group-id') || 0);
                 if (!group_id) return;
-                if (!confirm('Disband this mentor group? All members will be removed and the group chat will be deleted.')) return;
+                if (!await window.appConfirm('Disband this mentor group? All members will be removed and the group chat will be deleted.', {
+                    title: 'Disband mentor group',
+                    confirmText: 'Disband'
+                })) return;
                 const res = await makeApiCall('mentorship.php?action=disband_group', 'POST', { group_id });
                 if (res && res.success) {
                     await refreshMentorshipViews();
                 } else {
-                    alert((res && res.message) || 'Failed to disband this mentor group.');
+                    await window.appAlert((res && res.message) || 'Failed to disband this mentor group.', {
+                        title: 'Disband failed',
+                        icon: 'triangle-alert',
+                        iconTone: 'danger'
+                    });
                 }
             });
         });
@@ -632,7 +660,11 @@ include 'includes/sidebar.php';
                 if (res && res.success) {
                     await refreshMentorshipViews();
                 } else {
-                    alert((res && res.message) || 'Failed to review mentor application');
+                    await window.appAlert((res && res.message) || 'Failed to review mentor application', {
+                        title: 'Review failed',
+                        icon: 'triangle-alert',
+                        iconTone: 'danger'
+                    });
                 }
             });
         });
@@ -650,7 +682,11 @@ include 'includes/sidebar.php';
                 if (res && res.success) {
                     await refreshMentorshipViews();
                 } else {
-                    alert((res && res.message) || 'Failed to update request');
+                    await window.appAlert((res && res.message) || 'Failed to update request', {
+                        title: 'Request update failed',
+                        icon: 'triangle-alert',
+                        iconTone: 'danger'
+                    });
                 }
             });
         });
@@ -673,14 +709,32 @@ include 'includes/sidebar.php';
         if (becomeBtn) {
             becomeBtn.addEventListener('click', async () => {
                 if (!['faculty', 'alumni', 'admin'].includes(currentRole) || becomeBtn.disabled) return;
-                const headline = prompt('Add a short mentor headline (optional):', '') || '';
-                const expertise = prompt('Expertise (optional):', '') || '';
+                const headline = (await window.appPrompt('Add a short mentor headline (optional):', {
+                    title: 'Mentor headline',
+                    inputLabel: 'Headline',
+                    confirmText: 'Next',
+                    defaultValue: ''
+                })) || '';
+                const expertise = (await window.appPrompt('Expertise (optional):', {
+                    title: 'Mentor expertise',
+                    inputLabel: 'Expertise',
+                    confirmText: 'Save',
+                    defaultValue: ''
+                })) || '';
                 const res = await makeApiCall('mentorship.php?action=become_mentor', 'POST', { headline, expertise });
                 if (res && res.success) {
-                    alert(res.message || 'Mentor profile updated.');
+                    await window.appAlert(res.message || 'Mentor profile updated.', {
+                        title: 'Mentor profile updated',
+                        icon: 'badge-check',
+                        iconTone: 'success'
+                    });
                     await refreshMentorshipViews();
                 } else {
-                    alert((res && res.message) || 'Unable to become mentor');
+                    await window.appAlert((res && res.message) || 'Unable to become mentor', {
+                        title: 'Mentor update failed',
+                        icon: 'triangle-alert',
+                        iconTone: 'danger'
+                    });
                 }
             });
         }
@@ -696,12 +750,20 @@ include 'includes/sidebar.php';
                 if (!mentor_id) return;
                 const res = await makeApiCall('mentorship.php?action=request', 'POST', { mentor_id, message });
                 if (res && res.success) {
-                    alert(res.message || 'Mentorship request sent.');
+                    await window.appAlert(res.message || 'Mentorship request sent.', {
+                        title: 'Request sent',
+                        icon: 'send',
+                        iconTone: 'success'
+                    });
                     form.reset();
                     modal.classList.add('hidden');
                     await refreshMentorshipViews();
                 } else {
-                    alert((res && res.message) || 'Failed to send request');
+                    await window.appAlert((res && res.message) || 'Failed to send request', {
+                        title: 'Request failed',
+                        icon: 'triangle-alert',
+                        iconTone: 'danger'
+                    });
                 }
             });
         }

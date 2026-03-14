@@ -9,6 +9,7 @@ include_once '../helpers/FileStorageHelper.php';
 include_once __DIR__ . '/_message_schema.php';
 include_once __DIR__ . '/_mentorship_schema.php';
 include_once __DIR__ . '/_moderation_schema.php';
+include_once __DIR__ . '/_message_content.php';
 
 $database = new Database();
 $db = $database->getConnection();
@@ -124,79 +125,64 @@ if (($receiver_id > 0 || $group_id > 0) && ($messageText !== '' || $attachmentUr
         }
     }
 
-    // 5. 3.5NF Storage Logic (Message Content to File)
-    $filename = FileStorageHelper::uniqueFileName('msg', (int)$sender_id, 'txt', 'chat');
-    $storage_dir = dirname(__DIR__) . DIRECTORY_SEPARATOR . "storage" . DIRECTORY_SEPARATOR . "messages" . DIRECTORY_SEPARATOR;
-    if (!file_exists($storage_dir)) { mkdir($storage_dir, 0777, true); }
-    
-    $relative_path = "storage/messages/" . $filename;
-    
-    $messagePayload = [
-        'message' => $messageText
-    ];
+    $attachment = null;
     if ($attachmentUrl !== '') {
-        $messagePayload['attachment'] = [
+        $attachment = [
             'url' => str_replace('\\', '/', $attachmentUrl),
             'type' => $attachmentType ?: null,
             'name' => $attachmentName ?: null
         ];
     }
-    $payloadJson = json_encode($messagePayload, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+    $contentPointer = store_message_payload_record($db, (int)$sender_id, $messageText, $attachment);
 
-    if ($payloadJson !== false && file_put_contents($storage_dir . $filename, $payloadJson)) {
-        
-        // 6. Insert Message into DB
-        if ($group_id > 0) {
-            $query = "INSERT INTO mentorship_group_messages (group_id, sender_user_id, content_file_path) VALUES (:gid, :sid, :path)";
-            $stmt = $db->prepare($query);
+    // 6. Insert Message into DB
+    if ($group_id > 0) {
+        $query = "INSERT INTO mentorship_group_messages (group_id, sender_user_id, content_file_path) VALUES (:gid, :sid, :path)";
+        $stmt = $db->prepare($query);
 
-            if ($stmt->execute(['gid' => $group_id, 'sid' => $sender_id, 'path' => $relative_path])) {
-                $messageId = (int)$db->lastInsertId();
-                echo json_encode([
-                    "success" => true,
-                    "message" => "Message delivered.",
-                    "data" => [
-                        "message_id" => $messageId,
-                        "conversation_id" => 'group:' . (string)$group_id
-                    ]
-                ]);
-            } else {
-                http_response_code(500);
-                echo json_encode(["success" => false, "message" => "Failed to log group message in database."]);
-            }
+        if ($stmt->execute(['gid' => $group_id, 'sid' => $sender_id, 'path' => $contentPointer])) {
+            $messageId = (int)$db->lastInsertId();
+            echo json_encode([
+                "success" => true,
+                "message" => "Message delivered.",
+                "data" => [
+                    "message_id" => $messageId,
+                    "conversation_id" => 'group:' . (string)$group_id
+                ]
+            ]);
         } else {
-            $query = "INSERT INTO messages (sender_user_id, receiver_user_id, content_file_path) VALUES (:sid, :rid, :path)";
-            $stmt = $db->prepare($query);
-
-            if($stmt->execute(['sid' => $sender_id, 'rid' => $receiver_id, 'path' => $relative_path])) {
-                $messageId = (int)$db->lastInsertId();
-                
-                // 7. Notification Trigger (Section 10.B)
-                $notif_query = "INSERT INTO notifications (user_id, notification_type, related_user_id, content) 
-                                VALUES (:target, 'new_message', :sender, :msg)";
-                $db->prepare($notif_query)->execute([
-                    'target' => $receiver_id,
-                    'sender' => $sender_id,
-                    'msg' => "You have a new message."
-                ]);
-
-                echo json_encode([
-                    "success" => true,
-                    "message" => "Message delivered.",
-                    "data" => [
-                        "message_id" => $messageId,
-                        "receiver_id" => $receiver_id,
-                        "conversation_id" => (string)$receiver_id
-                    ]
-                ]);
-            } else {
-                http_response_code(500);
-                echo json_encode(["success" => false, "message" => "Failed to log message in database."]);
-            }
+            http_response_code(500);
+            echo json_encode(["success" => false, "message" => "Failed to log group message in database."]);
         }
     } else {
-        http_response_code(500);
-        echo json_encode(["success" => false, "message" => "Failed to save message file."]);
+        $query = "INSERT INTO messages (sender_user_id, receiver_user_id, content_file_path) VALUES (:sid, :rid, :path)";
+        $stmt = $db->prepare($query);
+
+        if($stmt->execute(['sid' => $sender_id, 'rid' => $receiver_id, 'path' => $contentPointer])) {
+            $messageId = (int)$db->lastInsertId();
+            
+            // 7. Notification Trigger (Section 10.B)
+            $notif_query = "INSERT INTO notifications (user_id, notification_type, related_user_id, content) 
+                            VALUES (:target, 'new_message', :sender, :msg)";
+            $db->prepare($notif_query)->execute([
+                'target' => $receiver_id,
+                'sender' => $sender_id,
+                'msg' => "You have a new message."
+            ]);
+
+            echo json_encode([
+                "success" => true,
+                "message" => "Message delivered.",
+                "data" => [
+                    "message_id" => $messageId,
+                    "receiver_id" => $receiver_id,
+                    "conversation_id" => (string)$receiver_id
+                ]
+            ]);
+        } else {
+            http_response_code(500);
+            echo json_encode(["success" => false, "message" => "Failed to log message in database."]);
+        }
     }
 } else {
     http_response_code(400);

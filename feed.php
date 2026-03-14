@@ -849,9 +849,19 @@ include 'includes/sidebar.php';
                             });
                         } else if (navigator.clipboard && navigator.clipboard.writeText) {
                             await navigator.clipboard.writeText(url);
-                            alert(`Share link copied:\n${url}`);
+                            await window.appAlert(`Share link copied:\n${url}`, {
+                                title: 'Share link copied',
+                                icon: 'link',
+                                iconTone: 'success'
+                            });
                         } else {
-                            window.prompt('Copy this share link:', url);
+                            await window.appPrompt('Copy this share link:', {
+                                title: 'Copy share link',
+                                inputLabel: 'Share link',
+                                confirmText: 'Done',
+                                defaultValue: url,
+                                inputReadonly: true
+                            });
                         }
                         shareBtn.classList.add('text-green-600');
                         const shareCountEl = shareBtn.querySelector('.share-count');
@@ -865,7 +875,11 @@ include 'includes/sidebar.php';
                         }
                     } catch (e) {
                         console.error('Share failed', e);
-                        alert(e?.message || 'Unable to share this post right now.');
+                        await window.appAlert(e?.message || 'Unable to share this post right now.', {
+                            title: 'Share failed',
+                            icon: 'triangle-alert',
+                            iconTone: 'danger'
+                        });
                     }
                 });
             }
@@ -1046,10 +1060,19 @@ include 'includes/sidebar.php';
             const contentEl = postElement.querySelector('.mb-4 p');
             if (!contentEl) return;
             const currentContent = contentEl.textContent || '';
-            const edited = prompt('Edit your post:', currentContent);
+            const edited = await window.appPrompt('Edit your post:', {
+                title: 'Edit post',
+                inputLabel: 'Post content',
+                confirmText: 'Save changes',
+                defaultValue: currentContent
+            });
             if (edited === null) return;
             if (!edited.trim()) {
-                alert('Post content cannot be empty.');
+                await window.appAlert('Post content cannot be empty.', {
+                    title: 'Empty post',
+                    icon: 'triangle-alert',
+                    iconTone: 'danger'
+                });
                 return;
             }
 
@@ -1060,17 +1083,28 @@ include 'includes/sidebar.php';
             if (response && (response.success || response.status === 'success')) {
                 contentEl.textContent = edited.trim();
             } else {
-                alert(response?.message || 'Failed to edit post.');
+                await window.appAlert(response?.message || 'Failed to edit post.', {
+                    title: 'Edit failed',
+                    icon: 'triangle-alert',
+                    iconTone: 'danger'
+                });
             }
         }
 
         async function handleDeletePost(postElement, postId) {
-            if (!confirm('Delete this post?')) return;
+            if (!await window.appConfirm('Delete this post?', {
+                title: 'Delete post',
+                confirmText: 'Delete'
+            })) return;
             const response = await makeApiCall('delete_post.php', 'POST', { post_id: postId });
             if (response && (response.success || response.status === 'success')) {
                 postElement.remove();
             } else {
-                alert(response?.message || 'Failed to delete post.');
+                await window.appAlert(response?.message || 'Failed to delete post.', {
+                    title: 'Delete failed',
+                    icon: 'triangle-alert',
+                    iconTone: 'danger'
+                });
             }
         }
         
@@ -1441,7 +1475,10 @@ include 'includes/sidebar.php';
         }
 
         async function handleDeleteComment(postId, commentId, commentBox) {
-            if (!confirm('Delete this comment?')) return;
+            if (!await window.appConfirm('Delete this comment?', {
+                title: 'Delete comment',
+                confirmText: 'Delete'
+            })) return;
             const res = await makeApiCall('delete_comment.php', 'POST', { comment_id: commentId });
             if (res && (res.success || res.status === 'success')) {
                 await loadComments(postId, commentBox.querySelector('.comments-list'), commentBox, true);
@@ -1450,40 +1487,74 @@ include 'includes/sidebar.php';
                 const latest = commentRenderState.get(postId)?.comments?.length || 0;
                 commentCount.textContent = latest;
             } else {
-                alert(res?.message || 'Failed to delete comment.');
+                await window.appAlert(res?.message || 'Failed to delete comment.', {
+                    title: 'Delete failed',
+                    icon: 'triangle-alert',
+                    iconTone: 'danger'
+                });
             }
         }
 
         async function handleEditComment(postId, commentId, content, commentBox) {
             if (!content) {
-                alert('Comment cannot be empty.');
+                await window.appAlert('Comment cannot be empty.', {
+                    title: 'Empty comment',
+                    icon: 'triangle-alert',
+                    iconTone: 'danger'
+                });
                 return;
             }
             const res = await makeApiCall('edit_comment.php', 'POST', { comment_id: commentId, content });
             if (res && (res.success || res.status === 'success')) {
                 await loadComments(postId, commentBox.querySelector('.comments-list'), commentBox, true);
             } else {
-                alert(res?.message || 'Failed to edit comment.');
+                await window.appAlert(res?.message || 'Failed to edit comment.', {
+                    title: 'Edit failed',
+                    icon: 'triangle-alert',
+                    iconTone: 'danger'
+                });
             }
         }
 
         async function handleReportPost(postId) {
-            if (!confirm('Report this post?')) return;
+            if (!await window.appConfirm('Report this post?', {
+                title: 'Report post',
+                confirmText: 'Report'
+            })) return;
             const res = await makeApiCall('report_content.php', 'POST', { post_id: postId, reason: 'spam' });
             if (res && (res.success || res.status === 'success' || res.message)) {
-                alert(res.message || 'Post reported.');
+                await window.appAlert(res.message || 'Post reported.', {
+                    title: 'Post reported',
+                    icon: 'shield-alert',
+                    iconTone: 'success'
+                });
             } else {
-                alert(res?.message || 'Failed to report post.');
+                await window.appAlert(res?.message || 'Failed to report post.', {
+                    title: 'Report failed',
+                    icon: 'triangle-alert',
+                    iconTone: 'danger'
+                });
             }
         }
 
         async function handleReportComment(commentId) {
-            if (!confirm('Report this comment/reply?')) return;
+            if (!await window.appConfirm('Report this comment/reply?', {
+                title: 'Report comment',
+                confirmText: 'Report'
+            })) return;
             const res = await makeApiCall('report_content.php', 'POST', { comment_id: commentId, reason: 'spam' });
             if (res && (res.success || res.status === 'success' || res.message)) {
-                alert(res.message || 'Comment reported.');
+                await window.appAlert(res.message || 'Comment reported.', {
+                    title: 'Comment reported',
+                    icon: 'shield-alert',
+                    iconTone: 'success'
+                });
             } else {
-                alert(res?.message || 'Failed to report comment.');
+                await window.appAlert(res?.message || 'Failed to report comment.', {
+                    title: 'Report failed',
+                    icon: 'triangle-alert',
+                    iconTone: 'danger'
+                });
             }
         }
 
@@ -1768,7 +1839,11 @@ include 'includes/sidebar.php';
             const gifUrl = document.getElementById('postGifUrl').value.trim();
             
             if (!content && !gifUrl && document.getElementById('postImages').files.length === 0 && document.getElementById('postFiles').files.length === 0) {
-                alert('Please add content or media for your post');
+                await window.appAlert('Please add content or media for your post', {
+                    title: 'Post content required',
+                    icon: 'triangle-alert',
+                    iconTone: 'danger'
+                });
                 return;
             }
             
@@ -1804,11 +1879,19 @@ include 'includes/sidebar.php';
                     clearPostForm('Post published. Draft cleared.');
                     await prependNewlyCreatedPost(response.post_id);
                 } else {
-                    alert(response.message || 'Failed to create post');
+                    await window.appAlert(response.message || 'Failed to create post', {
+                        title: 'Post publish failed',
+                        icon: 'triangle-alert',
+                        iconTone: 'danger'
+                    });
                 }
             } catch (error) {
                 console.error('Error creating post:', error);
-                alert(error.message || 'Error creating post');
+                await window.appAlert(error.message || 'Error creating post', {
+                    title: 'Post publish failed',
+                    icon: 'triangle-alert',
+                    iconTone: 'danger'
+                });
             } finally {
                 setPostComposerUploading(false);
                 isCreatingFeedPost = false;

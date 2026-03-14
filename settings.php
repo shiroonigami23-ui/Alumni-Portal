@@ -381,9 +381,17 @@ include 'includes/header.php';
                     userData.profile_picture = avatarUrl;
                     userData.profile_picture_url = avatarUrl;
                     localStorage.setItem('user_data', JSON.stringify(userData));
-                    alert('Profile photo updated.');
+                    await window.appAlert('Profile photo updated.', {
+                        title: 'Profile updated',
+                        icon: 'image-up',
+                        iconTone: 'success'
+                    });
                 } catch (e) {
-                    alert(e.message || 'Failed to update photo');
+                    await window.appAlert(e.message || 'Failed to update photo', {
+                        title: 'Photo update failed',
+                        icon: 'triangle-alert',
+                        iconTone: 'danger'
+                    });
                 } finally {
                     avatarInput.value = '';
                 }
@@ -401,9 +409,17 @@ include 'includes/header.php';
                     userData.profile_picture = '';
                     userData.profile_picture_url = '';
                     localStorage.setItem('user_data', JSON.stringify(userData));
-                    alert('Profile photo removed.');
+                    await window.appAlert('Profile photo removed.', {
+                        title: 'Profile updated',
+                        icon: 'image-minus',
+                        iconTone: 'success'
+                    });
                 } catch (err) {
-                    alert('Failed to remove profile photo.');
+                    await window.appAlert('Failed to remove profile photo.', {
+                        title: 'Photo removal failed',
+                        icon: 'triangle-alert',
+                        iconTone: 'danger'
+                    });
                 }
             });
         }
@@ -446,9 +462,17 @@ include 'includes/header.php';
                     userData.name = full_name;
                     localStorage.setItem('user_data', JSON.stringify(userData));
                     document.getElementById('settingsSidebarName').textContent = full_name || userData.email || 'Member';
-                    alert('Profile settings updated successfully.');
+                    await window.appAlert('Profile settings updated successfully.', {
+                        title: 'Settings saved',
+                        icon: 'circle-check',
+                        iconTone: 'success'
+                    });
                 } catch (err) {
-                    alert(err.message || 'Error saving settings');
+                    await window.appAlert(err.message || 'Error saving settings', {
+                        title: 'Save failed',
+                        icon: 'triangle-alert',
+                        iconTone: 'danger'
+                    });
                 } finally {
                     btn.disabled = false;
                     btn.textContent = original;
@@ -467,15 +491,27 @@ include 'includes/header.php';
                 const original = btn.textContent;
 
                 if (!currentPassword || !newPassword || !confirmPassword) {
-                    alert('Please fill all password fields.');
+                    await window.appAlert('Please fill all password fields.', {
+                        title: 'Missing details',
+                        icon: 'triangle-alert',
+                        iconTone: 'danger'
+                    });
                     return;
                 }
                 if (newPassword !== confirmPassword) {
-                    alert('New password and confirm password do not match.');
+                    await window.appAlert('New password and confirm password do not match.', {
+                        title: 'Password mismatch',
+                        icon: 'triangle-alert',
+                        iconTone: 'danger'
+                    });
                     return;
                 }
                 if (newPassword.length < 8) {
-                    alert('New password must be at least 8 characters.');
+                    await window.appAlert('New password must be at least 8 characters.', {
+                        title: 'Password too short',
+                        icon: 'triangle-alert',
+                        iconTone: 'danger'
+                    });
                     return;
                 }
 
@@ -489,10 +525,18 @@ include 'includes/header.php';
                     if (!res || !(res.success || res.status === 'success')) {
                         throw new Error((res && res.message) || 'Failed to change password');
                     }
-                    alert('Password updated successfully.');
+                    await window.appAlert('Password updated successfully.', {
+                        title: 'Password updated',
+                        icon: 'shield-check',
+                        iconTone: 'success'
+                    });
                     passwordForm.reset();
                 } catch (err) {
-                    alert(err.message || 'Failed to change password');
+                    await window.appAlert(err.message || 'Failed to change password', {
+                        title: 'Password update failed',
+                        icon: 'triangle-alert',
+                        iconTone: 'danger'
+                    });
                 } finally {
                     btn.disabled = false;
                     btn.textContent = original;
@@ -628,16 +672,28 @@ include 'includes/header.php';
                 const user = JSON.parse(localStorage.getItem('user_data') || '{}');
                 const role = String(user.role || window.settingsCurrentUserRole || '').toLowerCase();
                 if (role === 'student') {
-                    alert('Students are always public on this portal.');
+                    await window.appAlert('Students are always public on this portal.', {
+                        title: 'Privacy locked',
+                        icon: 'info',
+                        iconTone: 'info'
+                    });
                     setPrivacyToggleState(false);
                     return;
                 }
                 const isPrivate = (document.getElementById('settingsTogglePrivacy')?.dataset.private === '1');
                 const res = await makeApiCall('update_privacy.php', 'POST', { is_private: isPrivate ? 1 : 0 });
                 if (res && (res.success || res.status === 'success' || res.message)) {
-                    alert(`Privacy settings saved: ${isPrivate ? 'Private' : 'Public'}.`);
+                    await window.appAlert(`Privacy settings saved: ${isPrivate ? 'Private' : 'Public'}.`, {
+                        title: 'Privacy updated',
+                        icon: 'shield-check',
+                        iconTone: 'success'
+                    });
                 } else {
-                    alert((res && res.message) || 'Failed to save privacy settings.');
+                    await window.appAlert((res && res.message) || 'Failed to save privacy settings.', {
+                        title: 'Privacy update failed',
+                        icon: 'triangle-alert',
+                        iconTone: 'danger'
+                    });
                 }
             });
         }
