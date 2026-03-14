@@ -158,7 +158,7 @@ include 'includes/sidebar.php';
                 <!-- Comment Input -->
                 <div class="flex items-start mb-6">
                     <div class="flex-shrink-0">
-                        <img class="h-8 w-8 rounded-full" src="" alt="">
+                        <img class="h-8 w-8 rounded-full object-cover" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='32' height='32' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' fill='%23dbeafe'/%3E%3Ctext x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' font-family='Arial' font-size='11' fill='%233b82f6'%3EU%3C/text%3E%3C/svg%3E" alt="You">
                     </div>
                     <div class="ml-3 flex-1">
                         <textarea class="comment-input w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none" 
@@ -188,6 +188,11 @@ include 'includes/sidebar.php';
     <script>
         // Initialize Lucide icons
         lucide.createIcons();
+        
+        function getDefaultAvatarDataUri(label = 'U', bg = 'dbeafe', fg = '3b82f6', size = 48) {
+            const safeLabel = encodeURIComponent(String(label || 'U').trim().slice(0, 1).toUpperCase() || 'U');
+            return `data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='${size}' height='${size}' viewBox='0 0 ${size} ${size}'%3E%3Crect width='${size}' height='${size}' fill='%23${bg}'/%3E%3Ctext x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' font-family='Arial' font-size='${Math.round(size * 0.32)}' fill='%23${fg}'%3E${safeLabel}%3C/text%3E%3C/svg%3E`;
+        }
         
         // Global variables
         let currentPage = 1;
@@ -243,7 +248,12 @@ include 'includes/sidebar.php';
                     document.getElementById('userFeedName').textContent = user.full_name || user.name || user.email || 'Share your thoughts';
                     
                     if (user.profile_picture || user.profile_picture_url || user.profile_pic) {
-                        document.getElementById('userFeedAvatar').src = user.profile_picture || user.profile_picture_url || user.profile_pic;
+                        const avatarEl = document.getElementById('userFeedAvatar');
+                        avatarEl.src = user.profile_picture || user.profile_picture_url || user.profile_pic;
+                        avatarEl.onerror = function() {
+                            this.onerror = null;
+                            this.src = getDefaultAvatarDataUri(user.full_name || user.name || user.email || 'U');
+                        };
                     }
                     
                     // Show create post section if user can post
@@ -262,7 +272,12 @@ include 'includes/sidebar.php';
                     currentUserRole = String(user.role || '').toLowerCase();
                     document.getElementById('userFeedName').textContent = user.full_name || user.name || user.email || 'Share your thoughts';
                     if (user.profile_picture || user.profile_picture_url || user.profile_pic) {
-                        document.getElementById('userFeedAvatar').src = user.profile_picture || user.profile_picture_url || user.profile_pic;
+                        const avatarEl = document.getElementById('userFeedAvatar');
+                        avatarEl.src = user.profile_picture || user.profile_picture_url || user.profile_pic;
+                        avatarEl.onerror = function() {
+                            this.onerror = null;
+                            this.src = getDefaultAvatarDataUri(user.full_name || user.name || user.email || 'U');
+                        };
                     }
                     const canPost = (user.role === 'admin' || user.role === 'faculty' || user.role === 'alumni' || !!user.can_post);
                     if (canPost) {
@@ -430,7 +445,7 @@ include 'includes/sidebar.php';
                             <div class="grid grid-cols-2 md:grid-cols-3 gap-2">
                                 ${post.attachments.map(attachment => `
                                     ${(attachment.type === 'image' || attachment.type === 'gif') ? 
-                                        `<img src="${attachment.url}" alt="Attachment" class="w-full h-32 object-cover rounded-lg cursor-pointer hover:opacity-90" onclick="viewImage('${attachment.url}')">` : 
+                                        `<img src="${attachment.url}" alt="Attachment" class="w-full h-32 object-cover rounded-lg cursor-pointer hover:opacity-90" onerror="this.style.display='none'" onclick="viewImage('${attachment.url}')">` : 
                                         `<a href="${attachment.url}" target="_blank" class="flex items-center p-3 border border-gray-200 rounded-lg hover:bg-gray-50">
                                             <i data-lucide="file" class="h-5 w-5 text-gray-400 mr-3"></i>
                                             <span class="text-sm text-gray-700 truncate">${attachment.name}</span>
@@ -482,9 +497,11 @@ include 'includes/sidebar.php';
         function setupPostEventListeners(postElement, post) {
             // Like button
             const likeBtn = postElement.querySelector('.like-btn');
-            likeBtn.addEventListener('click', async () => {
-                await handleLike(post.id, likeBtn, postElement.querySelector('.like-count'));
-            });
+            if (likeBtn) {
+                likeBtn.addEventListener('click', async () => {
+                    await handleLike(post.id, likeBtn, postElement.querySelector('.like-count'));
+                });
+            }
 
             const repostBtn = postElement.querySelector('.repost-btn');
             if (repostBtn) {
@@ -505,14 +522,18 @@ include 'includes/sidebar.php';
             const menuBtn = postElement.querySelector('.post-menu-btn');
             const menu = postElement.querySelector('.post-menu');
             
-            menuBtn.addEventListener('click', (e) => {
-                e.stopPropagation();
-                menu.classList.toggle('hidden');
-            });
+            if (menuBtn && menu) {
+                menuBtn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    menu.classList.toggle('hidden');
+                });
+            }
             
             // Close menu when clicking outside
             document.addEventListener('click', () => {
-                menu.classList.add('hidden');
+                if (menu) {
+                    menu.classList.add('hidden');
+                }
             });
             
             // Pin/unpin post
@@ -556,20 +577,31 @@ include 'includes/sidebar.php';
                             throw new Error(shareRes?.message || 'Unable to create share link');
                         }
                         const url = new URL(String(shareRes.share_path || ''), window.location.href).toString();
-                        if (navigator.clipboard && navigator.clipboard.writeText) {
+                        if (navigator.share) {
+                            await navigator.share({
+                                title: `${post.author_name || 'RJIT Alumni Portal'} shared a post`,
+                                text: post.content || 'Check out this post on RJIT Alumni Portal',
+                                url
+                            });
+                        } else if (navigator.clipboard && navigator.clipboard.writeText) {
                             await navigator.clipboard.writeText(url);
+                            alert(`Share link copied:\n${url}`);
+                        } else {
+                            window.prompt('Copy this share link:', url);
                         }
                         shareBtn.classList.add('text-green-600');
                         const shareCountEl = shareBtn.querySelector('.share-count');
                         if (shareCountEl) {
-                            const current = Number(shareCountEl.textContent || 0);
+                            const nextCount = Number(shareRes.shares_count ?? (Number(shareCountEl.textContent || 0) + 1));
+                            shareCountEl.textContent = String(nextCount);
                             postStateCache.set(Number(post.id), {
                                 ...(postStateCache.get(Number(post.id)) || {}),
-                                shares_count: Number.isFinite(current) ? current : 0
+                                shares_count: nextCount
                             });
                         }
                     } catch (e) {
                         console.error('Share failed', e);
+                        alert(e?.message || 'Unable to share this post right now.');
                     }
                 });
             }
@@ -676,22 +708,23 @@ include 'includes/sidebar.php';
                     const liked = typeof response.liked === 'boolean'
                         ? response.liked
                         : !likeBtn.classList.contains('text-red-600');
+                    const likeIcon = likeBtn ? likeBtn.querySelector('svg, i') : null;
 
                     if (liked) {
                         likeBtn.classList.add('text-red-600');
-                        likeBtn.querySelector('i').classList.add('fill-current');
+                        if (likeIcon) likeIcon.classList.add('fill-current');
                     } else {
                         likeBtn.classList.remove('text-red-600');
-                        likeBtn.querySelector('i').classList.remove('fill-current');
+                        if (likeIcon) likeIcon.classList.remove('fill-current');
                     }
 
-                    if (typeof response.likes_count !== 'undefined') {
+                    if (typeof response.likes_count !== 'undefined' && likeCountElement) {
                         likeCountElement.textContent = response.likes_count;
                     }
                     postStateCache.set(Number(postId), {
                         ...(postStateCache.get(Number(postId)) || {}),
                         user_has_liked: liked,
-                        likes_count: Number(response.likes_count || likeCountElement.textContent || 0)
+                        likes_count: Number(response.likes_count || likeCountElement?.textContent || 0)
                     });
                 }
             } catch (error) {
@@ -962,7 +995,7 @@ include 'includes/sidebar.php';
             wrapper.innerHTML = `
                 <div class="flex-shrink-0">
                     ${comment.author_avatar ?
-                        `<img src="${comment.author_avatar}" alt="${comment.author_name}" class="h-8 w-8 rounded-full cursor-pointer" onclick="goToProfile(${Number(comment.author_id || 0)})">` :
+                        `<img src="${comment.author_avatar}" alt="${comment.author_name}" class="h-8 w-8 rounded-full object-cover cursor-pointer" onerror="this.onerror=null;this.src='${getDefaultAvatarDataUri(comment.author_name || 'U', 'f1f5f9', '475569', 32)}'" onclick="goToProfile(${Number(comment.author_id || 0)})">` :
                         `<div class="h-8 w-8 bg-gray-100 rounded-full flex items-center justify-center">
                             <i data-lucide="user" class="h-4 w-4 text-gray-400"></i>
                         </div>`}
@@ -985,13 +1018,13 @@ include 'includes/sidebar.php';
                             <div class="mt-2 flex flex-wrap gap-2">
                                 ${comment.attachments.map(a => {
                                     if (a.type === 'image' || a.type === 'gif') {
-                                        return `<img src="${a.url}" alt="${a.name || 'attachment'}" class="h-20 w-20 object-cover rounded border border-gray-200 cursor-pointer" onclick="viewImage('${a.url}')">`;
+                                        return `<img src="${a.url}" alt="${a.name || 'attachment'}" class="h-20 w-20 object-cover rounded border border-gray-200 cursor-pointer" onerror="this.style.display='none'" onclick="viewImage('${a.url}')">`;
                                     }
                                     return `<a href="${a.url}" target="_blank" class="text-xs text-blue-600 underline">${a.name || 'Attachment'}</a>`;
                                 }).join('')}
                             </div>
                         ` : ''}
-                        <div class="mt-2 flex items-center gap-3">
+                        <div class="mt-2 flex flex-wrap items-center gap-3">
                             <button type="button" class="comment-like-btn text-xs ${comment.user_has_liked ? 'text-red-600' : 'text-gray-600'} hover:text-red-600">
                                 ${comment.user_has_liked ? 'Unlike' : 'Like'} <span class="comment-like-count">${comment.likes_count || 0}</span>
                             </button>
@@ -1000,15 +1033,15 @@ include 'includes/sidebar.php';
                             ${comment.can_delete ? '<button type="button" class="comment-delete-btn text-xs text-red-600 hover:text-red-700">Delete</button>' : ''}
                             <button type="button" class="comment-report-btn text-xs text-amber-700 hover:text-amber-800">Report</button>
                         </div>
-                        <div class="reply-composer hidden mt-2">
+                        <div class="reply-composer hidden mt-3 rounded-lg border border-gray-200 bg-gray-50 p-3">
                             <textarea class="reply-input w-full px-2 py-1 border border-gray-300 rounded text-sm resize-none" rows="2" placeholder="Write a reply..."></textarea>
-                            <div class="mt-2 flex items-center gap-2">
+                            <div class="mt-2 flex flex-wrap items-center gap-2">
                                 <input type="file" class="reply-image hidden" accept="image/*">
                                 <input type="file" class="reply-file hidden">
                                 <button type="button" class="reply-add-image p-1 rounded-full hover:bg-blue-50 text-blue-600" title="Add image"><i data-lucide="image" class="h-4 w-4"></i></button>
                                 <button type="button" class="reply-add-file p-1 rounded-full hover:bg-blue-50 text-blue-600" title="Add file"><i data-lucide="paperclip" class="h-4 w-4"></i></button>
-                                <input type="url" class="reply-gif-url flex-1 px-2 py-1 border border-gray-300 rounded text-xs" placeholder="GIF URL (optional)">
-                                <button type="button" class="post-reply-btn bg-blue-600 text-white px-3 py-1 rounded text-xs hover:bg-blue-700">Reply</button>
+                                <input type="url" class="reply-gif-url min-w-[180px] flex-1 px-2 py-1 border border-gray-300 rounded text-xs" placeholder="GIF URL (optional)">
+                                <button type="button" class="post-reply-btn bg-blue-600 text-white px-3 py-1 rounded text-xs hover:bg-blue-700">Post Reply</button>
                             </div>
                         </div>
                     </div>
