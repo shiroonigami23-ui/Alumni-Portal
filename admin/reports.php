@@ -176,7 +176,7 @@ if (session_status() === PHP_SESSION_NONE) {
 
         function fmt(v) {
             if (!v) return '-';
-            return new Date(v).toLocaleString();
+            return window.portalTime ? window.portalTime.format(v, 'date-time') : window.formatDate(v, 'date-time');
         }
         function statusClass(status) {
             if (status === 'resolved' || status === 'closed') return 'bg-green-100 text-green-800';

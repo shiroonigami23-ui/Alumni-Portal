@@ -91,7 +91,7 @@ if (session_status() === PHP_SESSION_NONE) {
                     <div class="mt-1 text-xs text-gray-500">
                         <span>${t.is_active ? 'Active' : 'Used'}</span>
                         <span class="mx-1">•</span>
-                        <span>${new Date(t.created_at).toLocaleString()}</span>
+                        <span>${window.portalTime ? window.portalTime.format(t.created_at, 'date-time') : window.formatDate(t.created_at, 'date-time')}</span>
                         ${t.email ? `<span class="mx-1">•</span><span>${escapeHtml(t.email)}</span>` : ''}
                     </div>
                 </div>

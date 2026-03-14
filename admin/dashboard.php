@@ -847,23 +847,12 @@ if (session_status() === PHP_SESSION_NONE) {
         }
 
         function formatDate(dateString, format = 'relative') {
-            const date = new Date(dateString);
-            if (Number.isNaN(date.getTime())) return '-';
-            if (format === 'relative') {
-                const now = new Date();
-                const diffMs = now - date;
-                const diffMins = Math.floor(diffMs / 60000);
-                const diffHours = Math.floor(diffMs / 3600000);
-                const diffDays = Math.floor(diffMs / 86400000);
-                if (diffMins < 60) return `${diffMins}m ago`;
-                if (diffHours < 24) return `${diffHours}h ago`;
-                if (diffDays < 7) return `${diffDays}d ago`;
-                return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+            if (!window.portalTime || typeof window.portalTime.format !== 'function') {
+                return window.formatDate ? window.formatDate(dateString, format) : '-';
             }
-            if (format === 'HH:mm:ss') {
-                return date.toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' });
-            }
-            return date.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+            if (format === 'relative') return window.portalTime.format(dateString, 'relative');
+            if (format === 'HH:mm:ss') return window.portalTime.format(dateString, 'HH:mm:ss');
+            return window.portalTime.format(dateString, 'date-time');
         }
 
         function refreshLogs() {

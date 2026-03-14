@@ -449,7 +449,7 @@ include 'includes/sidebar.php';
                         <div class="border border-gray-200 rounded-lg p-4">
                             <p class="font-semibold text-gray-900">${currentActiveMatch.mentor_name || 'Current mentor'}</p>
                             <p class="text-sm text-gray-600 capitalize mt-1">${currentActiveMatch.mentor_role || ''}</p>
-                            <p class="text-xs text-gray-500 mt-2">Joined ${new Date(currentActiveMatch.joined_at).toLocaleDateString()}</p>
+                            <p class="text-xs text-gray-500 mt-2">Joined ${window.portalTime ? window.portalTime.format(currentActiveMatch.joined_at, 'date') : window.formatDate(currentActiveMatch.joined_at, 'date')}</p>
                             <div class="mt-3 flex flex-wrap gap-2">
                                 ${currentActiveMatch.group_id ? `<a href="messages.php?group_id=${currentActiveMatch.group_id}" class="text-xs px-3 py-1.5 bg-blue-600 text-white rounded">Open mentor group</a>` : ''}
                                 <button class="leave-current-mentor-btn text-xs px-3 py-1.5 border border-red-300 text-red-600 rounded">Leave current mentor</button>
@@ -480,7 +480,7 @@ include 'includes/sidebar.php';
                     <div class="border border-gray-200 rounded-lg p-4">
                         <p class="font-semibold text-gray-900">${match.mentor_name || 'Current mentor'}</p>
                         <p class="text-sm text-gray-600 capitalize mt-1">${match.mentor_role || ''}</p>
-                        <p class="text-xs text-gray-500 mt-2">Joined ${new Date(match.joined_at).toLocaleDateString()}</p>
+                        <p class="text-xs text-gray-500 mt-2">Joined ${window.portalTime ? window.portalTime.format(match.joined_at, 'date') : window.formatDate(match.joined_at, 'date')}</p>
                         <div class="mt-3 flex flex-wrap gap-2">
                             ${match.group_id ? `<a href="messages.php?group_id=${match.group_id}" class="text-xs px-3 py-1.5 bg-blue-600 text-white rounded">Open mentor group</a>` : ''}
                             <button class="leave-current-mentor-btn text-xs px-3 py-1.5 border border-red-300 text-red-600 rounded">Leave current mentor</button>
@@ -519,8 +519,8 @@ include 'includes/sidebar.php';
                                 <div>
                                     <p class="font-semibold text-gray-900">${row.mentee_name || 'Member'}</p>
                                     <p class="text-sm text-gray-600 capitalize">${row.mentee_role || ''}</p>
-                                    <p class="text-xs text-gray-500 mt-1">Joined ${new Date(row.joined_at).toLocaleDateString()}</p>
-                                    ${Number(row.is_banned) ? `<p class="text-xs text-red-600 mt-1">${Number(row.is_permanent) ? 'Permanently removed from this group.' : `Muted until ${new Date(row.banned_until).toLocaleString()}`}</p>` : ''}
+                                    <p class="text-xs text-gray-500 mt-1">Joined ${window.portalTime ? window.portalTime.format(row.joined_at, 'date') : window.formatDate(row.joined_at, 'date')}</p>
+                                    ${Number(row.is_banned) ? `<p class="text-xs text-red-600 mt-1">${Number(row.is_permanent) ? 'Permanently removed from this group.' : `Muted until ${window.portalTime ? window.portalTime.format(row.banned_until, 'date-time') : window.formatDate(row.banned_until, 'date-time')}`}</p>` : ''}
                                 </div>
                                 <div class="flex flex-wrap justify-end gap-2">
                                     ${Number(row.is_banned)

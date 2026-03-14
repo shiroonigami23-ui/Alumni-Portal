@@ -218,15 +218,98 @@
         }
     }
 
-    function formatDate(dateString) {
-        const date = new Date(dateString);
-        return date.toLocaleDateString('en-US', {
-            year: 'numeric',
-            month: 'short',
-            day: 'numeric',
-            hour: '2-digit',
-            minute: '2-digit'
+    const PORTAL_TIME_ZONE = 'Asia/Kolkata';
+    const PORTAL_TIME_LOCALE = 'en-IN';
+
+    function parsePortalDate(dateInput) {
+        if (!dateInput) return null;
+        if (dateInput instanceof Date) {
+            return Number.isNaN(dateInput.getTime()) ? null : new Date(dateInput.getTime());
+        }
+        if (typeof dateInput === 'number') {
+            const numericDate = new Date(dateInput);
+            return Number.isNaN(numericDate.getTime()) ? null : numericDate;
+        }
+        let normalized = String(dateInput).trim();
+        if (!normalized) return null;
+        normalized = normalized.replace(' ', 'T');
+        if (/^\d{4}-\d{2}-\d{2}$/.test(normalized)) {
+            normalized += 'T00:00:00Z';
+        } else if (/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(:\d{2}(\.\d{1,6})?)?$/.test(normalized)) {
+            normalized += 'Z';
+        }
+        const parsed = new Date(normalized);
+        return Number.isNaN(parsed.getTime()) ? null : parsed;
+    }
+
+    function formatPortalParts(dateInput, options) {
+        const parsed = parsePortalDate(dateInput);
+        if (!parsed) return '';
+        return parsed.toLocaleString(PORTAL_TIME_LOCALE, {
+            timeZone: PORTAL_TIME_ZONE,
+            ...options
         });
+    }
+
+    function formatRelativePortalDate(dateInput) {
+        const parsed = parsePortalDate(dateInput);
+        if (!parsed) return '';
+        const diffMs = Date.now() - parsed.getTime();
+        const safeDiff = Number.isFinite(diffMs) ? Math.max(0, diffMs) : 0;
+        const diffMins = Math.floor(safeDiff / 60000);
+        const diffHours = Math.floor(safeDiff / 3600000);
+        const diffDays = Math.floor(safeDiff / 86400000);
+
+        if (diffMins < 1) return 'just now';
+        if (diffMins < 60) return `${diffMins}m ago`;
+        if (diffHours < 24) return `${diffHours}h ago`;
+        if (diffDays < 7) return `${diffDays}d ago`;
+        return formatPortalParts(parsed, { month: 'short', day: 'numeric' });
+    }
+
+    function formatDate(dateInput, format = 'relative') {
+        if (format && typeof format === 'object') {
+            return formatPortalParts(dateInput, format);
+        }
+        switch (format) {
+            case 'relative':
+                return formatRelativePortalDate(dateInput);
+            case 'MMMM YYYY':
+                return formatPortalParts(dateInput, { month: 'long', year: 'numeric' });
+            case 'short-date':
+                return formatPortalParts(dateInput, { month: 'short', day: 'numeric' });
+            case 'date':
+                return formatPortalParts(dateInput, { year: 'numeric', month: 'short', day: 'numeric' });
+            case 'date-time':
+                return formatPortalParts(dateInput, {
+                    year: 'numeric',
+                    month: 'short',
+                    day: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit'
+                });
+            case 'time':
+                return formatPortalParts(dateInput, {
+                    hour: '2-digit',
+                    minute: '2-digit',
+                    hour12: true
+                });
+            case 'HH:mm:ss':
+                return formatPortalParts(dateInput, {
+                    hour: '2-digit',
+                    minute: '2-digit',
+                    second: '2-digit',
+                    hour12: false
+                });
+            default:
+                return formatPortalParts(dateInput, {
+                    year: 'numeric',
+                    month: 'short',
+                    day: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit'
+                });
+        }
     }
 
     function getUserRole() {
@@ -251,6 +334,18 @@
     window.makeApiCall = makeApiCall;
     window.fetchTextContent = fetchTextContent;
     window.formatDate = formatDate;
+    window.parsePortalDate = parsePortalDate;
+    window.portalTime = {
+        timeZone: PORTAL_TIME_ZONE,
+        locale: PORTAL_TIME_LOCALE,
+        parse: parsePortalDate,
+        format: formatDate,
+        formatRelative: formatRelativePortalDate,
+        formatDate: (dateInput) => formatDate(dateInput, 'date'),
+        formatShortDate: (dateInput) => formatDate(dateInput, 'short-date'),
+        formatDateTime: (dateInput) => formatDate(dateInput, 'date-time'),
+        formatTime: (dateInput) => formatDate(dateInput, 'time')
+    };
     window.getUserRole = getUserRole;
     window.logout = logout;
 })();

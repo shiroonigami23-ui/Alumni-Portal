@@ -201,6 +201,10 @@ When verifying a fresh deploy, append `?refresh=<commit>` to bypass stale browse
   - browser `alert` / `confirm` / `prompt` dialogs are being replaced with the shared in-app portal dialog layer:
     - Messages uses custom dialogs for edit/delete/disband/call flows
     - mentorship, feed, profile, settings, dashboard, discovery, jobs, events, and admin moderation pages now use the same app-styled modal system instead of native browser popups
+  - portal timestamp rendering is now being standardized to Indian Standard Time (`Asia/Kolkata`) in the shared frontend date parser/formatter:
+    - raw DB timestamps without offsets are treated as UTC-source server values before display
+    - relative labels such as `m ago` / `h ago` and exact date-time labels now resolve through one shared IST formatter
+    - messages, feed/profile posts and replies, mentorship membership timestamps, notifications, and admin time tables should no longer drift between pages
   - forgot-password is now a real email-reset flow:
     - new `forgot-password.php` and `reset.php` pages exist
     - reset tokens are issued securely, expire after 30 minutes, and are invalidated after use
@@ -252,6 +256,7 @@ When verifying a fresh deploy, append `?refresh=<commit>` to bypass stale browse
 - The theme toggle should remain visible in the shared mobile header, not just on Discovery
 - Custom in-app dialogs should appear across the portal instead of native browser `alert` / `confirm` / `prompt` popups
 - New and edited messages should survive AWS task changes without briefly rendering `[Content Missing]`
+- Portal timestamps should render consistently in Indian Standard Time across posts, replies, messages, notifications, mentorship, and admin views
 
 ### Known follow-up items
 

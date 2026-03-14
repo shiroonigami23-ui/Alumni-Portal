@@ -225,7 +225,7 @@ if (session_status() === PHP_SESSION_NONE) {
 
         function fmt(v) {
             if (!v) return '-';
-            return new Date(v).toLocaleString();
+            return window.portalTime ? window.portalTime.format(v, 'date-time') : window.formatDate(v, 'date-time');
         }
         function roleClass(role) {
             if (role === 'admin') return 'bg-amber-100 text-amber-800';

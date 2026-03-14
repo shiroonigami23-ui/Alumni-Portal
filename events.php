@@ -130,7 +130,7 @@
                     <div class="p-6">
                         <div class="flex items-center text-sm text-gray-500 mb-2">
                             <i data-lucide="calendar" class="h-4 w-4 mr-1"></i>
-                            ${new Date(event.event_date).toLocaleDateString()}
+                            ${window.portalTime ? window.portalTime.format(event.event_date, 'date') : window.formatDate(event.event_date, 'date')}
                         </div>
                         <h3 class="text-lg font-semibold text-gray-900 mb-2">${event.title}</h3>
                         <p class="text-gray-600 text-sm mb-4 line-clamp-2">${event.description}</p>
