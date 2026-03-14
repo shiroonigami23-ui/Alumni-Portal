@@ -283,9 +283,22 @@ $basePrefix = $isAdminPath ? '../' : '';
             const notificationBtn = document.getElementById('notificationBtn');
             const notificationDropdown = document.getElementById('notificationDropdown');
 
-            notificationBtn.addEventListener('click', function(e) {
+            notificationBtn.addEventListener('click', async function(e) {
                 e.stopPropagation();
+                const isOpening = notificationDropdown.classList.contains('hidden');
                 notificationDropdown.classList.toggle('hidden');
+                if (isOpening) {
+                    const countElement = document.getElementById('notificationCount');
+                    if (countElement) {
+                        countElement.textContent = '0';
+                        countElement.classList.add('hidden');
+                    }
+                    try {
+                        await makeApiCall('mark_notif_read.php', 'POST', {});
+                    } catch (error) {
+                        console.error('Error marking notifications as read:', error);
+                    }
+                }
                 loadNotifications();
             });
 

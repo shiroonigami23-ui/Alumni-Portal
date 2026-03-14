@@ -5,6 +5,7 @@ header("Access-Control-Allow-Methods: GET");
 
 include_once '../config/Database.php';
 include_once '../middleware/Auth.php';
+include_once __DIR__ . '/_moderation_schema.php';
 
 function respond(array $payload, int $status = 200): void
 {
@@ -16,6 +17,7 @@ function respond(array $payload, int $status = 200): void
 $database = new Database();
 $db = $database->getConnection();
 $auth = new Auth($db);
+ensure_user_moderation_schema($db);
 
 try {
     $user_id = $auth->validateRequest();
@@ -68,9 +70,14 @@ try {
             COALESCE(p.full_name, split_part(u.email, '@', 1)) AS full_name,
             p.branch,
             p.graduation_year,
-            p.profile_picture_url
+            p.profile_picture_url,
+            umr.posting_ban_until,
+            umr.messaging_ban_until,
+            ms.shadow_ban_until
         FROM users u
         LEFT JOIN profiles p ON p.user_id = u.user_id
+        LEFT JOIN user_moderation_restrictions umr ON umr.user_id = u.user_id
+        LEFT JOIN moderation_strikes ms ON ms.user_id = u.user_id
         $where
         ORDER BY u.created_at DESC
         LIMIT :limit OFFSET :offset
@@ -85,7 +92,15 @@ try {
     $stmt->execute();
 
     $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
-    $data = array_map(static function (array $row): array {
+    $now = time();
+    $data = array_map(static function (array $row) use ($now): array {
+        $postingUntilTs = !empty($row['posting_ban_until']) ? strtotime((string)$row['posting_ban_until']) : false;
+        $messagingUntilTs = !empty($row['messaging_ban_until']) ? strtotime((string)$row['messaging_ban_until']) : false;
+        $shadowUntilTs = !empty($row['shadow_ban_until']) ? strtotime((string)$row['shadow_ban_until']) : false;
+        $postingRestricted = ($postingUntilTs !== false && $postingUntilTs > $now);
+        $messagingRestricted = ($messagingUntilTs !== false && $messagingUntilTs > $now);
+        $shadowBanned = ($shadowUntilTs !== false && $shadowUntilTs > $now);
+
         return [
             'id' => (int)$row['user_id'],
             'name' => (string)$row['full_name'],
@@ -96,7 +111,14 @@ try {
             'last_login' => $row['last_login'],
             'branch' => $row['branch'] ?? null,
             'graduation_year' => $row['graduation_year'] ? (int)$row['graduation_year'] : null,
-            'avatar' => !empty($row['profile_picture_url']) ? str_replace('\\', '/', (string)$row['profile_picture_url']) : null
+            'avatar' => !empty($row['profile_picture_url']) ? str_replace('\\', '/', (string)$row['profile_picture_url']) : null,
+            'is_banned' => ((string)$row['status'] === 'banned'),
+            'posting_restricted' => $postingRestricted,
+            'messaging_restricted' => $messagingRestricted,
+            'shadow_banned' => $shadowBanned,
+            'posting_ban_until' => $row['posting_ban_until'] ?? null,
+            'messaging_ban_until' => $row['messaging_ban_until'] ?? null,
+            'shadow_ban_until' => $row['shadow_ban_until'] ?? null,
         ];
     }, $rows);
 
@@ -111,4 +133,3 @@ try {
 } catch (Throwable $e) {
     respond(["success" => false, "message" => "Failed to load users.", "error" => $e->getMessage()], 500);
 }
-

@@ -166,6 +166,9 @@ When verifying a fresh deploy, append `?refresh=<commit>` to bypass stale browse
   - avatar / cover uploads and generic file uploads now use DB-backed asset URLs; old local avatar/cover references are migrated or cleared on read
   - bare legacy avatar filenames like `avatar_46_...jpg` are treated as stale local media and no longer reused blindly by header/sidebar/feed/profile
   - `get_conversations.php` now includes the mentor owner id for mentor groups, preventing warning-leak / malformed JSON risk in group conversation payloads
+  - admin user management now loads moderation state per account so action buttons only show the valid next action (`Ban` vs `Unban`, `Shadow` vs `Lift Shadow`, `Mute DM` vs `Unmute DM`)
+  - admins can open any profile, including private faculty/alumni profiles, through the same profile API
+  - clicking the bell icon now bulk-marks all notifications as read instead of requiring notification-by-notification clearing
   - mobile navigation now uses a bottom-bar-first pattern on small screens with a `More` sheet for secondary destinations instead of a persistent left drawer
   - mobile polish pass:
     - bottom-nav icons are larger with tighter labels and touch-feedback states

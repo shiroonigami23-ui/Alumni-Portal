@@ -136,12 +136,12 @@ if (session_status() === PHP_SESSION_NONE) {
                                 <a class="px-2 py-1 border rounded hover:bg-gray-100" href="../profile.php?id=${user.id}" target="_blank">View</a>
                                 ${user.status === 'pending' ? `<button class="px-2 py-1 bg-green-600 text-white rounded hover:bg-green-700" onclick="updateUser(${user.id},'approve')">Approve</button>` : ''}
                                 ${user.status === 'pending' ? `<button class="px-2 py-1 bg-red-600 text-white rounded hover:bg-red-700" onclick="updateUser(${user.id},'reject')">Reject</button>` : ''}
-                                ${user.status !== 'banned' ? `<button class="px-2 py-1 bg-red-600 text-white rounded hover:bg-red-700" onclick="adminUserAction(${user.id}, 'ban_user')">Ban</button>` : ''}
-                                ${user.status === 'banned' ? `<button class="px-2 py-1 bg-green-600 text-white rounded hover:bg-green-700" onclick="adminUserAction(${user.id}, 'unban_user')">Unban</button>` : ''}
-                                <button class="px-2 py-1 bg-gray-800 text-white rounded hover:bg-gray-900" onclick="adminUserAction(${user.id}, 'shadow_ban')">Shadow 7d</button>
-                                <button class="px-2 py-1 bg-slate-700 text-white rounded hover:bg-slate-800" onclick="adminUserAction(${user.id}, 'restrict_messaging')">Mute DM 7d</button>
-                                <button class="px-2 py-1 border rounded hover:bg-gray-100" onclick="adminUserAction(${user.id}, 'lift_shadow_ban')">Lift Shadow</button>
-                                <button class="px-2 py-1 border rounded hover:bg-gray-100" onclick="adminUserAction(${user.id}, 'lift_messaging_restriction')">Unmute DM</button>
+                                ${!user.is_banned ? `<button class="px-2 py-1 bg-red-600 text-white rounded hover:bg-red-700" onclick="adminUserAction(${user.id}, 'ban_user')">Ban</button>` : ''}
+                                ${user.is_banned ? `<button class="px-2 py-1 bg-green-600 text-white rounded hover:bg-green-700" onclick="adminUserAction(${user.id}, 'unban_user')">Unban</button>` : ''}
+                                ${!user.is_banned && !user.shadow_banned ? `<button class="px-2 py-1 bg-gray-800 text-white rounded hover:bg-gray-900" onclick="adminUserAction(${user.id}, 'shadow_ban')">Shadow 7d</button>` : ''}
+                                ${!user.is_banned && user.shadow_banned ? `<button class="px-2 py-1 border rounded hover:bg-gray-100" onclick="adminUserAction(${user.id}, 'lift_shadow_ban')">Lift Shadow</button>` : ''}
+                                ${!user.is_banned && !user.shadow_banned && !user.messaging_restricted ? `<button class="px-2 py-1 bg-slate-700 text-white rounded hover:bg-slate-800" onclick="adminUserAction(${user.id}, 'restrict_messaging')">Mute DM 7d</button>` : ''}
+                                ${!user.is_banned && !user.shadow_banned && user.messaging_restricted ? `<button class="px-2 py-1 border rounded hover:bg-gray-100" onclick="adminUserAction(${user.id}, 'lift_messaging_restriction')">Unmute DM</button>` : ''}
                                 <button class="px-2 py-1 bg-blue-600 text-white rounded hover:bg-blue-700" onclick="resetUserPassword(${user.id}, '${escapeJs(user.email)}')">Reset Password</button>
                             </div>
                         </td>

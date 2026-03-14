@@ -37,6 +37,12 @@ function derive_joined_year(?string $rollNumber, ?string $email): ?int
 // Authenticate user (optional)
 $database = new Database(); $db = $database->getConnection(); $auth = new Auth($db);
 $current_user = $auth->validateRequest();
+$current_user_role = null;
+if ($current_user) {
+    $currentRoleStmt = $db->prepare("SELECT role FROM users WHERE user_id = :uid LIMIT 1");
+    $currentRoleStmt->execute(['uid' => $current_user]);
+    $current_user_role = (string)($currentRoleStmt->fetchColumn() ?: '');
+}
 
 // Get user_id from query parameter
 $user_id = $_GET['user_id'] ?? null;
@@ -133,7 +139,7 @@ try {
     }
     
     // Check if profile is private: allow only self for now.
-    if ($profile['is_private'] && (!$current_user || (int)$current_user !== (int)$user_id)) {
+    if ($profile['is_private'] && $current_user_role !== 'admin' && (!$current_user || (int)$current_user !== (int)$user_id)) {
         http_response_code(403);
         echo json_encode(['success' => false, 'message' => 'This profile is private']);
         exit;
