@@ -50,6 +50,12 @@ include 'includes/sidebar.php';
                         <div class="text-sm text-gray-500">No requests yet.</div>
                     </div>
                 </div>
+                <div id="activeMentorshipPanel" class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                    <h2 class="text-xl font-bold text-gray-900 mb-4" id="activeMentorshipTitle">Active Mentorship</h2>
+                    <div id="activeMentorshipList" class="space-y-3">
+                        <div class="text-sm text-gray-500">Loading current mentor details...</div>
+                    </div>
+                </div>
                 <div id="mentorApplicationsPanel" class="hidden bg-white rounded-xl shadow-sm border border-gray-200 p-6">
                     <h2 class="text-xl font-bold text-gray-900 mb-4">Mentor Applications</h2>
                     <div id="mentorApplicationsList" class="space-y-3">
@@ -84,6 +90,8 @@ include 'includes/sidebar.php';
     let currentUser = null;
     let currentRole = '';
     let mentorStatus = null;
+    let activeMentorshipRows = [];
+    let currentActiveMatch = null;
     const MENTORSHIP_API_BASE = (window.getApiBase ? window.getApiBase() : ((window.PORTAL_BASE_PREFIX || '') + 'api'));
 
     async function loadCurrentUser() {
@@ -134,13 +142,16 @@ include 'includes/sidebar.php';
         const hint = document.getElementById('mentorRoleHint');
         const becomeBtn = document.getElementById('becomeMentorBtn');
         const requestsTitle = document.getElementById('requestsPanelTitle');
+        const activeTitle = document.getElementById('activeMentorshipTitle');
         const appsPanel = document.getElementById('mentorApplicationsPanel');
         const profile = mentorStatus?.mentor_profile || null;
+        currentActiveMatch = mentorStatus?.active_match || null;
 
         if (currentRole === 'student') {
             hint.textContent = 'Students can browse approved mentors and request to join them.';
             becomeBtn.classList.add('hidden');
             requestsTitle.textContent = 'My Requests';
+            if (activeTitle) activeTitle.textContent = 'Current Mentor';
             if (appsPanel) appsPanel.classList.add('hidden');
             showMentorBanner('');
             return;
@@ -160,12 +171,14 @@ include 'includes/sidebar.php';
             becomeBtn.classList.remove('opacity-60', 'cursor-not-allowed');
             becomeBtn.textContent = profile?.is_active ? 'Update Mentor Profile' : 'Become a Mentor';
             requestsTitle.textContent = 'Incoming Requests';
+            if (activeTitle) activeTitle.textContent = 'Mentor Group';
             showMentorBanner(profile?.is_active ? 'Your mentor profile is active. Students can request to join your mentor group.' : '');
             return;
         }
 
         if (currentRole === 'alumni') {
-            requestsTitle.textContent = 'Incoming Requests';
+            requestsTitle.textContent = profile?.is_active ? 'Incoming Requests' : 'My Requests';
+            if (activeTitle) activeTitle.textContent = profile?.is_active ? 'Mentor Group' : 'Current Mentor';
             if (profile?.approval_status === 'pending') {
                 hint.textContent = 'Alumni mentor applications need faculty or admin approval before students can see them.';
                 becomeBtn.disabled = true;
@@ -191,7 +204,7 @@ include 'includes/sidebar.php';
                 return;
             }
 
-            hint.textContent = 'Alumni can apply to become mentors. Approval from faculty or admin is required before students can find you.';
+            hint.textContent = 'Alumni can apply to become mentors, and alumni can also request guidance under another approved mentor.';
             becomeBtn.disabled = false;
             becomeBtn.textContent = 'Apply to Become a Mentor';
             becomeBtn.classList.remove('opacity-60', 'cursor-not-allowed');
@@ -215,16 +228,24 @@ include 'includes/sidebar.php';
             const mentorsPayload = await mentorsRes.json();
             const mentors = Array.isArray(mentorsPayload?.data) ? mentorsPayload.data : [];
 
-            const reqAction = currentRole === 'student' ? 'list_my_requests' : 'list_requests';
+            const reqAction = (currentRole === 'student' || (currentRole === 'alumni' && !mentorStatus?.mentor_profile?.is_active))
+                ? 'list_my_requests'
+                : 'list_requests';
             const reqRes = await fetch(`${MENTORSHIP_API_BASE}/mentorship.php?action=${reqAction}`, {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
             const reqPayload = await reqRes.json();
             const reqs = Array.isArray(reqPayload?.data) ? reqPayload.data : [];
 
+            const matchesRes = await fetch(`${MENTORSHIP_API_BASE}/mentorship.php?action=list_active_matches`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            const matchesPayload = await matchesRes.json();
+            const matches = Array.isArray(matchesPayload?.data) ? matchesPayload.data : [];
+
             document.getElementById('mentorsCount').textContent = String(mentors.length);
             document.getElementById('requestsCount').textContent = String(reqs.filter((r) => r.status === 'pending').length);
-            document.getElementById('acceptedCount').textContent = String(reqs.filter((r) => r.status === 'accepted').length);
+            document.getElementById('acceptedCount').textContent = String(matches.length);
         } catch (e) {
             console.error('Failed to load mentorship stats:', e);
         }
@@ -252,7 +273,7 @@ include 'includes/sidebar.php';
                             <p class="text-sm text-gray-500 mt-1">${m.headline || 'Available for mentorship'}</p>
                             ${m.expertise ? `<p class="text-xs text-gray-500 mt-1">Expertise: ${m.expertise}</p>` : ''}
                         </div>
-                        ${currentRole === 'student' ? `<button class="request-mentor-btn bg-blue-600 text-white px-3 py-2 rounded-lg hover:bg-blue-700" data-mentor-id="${m.mentor_id}">Request to Join</button>` : ''}
+                        ${renderMentorActionButton(m)}
                     </div>
                 </div>
             `).join('');
@@ -260,6 +281,21 @@ include 'includes/sidebar.php';
         } catch (e) {
             listEl.innerHTML = '<div class="text-sm text-red-600">Unable to load mentors.</div>';
         }
+    }
+
+    function renderMentorActionButton(mentor) {
+        if (!mentorStatus?.can_request) {
+            return '';
+        }
+        if (currentActiveMatch && Number(currentActiveMatch.mentor_id) === Number(mentor.mentor_id)) {
+            return mentor.group_id
+                ? `<a href="messages.php?group_id=${mentor.group_id}" class="bg-green-600 text-white px-3 py-2 rounded-lg hover:bg-green-700">Open Group</a>`
+                : '<span class="text-xs text-green-600 font-medium">Current mentor</span>';
+        }
+        if (currentActiveMatch) {
+            return '<span class="text-xs text-amber-600 font-medium">Leave your current mentor first</span>';
+        }
+        return `<button class="request-mentor-btn bg-blue-600 text-white px-3 py-2 rounded-lg hover:bg-blue-700" data-mentor-id="${mentor.mentor_id}">Request to Join</button>`;
     }
 
     async function loadRequestsPanel() {
@@ -270,7 +306,9 @@ include 'includes/sidebar.php';
                 listEl.innerHTML = '<div class="text-sm text-gray-500">Sign in to view requests.</div>';
                 return;
             }
-            const action = currentRole === 'student' ? 'list_my_requests' : 'list_requests';
+            const action = (currentRole === 'student' || (currentRole === 'alumni' && !mentorStatus?.mentor_profile?.is_active))
+                ? 'list_my_requests'
+                : 'list_requests';
             const res = await fetch(`${MENTORSHIP_API_BASE}/mentorship.php?action=${action}`, {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
@@ -282,11 +320,11 @@ include 'includes/sidebar.php';
             }
             listEl.innerHTML = rows.map((r) => `
                 <div class="border border-gray-200 rounded-lg p-3">
-                    <p class="font-medium text-gray-900 text-sm">${currentRole === 'student' ? (r.mentor_name || 'Mentor') : (r.mentee_name || 'Student')}</p>
+                    <p class="font-medium text-gray-900 text-sm">${(action === 'list_my_requests') ? (r.mentor_name || 'Mentor') : (r.mentee_name || 'Student')}</p>
                     <p class="text-xs text-gray-500 mt-1">${r.message || ''}</p>
                     <div class="flex items-center justify-between mt-2">
                         <span class="text-xs px-2 py-0.5 rounded-full ${r.status === 'accepted' ? 'bg-green-100 text-green-700' : (r.status === 'rejected' ? 'bg-red-100 text-red-700' : 'bg-yellow-100 text-yellow-700')}">${r.status}</span>
-                        ${(['faculty', 'alumni', 'admin'].includes(currentRole) && r.status === 'pending') ? `
+                        ${((['faculty', 'admin'].includes(currentRole) || (currentRole === 'alumni' && mentorStatus?.mentor_profile?.is_active)) && r.status === 'pending') ? `
                             <div class="flex gap-2">
                                 <button class="mentor-respond-btn text-xs px-2 py-1 bg-green-600 text-white rounded" data-request-id="${r.request_id}" data-status="accepted">Accept</button>
                                 <button class="mentor-respond-btn text-xs px-2 py-1 bg-red-600 text-white rounded" data-request-id="${r.request_id}" data-status="rejected">Reject</button>
@@ -337,6 +375,95 @@ include 'includes/sidebar.php';
         }
     }
 
+    async function loadActiveMentorshipPanel() {
+        const listEl = document.getElementById('activeMentorshipList');
+        if (!listEl) return;
+
+        try {
+            const res = await makeApiCall('mentorship.php?action=list_active_matches');
+            activeMentorshipRows = Array.isArray(res?.data) ? res.data : [];
+            if (!currentActiveMatch && activeMentorshipRows.length && mentorStatus?.can_request) {
+                currentActiveMatch = activeMentorshipRows[0];
+            }
+
+            if (!activeMentorshipRows.length) {
+                if (mentorStatus?.can_request && currentActiveMatch) {
+                    listEl.innerHTML = `
+                        <div class="border border-gray-200 rounded-lg p-4">
+                            <p class="font-semibold text-gray-900">${currentActiveMatch.mentor_name || 'Current mentor'}</p>
+                            <p class="text-sm text-gray-600 capitalize mt-1">${currentActiveMatch.mentor_role || ''}</p>
+                            <p class="text-xs text-gray-500 mt-2">Joined ${new Date(currentActiveMatch.joined_at).toLocaleDateString()}</p>
+                            <div class="mt-3 flex flex-wrap gap-2">
+                                ${currentActiveMatch.group_id ? `<a href="messages.php?group_id=${currentActiveMatch.group_id}" class="text-xs px-3 py-1.5 bg-blue-600 text-white rounded">Open mentor group</a>` : ''}
+                                <button class="leave-current-mentor-btn text-xs px-3 py-1.5 border border-red-300 text-red-600 rounded">Leave current mentor</button>
+                            </div>
+                        </div>
+                    `;
+                    bindMentorGroupButtons();
+                    return;
+                }
+                listEl.innerHTML = `<div class="text-sm text-gray-500">${mentorStatus?.can_request ? 'You are not under any mentor right now.' : 'No active mentor group members yet.'}</div>`;
+                return;
+            }
+
+            if (mentorStatus?.can_request && !mentorStatus?.mentor_profile?.is_active) {
+                const match = activeMentorshipRows[0];
+                currentActiveMatch = match;
+                listEl.innerHTML = `
+                    <div class="border border-gray-200 rounded-lg p-4">
+                        <p class="font-semibold text-gray-900">${match.mentor_name || 'Current mentor'}</p>
+                        <p class="text-sm text-gray-600 capitalize mt-1">${match.mentor_role || ''}</p>
+                        <p class="text-xs text-gray-500 mt-2">Joined ${new Date(match.joined_at).toLocaleDateString()}</p>
+                        <div class="mt-3 flex flex-wrap gap-2">
+                            ${match.group_id ? `<a href="messages.php?group_id=${match.group_id}" class="text-xs px-3 py-1.5 bg-blue-600 text-white rounded">Open mentor group</a>` : ''}
+                            <button class="leave-current-mentor-btn text-xs px-3 py-1.5 border border-red-300 text-red-600 rounded">Leave current mentor</button>
+                        </div>
+                    </div>
+                `;
+            } else {
+                const groupId = Number(activeMentorshipRows[0].group_id || 0);
+                const menteeCard = (mentorStatus?.can_request && currentActiveMatch && Number(currentActiveMatch.mentor_id) !== Number(currentUser?.user_id || 0)) ? `
+                    <div class="border border-blue-200 bg-blue-50 rounded-lg p-4 mb-3">
+                        <p class="text-xs font-semibold uppercase tracking-wide text-blue-700">Your current mentor</p>
+                        <p class="mt-2 font-semibold text-gray-900">${currentActiveMatch.mentor_name || 'Current mentor'}</p>
+                        <p class="text-sm text-gray-600 capitalize mt-1">${currentActiveMatch.mentor_role || ''}</p>
+                        <div class="mt-3 flex flex-wrap gap-2">
+                            ${currentActiveMatch.group_id ? `<a href="messages.php?group_id=${currentActiveMatch.group_id}" class="text-xs px-3 py-1.5 bg-blue-600 text-white rounded">Open mentor group</a>` : ''}
+                            <button class="leave-current-mentor-btn text-xs px-3 py-1.5 border border-red-300 text-red-600 rounded">Leave current mentor</button>
+                        </div>
+                    </div>
+                ` : '';
+                listEl.innerHTML = `
+                    ${menteeCard}
+                    ${groupId ? `<div class="flex flex-wrap gap-2 mb-3"><a href="messages.php?group_id=${groupId}" class="text-xs px-3 py-1.5 bg-blue-600 text-white rounded">Open mentor group</a><button class="leave-group-btn text-xs px-3 py-1.5 border border-amber-300 text-amber-700 rounded" data-group-id="${groupId}">Leave group</button></div>` : ''}
+                    ${activeMentorshipRows.map((row) => `
+                        <div class="border border-gray-200 rounded-lg p-4">
+                            <div class="flex items-start justify-between gap-3">
+                                <div>
+                                    <p class="font-semibold text-gray-900">${row.mentee_name || 'Member'}</p>
+                                    <p class="text-sm text-gray-600 capitalize">${row.mentee_role || ''}</p>
+                                    <p class="text-xs text-gray-500 mt-1">Joined ${new Date(row.joined_at).toLocaleDateString()}</p>
+                                    ${Number(row.is_banned) ? `<p class="text-xs text-red-600 mt-1">${Number(row.is_permanent) ? 'Permanently removed from this group.' : `Muted until ${new Date(row.banned_until).toLocaleString()}`}</p>` : ''}
+                                </div>
+                                <div class="flex flex-wrap justify-end gap-2">
+                                    ${Number(row.is_banned)
+                                        ? `<button class="moderate-member-btn text-xs px-3 py-1.5 border border-green-300 text-green-700 rounded" data-group-id="${row.group_id}" data-member-id="${row.mentee_id}" data-action="unban">Unban</button>`
+                                        : `<button class="moderate-member-btn text-xs px-3 py-1.5 border border-amber-300 text-amber-700 rounded" data-group-id="${row.group_id}" data-member-id="${row.mentee_id}" data-action="ban">Ban 7d</button>`
+                                    }
+                                    <button class="moderate-member-btn text-xs px-3 py-1.5 border border-red-300 text-red-600 rounded" data-group-id="${row.group_id}" data-member-id="${row.mentee_id}" data-action="kick">Kick</button>
+                                </div>
+                            </div>
+                        </div>
+                    `).join('')}
+                `;
+            }
+
+            bindMentorGroupButtons();
+        } catch (e) {
+            listEl.innerHTML = '<div class="text-sm text-red-600">Unable to load active mentorship details.</div>';
+        }
+    }
+
     function bindMentorRequestButtons() {
         document.querySelectorAll('.request-mentor-btn').forEach((btn) => {
             if (btn.dataset.bound === '1') return;
@@ -344,6 +471,68 @@ include 'includes/sidebar.php';
             btn.addEventListener('click', () => {
                 document.getElementById('requestMentorId').value = btn.getAttribute('data-mentor-id') || '';
                 document.getElementById('mentorshipRequestModal').classList.remove('hidden');
+            });
+        });
+    }
+
+    function bindMentorGroupButtons() {
+        document.querySelectorAll('.leave-current-mentor-btn').forEach((btn) => {
+            if (btn.dataset.bound === '1') return;
+            btn.dataset.bound = '1';
+            btn.addEventListener('click', async () => {
+                if (!confirm('Leave your current mentor? You can request another mentor after this.')) return;
+                const res = await makeApiCall('mentorship.php?action=leave_current', 'POST', {});
+                if (res && res.success) {
+                    await loadMentorStatus();
+                    initRoleBasedActions();
+                    await loadActiveMentorshipPanel();
+                    await loadMentorList();
+                    await loadRequestsPanel();
+                    await loadMentorshipStats();
+                } else {
+                    alert((res && res.message) || 'Failed to leave your current mentor.');
+                }
+            });
+        });
+
+        document.querySelectorAll('.leave-group-btn').forEach((btn) => {
+            if (btn.dataset.bound === '1') return;
+            btn.dataset.bound = '1';
+            btn.addEventListener('click', async () => {
+                const group_id = Number(btn.getAttribute('data-group-id') || 0);
+                if (!group_id) return;
+                if (!confirm('Leave this mentor group? If you are the admin, ownership will transfer to another member when possible.')) return;
+                const res = await makeApiCall('mentorship.php?action=leave_group', 'POST', { group_id });
+                if (res && res.success) {
+                    await loadMentorStatus();
+                    initRoleBasedActions();
+                    await loadActiveMentorshipPanel();
+                    await loadMentorList();
+                    await loadRequestsPanel();
+                    await loadMentorshipStats();
+                } else {
+                    alert((res && res.message) || 'Failed to leave this mentor group.');
+                }
+            });
+        });
+
+        document.querySelectorAll('.moderate-member-btn').forEach((btn) => {
+            if (btn.dataset.bound === '1') return;
+            btn.dataset.bound = '1';
+            btn.addEventListener('click', async () => {
+                const group_id = Number(btn.getAttribute('data-group-id') || 0);
+                const member_user_id = Number(btn.getAttribute('data-member-id') || 0);
+                const moderation_action = btn.getAttribute('data-action') || '';
+                if (!group_id || !member_user_id || !moderation_action) return;
+                if (!confirm(`Proceed with ${moderation_action} for this member?`)) return;
+                const payload = { group_id, member_user_id, moderation_action };
+                if (moderation_action === 'ban') payload.ban_days = 7;
+                const res = await makeApiCall('mentorship.php?action=moderate_member', 'POST', payload);
+                if (res && res.success) {
+                    await loadActiveMentorshipPanel();
+                } else {
+                    alert((res && res.message) || 'Failed to update member access.');
+                }
             });
         });
     }
@@ -361,6 +550,7 @@ include 'includes/sidebar.php';
                     await loadMentorApplications();
                     await loadMentorList();
                     await loadMentorshipStats();
+                    await loadActiveMentorshipPanel();
                 } else {
                     alert((res && res.message) || 'Failed to review mentor application');
                 }
@@ -380,6 +570,8 @@ include 'includes/sidebar.php';
                 if (res && res.success) {
                     await loadRequestsPanel();
                     await loadMentorshipStats();
+                    await loadActiveMentorshipPanel();
+                    await loadMentorList();
                 } else {
                     alert((res && res.message) || 'Failed to update request');
                 }
@@ -413,6 +605,7 @@ include 'includes/sidebar.php';
                     initRoleBasedActions();
                     await loadMentorList();
                     await loadMentorshipStats();
+                    await loadActiveMentorshipPanel();
                     await loadMentorApplications();
                 } else {
                     alert((res && res.message) || 'Unable to become mentor');
@@ -431,9 +624,13 @@ include 'includes/sidebar.php';
                 if (!mentor_id) return;
                 const res = await makeApiCall('mentorship.php?action=request', 'POST', { mentor_id, message });
                 if (res && res.success) {
-                    alert('Mentorship request sent.');
+                    alert(res.message || 'Mentorship request sent.');
                     form.reset();
                     modal.classList.add('hidden');
+                    await loadMentorStatus();
+                    initRoleBasedActions();
+                    await loadActiveMentorshipPanel();
+                    await loadMentorList();
                     await loadRequestsPanel();
                     await loadMentorshipStats();
                 } else {
@@ -450,6 +647,7 @@ include 'includes/sidebar.php';
         initMentorshipActions();
         await loadMentorList();
         await loadRequestsPanel();
+        await loadActiveMentorshipPanel();
         await loadMentorshipStats();
         await loadMentorApplications();
     });

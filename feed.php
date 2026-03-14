@@ -45,7 +45,15 @@ include 'includes/sidebar.php';
             </div>
 
             <!-- Create Post Section -->
-            <div id="createPostSection" class="bg-white rounded-xl shadow-sm p-4 mb-8 hidden">
+            <div id="createPostSection" class="relative bg-white rounded-xl shadow-sm p-4 mb-8 hidden">
+                <div id="postUploadOverlay" class="hidden absolute inset-0 z-10 rounded-xl bg-white/80 backdrop-blur-sm">
+                    <div class="flex h-full items-center justify-center">
+                        <div class="rounded-2xl border border-blue-100 bg-white px-5 py-4 text-center shadow-lg">
+                            <i data-lucide="loader" class="mx-auto h-6 w-6 animate-spin text-blue-600"></i>
+                            <p id="postUploadOverlayText" class="mt-3 text-sm font-medium text-slate-700">Uploading your post...</p>
+                        </div>
+                    </div>
+                </div>
                 <div class="flex items-start mb-2">
                     <img id="userFeedAvatar" 
                          src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='48' height='48' viewBox='0 0 48 48'%3E%3Crect width='48' height='48' fill='%23dbeafe'/%3E%3Ctext x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' font-family='Arial' font-size='14' fill='%233b82f6'%3EU%3C/text%3E%3C/svg%3E" 
@@ -167,6 +175,7 @@ include 'includes/sidebar.php';
                         Load More Posts
                     </button>
                 </div>
+                <div id="feedScrollSentinel" class="h-4 w-full"></div>
             </div>
         </main>
     </div>
@@ -254,6 +263,7 @@ include 'includes/sidebar.php';
         const commentRenderState = new Map();
         const viewedPostIds = new Set();
         let postViewObserver = null;
+        let feedLoadObserver = null;
         let pendingSharedPostId = 0;
         let pendingOpenCommentsPostId = 0;
         const postStateCache = new Map();
@@ -282,6 +292,10 @@ include 'includes/sidebar.php';
             if (postViewObserver) {
                 postViewObserver.disconnect();
                 postViewObserver = null;
+            }
+            if (feedLoadObserver) {
+                feedLoadObserver.disconnect();
+                feedLoadObserver = null;
             }
         });
         
@@ -422,6 +436,8 @@ include 'includes/sidebar.php';
             const progressValue = document.getElementById('postUploadProgressValue');
             const uploadLabel = document.getElementById('postUploadLabel');
             const submitBtn = document.getElementById('submitPostBtn');
+            const overlay = document.getElementById('postUploadOverlay');
+            const overlayText = document.getElementById('postUploadOverlayText');
 
             if (form) {
                 form.querySelectorAll('textarea, input, button').forEach((el) => {
@@ -432,6 +448,11 @@ include 'includes/sidebar.php';
 
             if (submitBtn) {
                 submitBtn.textContent = isUploading ? 'Posting...' : 'Post';
+            }
+
+            if (overlay && overlayText) {
+                overlay.classList.toggle('hidden', !isUploading);
+                overlayText.textContent = message;
             }
 
             if (progressWrap && progressBar && progressText && progressValue && uploadLabel) {
@@ -493,13 +514,46 @@ include 'includes/sidebar.php';
                 xhr.send(formData);
             });
         }
+
+        function ensureFeedScaffold() {
+            const feedContainer = document.getElementById('feedContainer');
+            if (!feedContainer) return null;
+            let postsContainer = document.getElementById('feedPostsContainer');
+            let loadMoreContainer = document.getElementById('loadMoreContainer');
+            let sentinel = document.getElementById('feedScrollSentinel');
+
+            if (!postsContainer || !loadMoreContainer || !sentinel) {
+                feedContainer.innerHTML = `
+                    <div id="feedPostsContainer" class="space-y-6"></div>
+                    <div id="loadMoreContainer" class="mt-8 text-center hidden">
+                        <button id="loadMoreBtn" class="px-6 py-3 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 font-medium">
+                            Load More Posts
+                        </button>
+                    </div>
+                    <div id="feedScrollSentinel" class="h-4 w-full"></div>
+                `;
+                postsContainer = document.getElementById('feedPostsContainer');
+                loadMoreContainer = document.getElementById('loadMoreContainer');
+                sentinel = document.getElementById('feedScrollSentinel');
+                const loadMoreBtn = document.getElementById('loadMoreBtn');
+                if (loadMoreBtn && !loadMoreBtn.dataset.bound) {
+                    loadMoreBtn.dataset.bound = '1';
+                    loadMoreBtn.addEventListener('click', () => {
+                        currentPage++;
+                        loadFeed();
+                    });
+                }
+            }
+
+            return { feedContainer, postsContainer, loadMoreContainer, sentinel };
+        }
         
         async function loadFeed() {
             if (isLoading) return;
             
             isLoading = true;
-            const feedContainer = document.getElementById('feedContainer');
-            const loadMoreContainer = document.getElementById('loadMoreContainer');
+            const scaffold = ensureFeedScaffold();
+            const loadMoreContainer = scaffold?.loadMoreContainer;
             
             try {
                 const response = await makeApiCall(`get_feed.php?page=${currentPage}&filter=${currentFilter}&sort=${currentSort}`);
@@ -510,7 +564,7 @@ include 'includes/sidebar.php';
                     const totalPosts = response.total || 0;
                     
                     if (currentPage === 1) {
-                        feedContainer.innerHTML = '';
+                        scaffold?.postsContainer?.replaceChildren();
 
                         if (posts.length === 0) {
                             showNoPostsMessage();
@@ -532,6 +586,7 @@ include 'includes/sidebar.php';
                     } else {
                         loadMoreContainer.classList.add('hidden');
                     }
+                    ensureFeedLoadObserver();
                 } else {
                     showErrorMessage(response?.message || 'Unable to load posts');
                 }
@@ -544,14 +599,8 @@ include 'includes/sidebar.php';
         }
         
         async function renderPosts(posts) {
-            const feedContainer = document.getElementById('feedContainer').querySelector('.space-y-6') || 
-                                document.getElementById('feedContainer');
-            
-            if (currentPage === 1 && !feedContainer.classList.contains('space-y-6')) {
-                feedContainer.innerHTML = '<div class="space-y-6"></div>';
-            }
-            
-            const postsContainer = feedContainer.classList.contains('space-y-6') ? feedContainer : feedContainer.querySelector('.space-y-6');
+            const postsContainer = ensureFeedScaffold()?.postsContainer;
+            if (!postsContainer) return;
             
             for (const post of posts) {
                 const postElement = await createPostElement(post);
@@ -849,6 +898,26 @@ include 'includes/sidebar.php';
                     postViewObserver.observe(card);
                 }
             });
+        }
+
+        function ensureFeedLoadObserver() {
+            const sentinel = document.getElementById('feedScrollSentinel');
+            if (!sentinel) return;
+            if (feedLoadObserver) {
+                feedLoadObserver.disconnect();
+            }
+            feedLoadObserver = new IntersectionObserver(async (entries) => {
+                for (const entry of entries) {
+                    if (!entry.isIntersecting) continue;
+                    if (!hasMorePosts || isLoading) continue;
+                    currentPage += 1;
+                    await loadFeed();
+                }
+            }, {
+                rootMargin: '250px 0px 250px 0px',
+                threshold: 0.05
+            });
+            feedLoadObserver.observe(sentinel);
         }
 
         async function processSharedLinkOpen() {
@@ -1449,12 +1518,8 @@ include 'includes/sidebar.php';
             }
 
             const postElement = await createPostElement(created, false);
-            const feedContainer = document.getElementById('feedContainer');
-            let postsContainer = feedContainer.querySelector('.space-y-6');
-            if (!postsContainer) {
-                feedContainer.innerHTML = '<div class="space-y-6"></div>';
-                postsContainer = feedContainer.querySelector('.space-y-6');
-            }
+            const postsContainer = ensureFeedScaffold()?.postsContainer;
+            if (!postsContainer) return;
             postsContainer.prepend(postElement);
             lucide.createIcons();
         }
@@ -1598,19 +1663,25 @@ include 'includes/sidebar.php';
         
         function reloadFeed() {
             currentPage = 1;
+            hasMorePosts = true;
             openCommentPosts.clear();
             for (const timer of commentRefreshTimers.values()) {
                 clearInterval(timer);
             }
             commentRefreshTimers.clear();
-            document.getElementById('feedContainer').innerHTML = `
-                <div class="space-y-6">
+            const scaffold = ensureFeedScaffold();
+            if (scaffold?.postsContainer) {
+                scaffold.postsContainer.innerHTML = `
                     <div class="text-center py-12">
                         <i data-lucide="loader" class="h-8 w-8 animate-spin text-blue-600 mx-auto mb-4"></i>
                         <p class="text-gray-500">Loading posts...</p>
                     </div>
-                </div>
-            `;
+                `;
+                if (scaffold.loadMoreContainer) {
+                    scaffold.loadMoreContainer.classList.add('hidden');
+                }
+                lucide.createIcons();
+            }
             return loadFeed();
         }
 
@@ -1637,12 +1708,8 @@ include 'includes/sidebar.php';
             const newOnes = freshPosts.filter((p) => !existingIds.has(Number(p.id)));
             if (!newOnes.length) return;
 
-            const feedContainer = document.getElementById('feedContainer');
-            let postsContainer = feedContainer.querySelector('.space-y-6');
-            if (!postsContainer) {
-                feedContainer.innerHTML = '<div class="space-y-6"></div>';
-                postsContainer = feedContainer.querySelector('.space-y-6');
-            }
+            const postsContainer = ensureFeedScaffold()?.postsContainer;
+            if (!postsContainer) return;
 
             for (const post of newOnes.reverse()) {
                 const postElement = await createPostElement(post);
@@ -1659,11 +1726,11 @@ include 'includes/sidebar.php';
             
             try {
                 const response = await makeApiCall(`search_posts.php?q=${encodeURIComponent(query)}`);
-                const feedContainer = document.getElementById('feedContainer');
+                const postsContainer = ensureFeedScaffold()?.postsContainer;
+                if (!postsContainer) return;
                 
                 if (response && (response.success || response.status === 'success') && response.data) {
-                    feedContainer.innerHTML = '<div class="space-y-6"></div>';
-                    const postsContainer = feedContainer.querySelector('.space-y-6');
+                    postsContainer.replaceChildren();
                     
                     if (response.data.length === 0) {
                         postsContainer.innerHTML = `
@@ -1809,46 +1876,25 @@ include 'includes/sidebar.php';
             const normalizedQuery = query.trim();
             status.textContent = normalizedQuery ? `Results for "${normalizedQuery}"` : 'Popular GIFs';
             try {
-                const searchTerm = normalizedQuery ? `${normalizedQuery} gif` : 'reaction gif';
-                const params = new URLSearchParams({
-                    action: 'query',
-                    generator: 'search',
-                    gsrsearch: `filemime:gif ${searchTerm}`,
-                    gsrnamespace: '6',
-                    gsrlimit: '24',
-                    prop: 'imageinfo',
-                    iiprop: 'url',
-                    iiurlwidth: '360',
-                    format: 'json',
-                    origin: '*'
-                });
-                const response = await fetch(`https://commons.wikimedia.org/w/api.php?${params.toString()}`);
-                const payload = await response.json();
-                const gifs = Object.values(payload?.query?.pages || {})
-                    .map((page) => {
-                        const imageInfo = Array.isArray(page?.imageinfo) ? page.imageinfo[0] : null;
-                        const originalUrl = imageInfo?.url || '';
-                        if (!originalUrl || !/\.gif(\?|$)/i.test(originalUrl)) {
-                            return null;
-                        }
-                        return {
-                            title: String(page?.title || 'GIF').replace(/^File:/i, ''),
-                            preview_url: imageInfo?.thumburl || originalUrl,
-                            url: originalUrl
-                        };
-                    })
-                    .filter(Boolean);
+                const response = await makeApiCall(`search_gifs.php?q=${encodeURIComponent(normalizedQuery)}&limit=24`);
+                if (!(response && (response.success || response.status === 'success'))) {
+                    throw new Error(response?.message || 'Unable to load GIFs');
+                }
+                const gifs = Array.isArray(response.data) ? response.data : [];
                 if (!gifs.length) {
                     grid.innerHTML = '<div class="col-span-full py-10 text-center text-slate-400">No GIFs found.</div>';
                     return;
                 }
                 grid.innerHTML = gifs.map((gif) => {
-                    const preview = gif?.preview_url || gif?.url || '';
+                    const preview = gif?.url || gif?.preview_url || '';
                     const original = gif?.url || preview;
                     const title = (gif?.title || 'GIF').replace(/"/g, '&quot;');
                     return `
                         <button type="button" class="gif-choice overflow-hidden rounded-xl border border-slate-700 bg-slate-900 hover:border-pink-500" data-gif-url="${original}">
-                            <img src="${preview}" alt="${title}" class="h-40 w-full object-cover">
+                            <div class="relative">
+                                <img src="${preview}" alt="${title}" loading="lazy" class="h-40 w-full object-cover">
+                                <div class="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/70 to-transparent px-2 py-2 text-left text-xs font-medium text-white">${title}</div>
+                            </div>
                         </button>
                     `;
                 }).join('');
@@ -1951,19 +1997,26 @@ include 'includes/sidebar.php';
         }
         
         function showNoPostsMessage() {
-            const feedContainer = document.getElementById('feedContainer');
-            feedContainer.innerHTML = `
+            const scaffold = ensureFeedScaffold();
+            const postsContainer = scaffold?.postsContainer;
+            if (!postsContainer) return;
+            if (scaffold?.loadMoreContainer) scaffold.loadMoreContainer.classList.add('hidden');
+            postsContainer.innerHTML = `
                 <div class="text-center py-12">
                     <i data-lucide="newspaper" class="h-12 w-12 text-gray-300 mx-auto mb-4"></i>
                     <p class="text-gray-500">No posts to show yet</p>
                     <p class="text-gray-400 text-sm mt-2">Be the first to share something with the community!</p>
                 </div>
             `;
+            lucide.createIcons();
         }
         
         function showErrorMessage(message = 'Unable to load posts') {
-            const feedContainer = document.getElementById('feedContainer');
-            feedContainer.innerHTML = `
+            const scaffold = ensureFeedScaffold();
+            const postsContainer = scaffold?.postsContainer;
+            if (!postsContainer) return;
+            if (scaffold?.loadMoreContainer) scaffold.loadMoreContainer.classList.add('hidden');
+            postsContainer.innerHTML = `
                 <div class="text-center py-12">
                     <i data-lucide="alert-circle" class="h-12 w-12 text-red-300 mx-auto mb-4"></i>
                     <p class="text-gray-500">${message}</p>
@@ -1972,5 +2025,6 @@ include 'includes/sidebar.php';
                     </button>
                 </div>
             `;
+            lucide.createIcons();
         }
     </script>

@@ -15,7 +15,7 @@ try {
         SELECT COUNT(*)::int
         FROM events
         WHERE DATE(start_datetime) >= CURRENT_DATE
-          AND status = 'approved'::event_status
+          AND status::text = 'approved'
     ");
 
     echo json_encode([

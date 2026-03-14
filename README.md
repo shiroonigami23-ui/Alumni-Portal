@@ -144,11 +144,18 @@ When verifying a fresh deploy, append `?refresh=<commit>` to bypass stale browse
 - current worktree:
   - aligned dashboard upcoming-event APIs with the real `events` schema (`start_datetime` / `event_status`)
   - changed mentorship so:
-    - students only request approved mentors
+    - students and alumni can each be under only one active mentor at a time
+    - they must leave the current mentor before joining another
     - faculty/admin can become mentors immediately
     - alumni submit mentor applications for faculty/admin approval
+    - students never see `Become a Mentor`
     - accepted mentor requests create a mentor group
+    - mentor-group admin ownership transfers if the current admin leaves and another member is available
+    - mentors/admins can ban, unban, or kick group members
+    - bans are messaging bans for the mentor group chat
   - surfaced mentor groups inside the existing Messages screen using `group:<id>` conversations
+  - changed feed so older posts load progressively with a bottom sentinel instead of trying to render everything at once
+  - added post draft controls plus upload-progress / upload-lock UI in the feed composer
 
 ### Stable behavior we now expect
 
@@ -158,10 +165,14 @@ When verifying a fresh deploy, append `?refresh=<commit>` to bypass stale browse
 - Share action exists and should either open native sharing or copy the link
 - Image/file attachments for new posts/comments should survive ECS task changes
 - GIF picker should show real GIF search results instead of a dead URL field
+- Feed should progressively load older posts while scrolling instead of dumping the whole feed at once
+- Feed drafts should stay on the current browser until posted or discarded
+- Feed uploads should lock the composer and show progress/overlay feedback while files are being sent
 - Dashboard count cards should hit real API endpoints instead of 404 routes
 - Mentorship should no longer show `Become a Mentor` to students
 - Alumni should move through a pending mentor-application flow instead of becoming mentors instantly
 - Accepted mentor/mentee matches should have a mentor group conversation available in Messages
+- A student/alumni should never have more than one active mentor relationship at once
 
 ### Known follow-up items
 
@@ -170,6 +181,7 @@ When verifying a fresh deploy, append `?refresh=<commit>` to bypass stale browse
 - Old posts created before the DB-backed attachment/content migrations may still show broken legacy media
 - Messages still need a cleanup pass for placeholder avatar/media fallbacks
 - Group-chat unread counts are not tracked yet; mentor groups show in Messages but currently report `0` unread
+- Mentor-group admin transfer currently falls back to the next available member; there is no separate admin-picker UI yet
 
 ### Verification checklist before calling a deploy good
 
@@ -186,8 +198,16 @@ When verifying a fresh deploy, append `?refresh=<commit>` to bypass stale browse
    - comments/replies work
    - like/share work
    - GIF picker shows real results
+   - GIF selection renders an actual animated GIF on the post, not a dead preview card
    - attachment upload shows progress and renders after posting
+   - feed infinite-scroll loads older posts as you reach the bottom
+   - draft save / discard works on the current browser
    - dashboard cards load counts without 404/API parse errors
+   - dashboard upcoming-events panel loads without HTML/PHP warning leakage
+   - students do not see `Become a Mentor`
+   - alumni mentor applications require faculty/admin approval
+   - students/alumni cannot join a second mentor without leaving the current one
+   - mentor group moderation actions work: accept, reject, ban, unban, kick, leave
 4. Verify any new API route directly from the live ALB URL.
 
 ### Notes for future work

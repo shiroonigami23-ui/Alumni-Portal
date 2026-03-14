@@ -60,7 +60,7 @@ function search_commons_gifs(string $query, int $limit = 24): array
         $results[] = [
             'id' => (int)($page['pageid'] ?? 0),
             'title' => preg_replace('/^File:/i', '', $title),
-            'preview_url' => (string)($imageInfo['thumburl'] ?? $originalUrl),
+            'preview_url' => $originalUrl,
             'url' => $originalUrl,
             'source' => 'wikimedia-commons'
         ];

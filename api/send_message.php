@@ -7,11 +7,13 @@ include_once '../config/Database.php';
 include_once '../middleware/Auth.php';
 include_once '../helpers/FileStorageHelper.php';
 include_once __DIR__ . '/_message_schema.php';
+include_once __DIR__ . '/_mentorship_schema.php';
 
 $database = new Database();
 $db = $database->getConnection();
 ensure_message_columns($db);
 ensure_group_message_schema($db);
+ensureMentorshipSchema($db);
 $auth = new Auth($db);
 
 $sender_id = $auth->validateRequest();
@@ -71,6 +73,18 @@ if (($receiver_id > 0 || $group_id > 0) && ($messageText !== '' || $attachmentUr
         if (!$membership->fetchColumn()) {
             http_response_code(403);
             echo json_encode(["success" => false, "message" => "You are not a member of this mentor group."]);
+            exit();
+        }
+
+        $activeBan = getActiveGroupBan($db, $group_id, $sender_id);
+        if ($activeBan) {
+            http_response_code(403);
+            echo json_encode([
+                "success" => false,
+                "message" => !empty($activeBan['is_permanent'])
+                    ? "You were removed from this mentor group."
+                    : "You are temporarily banned from sending messages in this mentor group."
+            ]);
             exit();
         }
     } elseif ($sender_role !== 'admin') {
