@@ -205,6 +205,12 @@ When verifying a fresh deploy, append `?refresh=<commit>` to bypass stale browse
     - raw DB timestamps without offsets are treated as UTC-source server values before display
     - relative labels such as `m ago` / `h ago` and exact date-time labels now resolve through one shared IST formatter
     - messages, feed/profile posts and replies, mentorship membership timestamps, notifications, and admin time tables should no longer drift between pages
+  - dashboard now routes its cards/feed/notification requests through the shared API helper instead of a stale local `res.json()` wrapper, avoiding repeated console parse errors when an endpoint returns HTML or a PHP warning page instead of JSON
+  - profile timeline no longer shows `Edit` / `Delete` controls on repost activity cards for users who only reposted the original post
+  - settings now treats the account email as a managed login identifier instead of an editable profile field:
+    - the email shown in settings is read-only
+    - student login email is explicitly locked by institute policy
+    - alumni/faculty/admin should use bio/contact/social fields for public-facing contact info, without affecting their actual login id
   - forgot-password is now a real email-reset flow:
     - new `forgot-password.php` and `reset.php` pages exist
     - reset tokens are issued securely, expire after 30 minutes, and are invalidated after use
@@ -257,6 +263,9 @@ When verifying a fresh deploy, append `?refresh=<commit>` to bypass stale browse
 - Custom in-app dialogs should appear across the portal instead of native browser `alert` / `confirm` / `prompt` popups
 - New and edited messages should survive AWS task changes without briefly rendering `[Content Missing]`
 - Portal timestamps should render consistently in Indian Standard Time across posts, replies, messages, notifications, mentorship, and admin views
+- Dashboard should not spam JSON parse errors in console just because an API response body is HTML/malformed
+- Repost activity cards on profile should not show misleading edit/delete controls
+- Settings should not imply that login email is editable when it is actually managed separately from profile content
 
 ### Known follow-up items
 

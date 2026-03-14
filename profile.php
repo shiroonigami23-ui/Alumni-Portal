@@ -851,6 +851,7 @@ include 'includes/sidebar.php';
             postElement.className = `bg-white rounded-xl shadow-sm p-6 ${isPinned ? 'border-l-4 border-amber-500 bg-amber-50' : ''}`;
             postElement.id = `profile-post-${post.id}`;
             postElement.dataset.postId = String(post.id);
+            const isRepostActivity = String(post.activity_kind || '') === 'repost';
             
             let content = '';
             if (post.content) {
@@ -858,8 +859,8 @@ include 'includes/sidebar.php';
             } else if (post.content_file_path) {
                 try { content = await fetchTextContent(post.content_file_path); } catch (_) {}
             }
-            const canEditPost = !!(post.is_owner || isOwnProfile);
-            const canDeletePost = !!(canEditPost || currentUserRole === 'admin');
+            const canEditPost = !!post.is_owner && !isRepostActivity;
+            const canDeletePost = !!((post.is_owner && !isRepostActivity) || currentUserRole === 'admin');
             const canReportPost = !canDeletePost && currentUserRole !== 'admin';
             
             postElement.innerHTML = `
@@ -1462,15 +1463,10 @@ include 'includes/sidebar.php';
         }
         
         async function saveProfileSettings() {
-            const email = document.getElementById('settingsEmail').value;
             const currentPassword = document.getElementById('currentPassword').value;
             const newPassword = document.getElementById('newPassword').value;
             
             const updateData = {};
-            
-            if (email && email !== profileData.email) {
-                updateData.email = email;
-            }
             
             if (currentPassword && newPassword) {
                 updateData.current_password = currentPassword;

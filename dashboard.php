@@ -261,7 +261,10 @@ include 'includes/sidebar.php';
         }
 
         // --- API HELPERS ---
-        async function makeApiCall(endpoint, method = 'GET', body = null) {
+        async function dashboardApiCall(endpoint, method = 'GET', body = null) {
+            if (window.makeApiCall && typeof window.makeApiCall === 'function') {
+                return window.makeApiCall(endpoint, method, body);
+            }
             const headers = {
                 'Authorization': `Bearer ${token}`
             };
@@ -276,15 +279,25 @@ include 'includes/sidebar.php';
                 const res = await fetch(`${apiBase}/${endpoint}`, {
                     method,
                     headers,
-                    body
+                    body,
+                    credentials: 'same-origin'
                 });
                 if (res.status === 401) {
                     window.location.href = 'login.php';
                     return null;
                 }
-                return await res.json();
+                const rawText = await res.text();
+                try {
+                    return rawText ? JSON.parse(rawText) : {};
+                } catch (_error) {
+                    return {
+                        success: false,
+                        status: 'error',
+                        message: rawText ? rawText.slice(0, 300) : 'Invalid server response'
+                    };
+                }
             } catch (e) {
-                console.error('API Error:', e);
+                console.error('Dashboard API Error:', endpoint, e);
                 return {
                     success: false
                 };
@@ -368,25 +381,25 @@ include 'includes/sidebar.php';
         async function loadDashboardStats() {
             try {
                 // Load connections count
-                const connectionsResponse = await makeApiCall('get_connections_count.php');
+                const connectionsResponse = await dashboardApiCall('get_connections_count.php');
                 if (connectionsResponse && connectionsResponse.success) {
                     document.getElementById('connectionsCount').textContent = connectionsResponse.count || 0;
                 }
 
                 // Load unread messages count
-                const messagesResponse = await makeApiCall('get_unread_messages_count.php');
+                const messagesResponse = await dashboardApiCall('get_unread_messages_count.php');
                 if (messagesResponse && messagesResponse.success) {
                     document.getElementById('unreadMessagesCount').textContent = messagesResponse.count || 0;
                 }
 
                 // Load upcoming events count
-                const eventsResponse = await makeApiCall('get_upcoming_events_count.php');
+                const eventsResponse = await dashboardApiCall('get_upcoming_events_count.php');
                 if (eventsResponse && eventsResponse.success) {
                     document.getElementById('upcomingEventsCount').textContent = eventsResponse.count || 0;
                 }
 
                 // Load notifications count
-                const notificationsResponse = await makeApiCall('get_unread_notifications_count.php');
+                const notificationsResponse = await dashboardApiCall('get_unread_notifications_count.php');
                 if (notificationsResponse && notificationsResponse.success) {
                     document.getElementById('notificationsCount').textContent = notificationsResponse.count || 0;
                 }
@@ -397,7 +410,7 @@ include 'includes/sidebar.php';
 
         async function loadRecentActivity() {
             try {
-                const response = await makeApiCall('get_feed.php?limit=5');
+                const response = await dashboardApiCall('get_feed.php?limit=5');
                 const container = document.getElementById('recentActivity');
 
                 if (response && response.success && response.data && response.data.length > 0) {
@@ -466,7 +479,7 @@ include 'includes/sidebar.php';
 
         async function loadUpcomingEvents() {
             try {
-                const response = await makeApiCall('get_upcoming_events.php?limit=3');
+                const response = await dashboardApiCall('get_upcoming_events.php?limit=3');
                 const container = document.getElementById('upcomingEvents');
                 const events = Array.isArray(response) ? response : (Array.isArray(response?.data) ? response.data : []);
 
@@ -520,7 +533,7 @@ include 'includes/sidebar.php';
 
         async function loadRecentNotifications() {
             try {
-                const response = await makeApiCall('get_notifications.php?limit=4');
+                const response = await dashboardApiCall('get_notifications.php?limit=4');
                 const container = document.getElementById('recentNotifications');
                 const notifications = Array.isArray(response?.data) ? response.data : (Array.isArray(response?.notifications) ? response.notifications : []);
 
@@ -597,7 +610,7 @@ include 'includes/sidebar.php';
                     }
 
                     try {
-                        const response = await makeApiCall('create_post.php', 'POST', formData);
+                        const response = await dashboardApiCall('create_post.php', 'POST', formData);
 
                         if (response && response.success) {
                             await window.appAlert('Post created successfully!', {

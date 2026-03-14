@@ -105,10 +105,12 @@ include 'includes/header.php';
                             </div>
                             
                             <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-2">Email Address</label>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Login Email</label>
                                 <input id="settingsEmailInput" type="email" 
                                        value="" 
-                                       class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                       readonly
+                                       class="w-full px-4 py-3 border border-gray-300 rounded-lg bg-gray-50 text-gray-500 cursor-not-allowed focus:outline-none">
+                                <p id="settingsEmailHelp" class="mt-2 text-xs text-gray-500">Your sign-in email is managed separately from profile details.</p>
                             </div>
                             
                             <div>
@@ -306,6 +308,12 @@ include 'includes/header.php';
             document.getElementById('settingsFirstName').value = first;
             document.getElementById('settingsLastName').value = last;
             document.getElementById('settingsEmailInput').value = user.email || '';
+            const emailHelp = document.getElementById('settingsEmailHelp');
+            if (emailHelp) {
+                emailHelp.textContent = window.settingsCurrentUserRole === 'student'
+                    ? 'Student login email is fixed by institute policy and cannot be changed here.'
+                    : 'Login email is managed separately from your public profile. Use bio, contact number, website, or social links for public contact details.';
+            }
             document.getElementById('settingsBioInput').value = user.bio || '';
 
             const sideImg = document.getElementById('settingsSidebarAvatar');
