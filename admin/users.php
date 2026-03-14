@@ -132,10 +132,17 @@ if (session_status() === PHP_SESSION_NONE) {
                         <td class="py-3 px-3 text-sm text-gray-700">${escapeHtml(user.branch || '-')}</td>
                         <td class="py-3 px-3 text-sm text-gray-700">${fmt(user.created_at)}</td>
                         <td class="py-3 px-3 text-sm">
-                            <div class="flex gap-2">
+                            <div class="flex flex-wrap gap-2">
                                 <a class="px-2 py-1 border rounded hover:bg-gray-100" href="../profile.php?id=${user.id}" target="_blank">View</a>
                                 ${user.status === 'pending' ? `<button class="px-2 py-1 bg-green-600 text-white rounded hover:bg-green-700" onclick="updateUser(${user.id},'approve')">Approve</button>` : ''}
                                 ${user.status === 'pending' ? `<button class="px-2 py-1 bg-red-600 text-white rounded hover:bg-red-700" onclick="updateUser(${user.id},'reject')">Reject</button>` : ''}
+                                ${user.status !== 'banned' ? `<button class="px-2 py-1 bg-red-600 text-white rounded hover:bg-red-700" onclick="adminUserAction(${user.id}, 'ban_user')">Ban</button>` : ''}
+                                ${user.status === 'banned' ? `<button class="px-2 py-1 bg-green-600 text-white rounded hover:bg-green-700" onclick="adminUserAction(${user.id}, 'unban_user')">Unban</button>` : ''}
+                                <button class="px-2 py-1 bg-gray-800 text-white rounded hover:bg-gray-900" onclick="adminUserAction(${user.id}, 'shadow_ban')">Shadow 7d</button>
+                                <button class="px-2 py-1 bg-slate-700 text-white rounded hover:bg-slate-800" onclick="adminUserAction(${user.id}, 'restrict_messaging')">Mute DM 7d</button>
+                                <button class="px-2 py-1 border rounded hover:bg-gray-100" onclick="adminUserAction(${user.id}, 'lift_shadow_ban')">Lift Shadow</button>
+                                <button class="px-2 py-1 border rounded hover:bg-gray-100" onclick="adminUserAction(${user.id}, 'lift_messaging_restriction')">Unmute DM</button>
+                                <button class="px-2 py-1 bg-blue-600 text-white rounded hover:bg-blue-700" onclick="resetUserPassword(${user.id}, '${escapeJs(user.email)}')">Reset Password</button>
                             </div>
                         </td>
                     </tr>
@@ -160,6 +167,36 @@ if (session_status() === PHP_SESSION_NONE) {
             loadUsers(currentPage);
         }
 
+        async function adminUserAction(userId, action) {
+            const payload = { action, target_user_id: userId };
+            if (action === 'shadow_ban' || action === 'restrict_messaging' || action === 'restrict_posting') {
+                payload.duration_hours = 168;
+            }
+            const ok = confirm(`Run ${action} for user #${userId}?`);
+            if (!ok) return;
+            const res = await makeApiCall('admin_user_actions.php', 'POST', payload);
+            if (!res || res.success === false) {
+                alert((res && res.message) ? res.message : 'Admin action failed');
+                return;
+            }
+            loadUsers(currentPage);
+        }
+
+        async function resetUserPassword(userId, email) {
+            const newPassword = prompt(`Enter a new password for ${email}:`);
+            if (!newPassword) return;
+            const res = await makeApiCall('admin_user_actions.php', 'POST', {
+                action: 'reset_password',
+                target_user_id: userId,
+                new_password: newPassword
+            });
+            if (!res || res.success === false) {
+                alert((res && res.message) ? res.message : 'Password reset failed');
+                return;
+            }
+            alert('Password reset successfully.');
+        }
+
         function fmt(v) {
             if (!v) return '-';
             return new Date(v).toLocaleString();
@@ -182,6 +219,9 @@ if (session_status() === PHP_SESSION_NONE) {
         }
         function escapeHtml(s) {
             return String(s).replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m]));
+        }
+        function escapeJs(s) {
+            return String(s).replace(/\\/g, '\\\\').replace(/'/g, "\\'");
         }
     </script>
 </body>

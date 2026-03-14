@@ -257,3 +257,18 @@ When verifying a fresh deploy, append `?refresh=<commit>` to bypass stale browse
 - Keep this section updated after every meaningful deploy.
 - Add commit ID + what changed + any remaining known issue.
 - Prefer recording live behavior here instead of relying on chat memory.
+## Project Memory
+
+### Admin Moderation And Access Control
+- Admin moderation is being expanded through `api/admin_user_actions.php` and `api/admin_report_action.php`.
+- Admin can now ban/unban users, collect and ban their known devices, restrict posting, restrict messaging, shadow-ban, and reset passwords through the admin flow.
+- Non-admins cannot report admin-authored posts/comments anymore; the backend blocks those attempts in `api/report_content.php`.
+- Non-admins cannot directly message admins. Private alumni/faculty also cannot start direct conversations while their profile is private.
+
+### Password Reset Delivery
+- App-side forgot-password flow exists through `forgot-password.php`, `api/request_reset.php`, and `api/reset_password.php`.
+- Current AWS SES status still blocks real delivery:
+  - SES account is still in sandbox
+  - no SES email identities are verified
+  - no production sender identity is available yet
+- Because of that, password reset requests can generate tokens but cannot reliably send email until SES is configured.

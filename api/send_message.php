@@ -8,6 +8,7 @@ include_once '../middleware/Auth.php';
 include_once '../helpers/FileStorageHelper.php';
 include_once __DIR__ . '/_message_schema.php';
 include_once __DIR__ . '/_mentorship_schema.php';
+include_once __DIR__ . '/_moderation_schema.php';
 
 $database = new Database();
 $db = $database->getConnection();
@@ -44,8 +45,10 @@ if (($receiver_id > 0 || $group_id > 0) && ($messageText !== '' || $attachmentUr
     $stmt = $db->prepare("SELECT role FROM users WHERE user_id = :sid");
     $stmt->execute(['sid' => $sender_id]);
     $sender_role = $stmt->fetchColumn();
+    moderation_assert_messaging_allowed($db, (int)$sender_id, 'Messaging is currently restricted for this account.');
 
     $receiver_role = null;
+    $receiver_private = false;
     if ($receiver_id > 0) {
         $stmt = $db->prepare("SELECT role FROM users WHERE user_id = :rid");
         $stmt->execute(['rid' => $receiver_id]);
@@ -55,6 +58,7 @@ if (($receiver_id > 0 || $group_id > 0) && ($messageText !== '' || $attachmentUr
             echo json_encode(["success" => false, "message" => "Receiver not found."]);
             exit();
         }
+        $receiver_private = moderation_is_profile_private($db, (int)$receiver_id);
     }
 
     // 2. Admin Bypass (Blueprint Section 4.D)
@@ -88,6 +92,17 @@ if (($receiver_id > 0 || $group_id > 0) && ($messageText !== '' || $attachmentUr
             exit();
         }
     } elseif ($sender_role !== 'admin') {
+        if ($receiver_role === 'admin' && $sender_id !== $receiver_id) {
+            http_response_code(403);
+            echo json_encode(["success" => false, "message" => "Direct messaging admins is disabled."]);
+            exit();
+        }
+
+        if (in_array((string)$sender_role, ['alumni', 'faculty'], true) && moderation_is_profile_private($db, (int)$sender_id) && $sender_id !== $receiver_id) {
+            http_response_code(403);
+            echo json_encode(["success" => false, "message" => "Private alumni/faculty accounts must be public to send direct messages."]);
+            exit();
+        }
         
         // 3. Block Check (Blueprint Section 18.2 - Mutual Invisibility)
         // Using verified column names: blocker_user_id, blocked_user_id
@@ -102,11 +117,7 @@ if (($receiver_id > 0 || $group_id > 0) && ($messageText !== '' || $attachmentUr
         }
 
         // 4. Privacy Check (Section 7)
-        $p_check = $db->prepare("SELECT is_private FROM profiles WHERE user_id = :rid");
-        $p_check->execute(['rid' => $receiver_id]);
-        $is_private = $p_check->fetchColumn();
-
-        if ($is_private && $sender_id != $receiver_id) {
+        if ($receiver_private && $sender_id != $receiver_id) {
             http_response_code(403);
             echo json_encode(["success" => false, "message" => "Cannot message a private profile."]);
             exit();

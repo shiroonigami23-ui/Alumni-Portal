@@ -5,6 +5,7 @@ header("Access-Control-Allow-Methods: POST");
 
 include_once '../config/Database.php';
 include_once '../middleware/Auth.php';
+include_once __DIR__ . '/_moderation_schema.php';
 
 function ensure_comment_reports_schema(PDO $db): void
 {
@@ -72,6 +73,27 @@ try {
     if ($post_id > 0) {
         ensure_post_reports_schema($db);
         $db->beginTransaction();
+        $targetStmt = $db->prepare("
+            SELECT p.user_id, u.role
+            FROM posts p
+            JOIN users u ON u.user_id = p.user_id
+            WHERE p.post_id = :pid
+            LIMIT 1
+        ");
+        $targetStmt->execute(['pid' => $post_id]);
+        $target = $targetStmt->fetch(PDO::FETCH_ASSOC);
+        if (!$target) {
+            $db->rollBack();
+            http_response_code(404);
+            echo json_encode(["success" => false, "status" => "error", "message" => "Post not found."]);
+            exit;
+        }
+        if (($target['role'] ?? '') === 'admin' && $role !== 'admin') {
+            $db->rollBack();
+            http_response_code(403);
+            echo json_encode(["success" => false, "status" => "error", "message" => "Admin-authored posts cannot be reported."]);
+            exit;
+        }
         if ($role === 'admin') {
             $db->prepare("DELETE FROM posts WHERE post_id = :pid")->execute(['pid' => $post_id]);
             $db->commit();
@@ -116,6 +138,27 @@ try {
 
     ensure_comment_reports_schema($db);
     $db->beginTransaction();
+    $commentTargetStmt = $db->prepare("
+        SELECT c.user_id, u.role
+        FROM comments c
+        JOIN users u ON u.user_id = c.user_id
+        WHERE c.comment_id = :cid
+        LIMIT 1
+    ");
+    $commentTargetStmt->execute(['cid' => $comment_id]);
+    $commentTarget = $commentTargetStmt->fetch(PDO::FETCH_ASSOC);
+    if (!$commentTarget) {
+        $db->rollBack();
+        http_response_code(404);
+        echo json_encode(["success" => false, "status" => "error", "message" => "Comment not found."]);
+        exit;
+    }
+    if (($commentTarget['role'] ?? '') === 'admin' && $role !== 'admin') {
+        $db->rollBack();
+        http_response_code(403);
+        echo json_encode(["success" => false, "status" => "error", "message" => "Admin-authored comments cannot be reported."]);
+        exit;
+    }
     if ($role === 'admin') {
         $db->prepare("DELETE FROM comments WHERE comment_id = :cid")->execute(['cid' => $comment_id]);
         $db->commit();

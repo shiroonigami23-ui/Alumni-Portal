@@ -21,7 +21,7 @@ class EmailService
     {
         // Try AWS SES first if configured
         if ($this->aws && $this->aws->hasSesClient()) {
-            $result = $this->aws->sendEmail($to, $subject, $body);
+            $result = $this->aws->sendEmail($to, $subject, $body, $this->fromEmail, $this->fromName);
             if ($result) {
                 return ['success' => true, 'method' => 'SES', 'message_id' => $result];
             }

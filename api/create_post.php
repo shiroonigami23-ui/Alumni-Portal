@@ -10,6 +10,7 @@ include_once '../middleware/Security.php';
 include_once '../helpers/Logger.php'; // Added Logger
 include_once __DIR__ . '/_asset_store.php';
 include_once __DIR__ . '/_content_store.php';
+include_once __DIR__ . '/_moderation_schema.php';
 
 $database = new Database();
 $db = $database->getConnection();
@@ -34,6 +35,8 @@ if (($userPerms['role'] ?? '') === 'student') {
     echo json_encode(["status" => "error", "message" => "Students cannot create posts."]);
     exit;
 }
+
+moderation_assert_posting_allowed($db, (int)$user_id, 'Posting is currently restricted for this account.');
 
 $raw = file_get_contents("php://input");
 $data = json_decode($raw);

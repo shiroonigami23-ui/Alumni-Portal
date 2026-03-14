@@ -4,12 +4,14 @@ header("Content-Type: application/json; charset=UTF-8");
 
 require_once __DIR__ . '/../config/Database.php';
 require_once __DIR__ . '/../middleware/Auth.php';
+require_once __DIR__ . '/_moderation_schema.php';
 
 try {
     $database = new Database();
     $db = $database->getConnection();
     $auth = new Auth($db);
     $currentUserId = (int)$auth->validateRequest();
+    $currentUserRole = moderation_get_user_role($db, $currentUserId);
 
     $q = trim((string)($_GET['q'] ?? ''));
     $search = '%' . mb_strtolower($q) . '%';
@@ -26,6 +28,7 @@ try {
         LEFT JOIN profiles p ON p.user_id = u.user_id
         WHERE u.user_id <> :me
           AND u.status = 'active'
+          AND (:viewer_is_admin = 1 OR u.role <> 'admin')
           AND (
                 :q = ''
                 OR LOWER(COALESCE(p.full_name, '')) LIKE :search
@@ -42,6 +45,7 @@ try {
     $stmt = $db->prepare($sql);
     $stmt->execute([
         ':me' => $currentUserId,
+        ':viewer_is_admin' => ($currentUserRole === 'admin'),
         ':q' => $q,
         ':search' => $search,
         ':prefix' => $prefix
@@ -71,4 +75,3 @@ try {
         'error' => $e->getMessage()
     ]);
 }
-

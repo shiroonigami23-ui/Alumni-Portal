@@ -5,9 +5,11 @@ header("Access-Control-Allow-Methods: POST");
 
 include_once '../config/Database.php';
 include_once '../middleware/Auth.php';
+include_once __DIR__ . '/_moderation_schema.php';
 
 $database = new Database();
 $db = $database->getConnection();
+ensure_user_moderation_schema($db);
 $auth = new Auth($db);
 
 $admin_id = $auth->validateRequest();
@@ -57,8 +59,8 @@ if (!empty($data->target_id)) {
         ");
         $src->execute(['uid' => $data->target_id]);
         $insertBan = $db->prepare("
-            INSERT INTO device_bans (device_fingerprint, ip_address, banned_by_admin_id, reason)
-            VALUES (:fp, CAST(:ip AS inet), :aid, :reason)
+            INSERT INTO device_bans (device_fingerprint, ip_address, banned_by_admin_id, banned_user_id, reason)
+            VALUES (:fp, CAST(:ip AS inet), :aid, :buid, :reason)
             ON CONFLICT (device_fingerprint, ip_address) DO NOTHING
         ");
         while ($row = $src->fetch(PDO::FETCH_ASSOC)) {
@@ -76,6 +78,7 @@ if (!empty($data->target_id)) {
                 'fp' => $fp,
                 'ip' => $ip,
                 'aid' => $admin_id,
+                'buid' => $data->target_id,
                 'reason' => $reason
             ]);
         }

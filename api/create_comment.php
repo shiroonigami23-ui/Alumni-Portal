@@ -7,6 +7,7 @@ include_once '../config/Database.php';
 include_once '../middleware/Auth.php';
 include_once __DIR__ . '/_asset_store.php';
 include_once __DIR__ . '/_content_store.php';
+include_once __DIR__ . '/_moderation_schema.php';
 
 $database = new Database();
 $db = $database->getConnection();
@@ -48,6 +49,7 @@ try {
     $permStmt->execute([':uid' => $user_id]);
     $userPerms = $permStmt->fetch(PDO::FETCH_ASSOC) ?: ['role' => '', 'can_post' => false];
     $isStudent = (($userPerms['role'] ?? '') === 'student');
+    moderation_assert_posting_allowed($db, (int)$user_id, 'Commenting is currently restricted for this account.');
     if ($isStudent && !empty($_FILES)) {
         http_response_code(403);
         echo json_encode([

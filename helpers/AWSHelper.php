@@ -52,11 +52,13 @@ class AWSHelper
         }
     }
 
-    public function sendEmail($to, $subject, $body)
+    public function sendEmail($to, $subject, $body, $fromEmail = null, $fromName = null)
     {
         if (!$this->ses) return false;
 
         try {
+            $sourceEmail = $fromEmail ?: (getenv('AWS_SES_FROM_EMAIL') ?: 'noreply@alumni.rjit.ac.in');
+            $sourceName = $fromName ?: (getenv('AWS_SES_FROM_NAME') ?: 'RJIT Alumni Portal');
             $result = $this->ses->sendEmail([
                 'Destination' => [
                     'ToAddresses' => [$to],
@@ -73,7 +75,7 @@ class AWSHelper
                         'Data' => $subject,
                     ],
                 ],
-                'Source' => getenv('AWS_SES_FROM_EMAIL'),
+                'Source' => sprintf('%s <%s>', $sourceName, $sourceEmail),
             ]);
             return $result['MessageId'];
         } catch (Exception $e) {
