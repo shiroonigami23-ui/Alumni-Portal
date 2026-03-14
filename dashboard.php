@@ -74,42 +74,50 @@ include 'includes/sidebar.php';
                 <button type="button" class="dashboard-toggle flex w-full items-center justify-between px-6 py-5 text-left" data-target="dashboardQuickActions">
                     <div>
                         <h2 class="text-lg font-semibold text-gray-900">Jump Back In</h2>
-                        <p class="mt-1 text-sm text-gray-500">Shortcuts for the parts of the portal you’ll likely open next.</p>
+                        <p class="mt-1 text-sm text-gray-500">Shortcuts for the parts of the portal you'll likely open next.</p>
                     </div>
                     <i data-lucide="chevron-down" class="h-5 w-5 text-gray-400 transition-transform"></i>
                 </button>
-                <div id="dashboardQuickActions" class="px-6 pb-6">
-                <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
-                    <a href="feed.php" class="bg-white rounded-xl shadow-sm p-4 text-center hover:shadow-md transition duration-300 border border-transparent hover:border-blue-200">
-                        <div class="inline-flex items-center justify-center w-12 h-12 bg-blue-100 rounded-lg mb-3">
+                <div id="dashboardQuickActions" class="hidden px-6 pb-6">
+                <div class="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-4">
+                    <a href="feed.php" class="flex items-center gap-3 rounded-xl border border-transparent bg-slate-50 p-4 text-left transition duration-300 hover:border-blue-200 hover:bg-white hover:shadow-md">
+                        <div class="inline-flex h-12 w-12 items-center justify-center rounded-lg bg-blue-100">
                             <i data-lucide="newspaper" class="h-6 w-6 text-blue-600"></i>
                         </div>
-                        <p class="font-medium text-gray-900">View Feed</p>
-                        <p class="text-sm text-gray-500 mt-1">See latest posts</p>
+                        <div>
+                            <p class="font-medium text-gray-900">View Feed</p>
+                            <p class="mt-1 text-sm text-gray-500">See latest posts</p>
+                        </div>
                     </a>
 
-                    <a href="discovery.php" class="bg-white rounded-xl shadow-sm p-4 text-center hover:shadow-md transition duration-300 border border-transparent hover:border-blue-200">
-                        <div class="inline-flex items-center justify-center w-12 h-12 bg-green-100 rounded-lg mb-3">
+                    <a href="discovery.php" class="flex items-center gap-3 rounded-xl border border-transparent bg-slate-50 p-4 text-left transition duration-300 hover:border-blue-200 hover:bg-white hover:shadow-md">
+                        <div class="inline-flex h-12 w-12 items-center justify-center rounded-lg bg-green-100">
                             <i data-lucide="search" class="h-6 w-6 text-green-600"></i>
                         </div>
-                        <p class="font-medium text-gray-900">Find Alumni</p>
-                        <p class="text-sm text-gray-500 mt-1">Connect with others</p>
+                        <div>
+                            <p class="font-medium text-gray-900">Find Alumni</p>
+                            <p class="mt-1 text-sm text-gray-500">Connect with others</p>
+                        </div>
                     </a>
 
-                    <a href="events.php" class="bg-white rounded-xl shadow-sm p-4 text-center hover:shadow-md transition duration-300 border border-transparent hover:border-blue-200">
-                        <div class="inline-flex items-center justify-center w-12 h-12 bg-purple-100 rounded-lg mb-3">
+                    <a href="events.php" class="flex items-center gap-3 rounded-xl border border-transparent bg-slate-50 p-4 text-left transition duration-300 hover:border-blue-200 hover:bg-white hover:shadow-md">
+                        <div class="inline-flex h-12 w-12 items-center justify-center rounded-lg bg-purple-100">
                             <i data-lucide="calendar" class="h-6 w-6 text-purple-600"></i>
                         </div>
-                        <p class="font-medium text-gray-900">Events</p>
-                        <p class="text-sm text-gray-500 mt-1">Join upcoming events</p>
+                        <div>
+                            <p class="font-medium text-gray-900">Events</p>
+                            <p class="mt-1 text-sm text-gray-500">Join upcoming events</p>
+                        </div>
                     </a>
 
-                    <a href="jobs.php" class="bg-white rounded-xl shadow-sm p-4 text-center hover:shadow-md transition duration-300 border border-transparent hover:border-blue-200">
-                        <div class="inline-flex items-center justify-center w-12 h-12 bg-amber-100 rounded-lg mb-3">
+                    <a href="jobs.php" class="flex items-center gap-3 rounded-xl border border-transparent bg-slate-50 p-4 text-left transition duration-300 hover:border-blue-200 hover:bg-white hover:shadow-md">
+                        <div class="inline-flex h-12 w-12 items-center justify-center rounded-lg bg-amber-100">
                             <i data-lucide="briefcase" class="h-6 w-6 text-amber-600"></i>
                         </div>
-                        <p class="font-medium text-gray-900">Jobs</p>
-                        <p class="text-sm text-gray-500 mt-1">Find opportunities</p>
+                        <div>
+                            <p class="font-medium text-gray-900">Jobs</p>
+                            <p class="mt-1 text-sm text-gray-500">Find opportunities</p>
+                        </div>
                     </a>
                 </div>
                 </div>
@@ -205,7 +213,7 @@ include 'includes/sidebar.php';
                                 <h3 class="font-semibold text-gray-900">Recent Notifications</h3>
                                 <i data-lucide="chevron-down" class="h-5 w-5 text-gray-400 transition-transform"></i>
                             </button>
-                            <a href="#" class="text-sm text-blue-600 hover:text-blue-800">View All</a>
+                            <a href="javascript:void(0)" class="text-sm text-blue-600 hover:text-blue-800">View All</a>
                         </div>
 
                         <div id="recentNotificationsWrap" class="mt-4">
@@ -306,9 +314,12 @@ include 'includes/sidebar.php';
                 const target = targetId ? document.getElementById(targetId) : null;
                 const icon = button.querySelector('svg, i');
                 if (!target) return;
+                if (icon && target.classList.contains('hidden')) {
+                    icon.classList.add('-rotate-90');
+                }
                 button.addEventListener('click', () => {
                     target.classList.toggle('hidden');
-                    if (icon) icon.classList.toggle('rotate-180');
+                    if (icon) icon.classList.toggle('-rotate-90');
                 });
             });
         }
@@ -437,11 +448,12 @@ include 'includes/sidebar.php';
             try {
                 const response = await makeApiCall('get_upcoming_events.php?limit=3');
                 const container = document.getElementById('upcomingEvents');
+                const events = Array.isArray(response) ? response : (Array.isArray(response?.data) ? response.data : []);
 
-                if (response && response.success && response.data && response.data.length > 0) {
+                if (events.length > 0) {
                     container.innerHTML = '';
 
-                    for (const event of response.data.slice(0, 3)) {
+                    for (const event of events.slice(0, 3)) {
                         const eventElement = document.createElement('div');
                         eventElement.className = 'p-3 rounded-lg border border-gray-100';
 
@@ -490,11 +502,12 @@ include 'includes/sidebar.php';
             try {
                 const response = await makeApiCall('get_notifications.php?limit=4');
                 const container = document.getElementById('recentNotifications');
+                const notifications = Array.isArray(response?.data) ? response.data : (Array.isArray(response?.notifications) ? response.notifications : []);
 
-                if (response && response.success && response.data && response.data.length > 0) {
+                if (notifications.length > 0) {
                     container.innerHTML = '';
 
-                    for (const notif of response.data.slice(0, 4)) {
+                    for (const notif of notifications.slice(0, 4)) {
                         const notifElement = document.createElement('div');
                         notifElement.className = 'flex items-start p-3 rounded-lg bg-gray-50';
 

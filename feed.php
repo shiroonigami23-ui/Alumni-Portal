@@ -58,6 +58,16 @@ include 'includes/sidebar.php';
                                       rows="3"
                                       class="w-full px-3 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
                                       placeholder="What's happening?"></textarea>
+                            <div class="mt-2 flex flex-wrap items-center justify-between gap-2 text-xs">
+                                <div class="flex items-center gap-3 text-gray-500">
+                                    <span id="feedDraftStatus">Drafts stay on this device until you post or discard them.</span>
+                                    <span id="postUploadLabel" class="hidden font-medium text-blue-600"></span>
+                                </div>
+                                <div class="flex items-center gap-2">
+                                    <button id="saveDraftBtn" type="button" class="rounded-full border border-gray-300 px-3 py-1 font-medium text-gray-700 hover:bg-gray-50">Save draft</button>
+                                    <button id="discardDraftBtn" type="button" class="rounded-full border border-transparent px-3 py-1 font-medium text-gray-500 hover:bg-gray-50">Discard draft</button>
+                                </div>
+                            </div>
 
                             <div id="postMediaPanel" class="hidden mt-3 border border-dashed border-gray-300 rounded-xl p-3">
                                 <div class="grid sm:grid-cols-2 gap-3">
@@ -75,6 +85,15 @@ include 'includes/sidebar.php';
                                 <input type="hidden" id="postGifUrl">
                                 <div id="postGifPreview" class="hidden mt-3"></div>
                             </div>
+                            <div id="postUploadProgress" class="hidden mt-3 overflow-hidden rounded-xl border border-blue-200 bg-blue-50">
+                                <div class="flex items-center justify-between px-3 py-2 text-xs font-medium text-blue-700">
+                                    <span id="postUploadProgressText">Preparing upload...</span>
+                                    <span id="postUploadProgressValue">0%</span>
+                                </div>
+                                <div class="h-2 w-full bg-blue-100">
+                                    <div id="postUploadProgressBar" class="h-full w-0 bg-blue-600 transition-all duration-200"></div>
+                                </div>
+                            </div>
 
                             <div class="mt-3 flex items-center justify-between gap-2">
                                 <div class="flex items-center gap-2">
@@ -89,8 +108,8 @@ include 'includes/sidebar.php';
                                 </div>
 
                                 <div class="flex items-center gap-2">
-                                    <button type="button" onclick="clearPostForm()" class="px-3 py-1.5 border border-gray-300 rounded-full text-sm text-gray-700 hover:bg-gray-50 font-medium">Clear</button>
-                                    <button type="submit" class="bg-blue-600 text-white px-5 py-1.5 rounded-full hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 font-medium">Post</button>
+                                    <button id="clearPostBtn" type="button" onclick="clearPostForm()" class="px-3 py-1.5 border border-gray-300 rounded-full text-sm text-gray-700 hover:bg-gray-50 font-medium">Clear</button>
+                                    <button id="submitPostBtn" type="submit" class="bg-blue-600 text-white px-5 py-1.5 rounded-full hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 font-medium">Post</button>
                                 </div>
                             </div>
                         </form>
@@ -238,12 +257,13 @@ include 'includes/sidebar.php';
         let pendingSharedPostId = 0;
         let pendingOpenCommentsPostId = 0;
         const postStateCache = new Map();
-        const GIF_API_KEY = 'dc6zaTOxFJmzC';
+        const FEED_DRAFT_KEY_PREFIX = 'feed_post_draft_v1_';
         let gifPickerTarget = null;
         
         // Load feed data
         document.addEventListener('DOMContentLoaded', async function() {
             await loadUserProfile();
+            restoreFeedDraft();
             await processSharedLinkOpen();
             processOpenCommentsParam();
             await loadFeed();
@@ -316,6 +336,162 @@ include 'includes/sidebar.php';
             } catch (error) {
                 console.error('Error loading user profile:', error);
             }
+        }
+
+        function getFeedDraftKey() {
+            return FEED_DRAFT_KEY_PREFIX + String(currentUserId || 'guest');
+        }
+
+        function setFeedDraftStatus(message, tone = 'muted') {
+            const status = document.getElementById('feedDraftStatus');
+            if (!status) return;
+            status.textContent = message;
+            status.className = 'text-xs';
+            if (tone === 'saved') {
+                status.classList.add('text-emerald-600', 'font-medium');
+            } else if (tone === 'warning') {
+                status.classList.add('text-amber-600', 'font-medium');
+            } else {
+                status.classList.add('text-gray-500');
+            }
+        }
+
+        function collectFeedDraftPayload() {
+            return {
+                content: document.getElementById('postContent')?.value || '',
+                allowComments: !!document.getElementById('allowComments')?.checked,
+                gifUrl: document.getElementById('postGifUrl')?.value || '',
+                updatedAt: new Date().toISOString()
+            };
+        }
+
+        function saveFeedDraft(showSavedState = true) {
+            const payload = collectFeedDraftPayload();
+            if (!payload.content.trim() && !payload.gifUrl.trim()) {
+                localStorage.removeItem(getFeedDraftKey());
+                setFeedDraftStatus('Drafts stay on this device until you post or discard them.');
+                return;
+            }
+            localStorage.setItem(getFeedDraftKey(), JSON.stringify(payload));
+            if (showSavedState) {
+                setFeedDraftStatus('Draft saved locally.');
+            }
+        }
+
+        function restoreFeedDraft() {
+            try {
+                const raw = localStorage.getItem(getFeedDraftKey());
+                if (!raw) return;
+                const draft = JSON.parse(raw);
+                const contentEl = document.getElementById('postContent');
+                const allowCommentsEl = document.getElementById('allowComments');
+                const gifEl = document.getElementById('postGifUrl');
+                const gifPreview = document.getElementById('postGifPreview');
+                if (contentEl && typeof draft.content === 'string') {
+                    contentEl.value = draft.content;
+                }
+                if (allowCommentsEl) {
+                    allowCommentsEl.checked = draft.allowComments !== false;
+                }
+                if (gifEl && typeof draft.gifUrl === 'string' && draft.gifUrl.trim() !== '') {
+                    gifEl.value = draft.gifUrl.trim();
+                    renderGifPreview(gifPreview, gifEl.value);
+                    document.getElementById('postMediaPanel')?.classList.remove('hidden');
+                }
+                setFeedDraftStatus('Draft restored from this device.', 'saved');
+            } catch (_error) {
+                localStorage.removeItem(getFeedDraftKey());
+            }
+        }
+
+        function discardFeedDraft(message = 'Draft discarded.') {
+            localStorage.removeItem(getFeedDraftKey());
+            setFeedDraftStatus(message);
+        }
+
+        function queueFeedDraftSave() {
+            clearTimeout(window.__feedDraftTimer);
+            window.__feedDraftTimer = setTimeout(() => saveFeedDraft(false), 350);
+        }
+
+        function setPostComposerUploading(isUploading, progress = 0, message = 'Uploading...') {
+            const form = document.getElementById('createPostForm');
+            const progressWrap = document.getElementById('postUploadProgress');
+            const progressBar = document.getElementById('postUploadProgressBar');
+            const progressText = document.getElementById('postUploadProgressText');
+            const progressValue = document.getElementById('postUploadProgressValue');
+            const uploadLabel = document.getElementById('postUploadLabel');
+            const submitBtn = document.getElementById('submitPostBtn');
+
+            if (form) {
+                form.querySelectorAll('textarea, input, button').forEach((el) => {
+                    if (el.id === 'postUploadProgressBar') return;
+                    el.disabled = !!isUploading;
+                });
+            }
+
+            if (submitBtn) {
+                submitBtn.textContent = isUploading ? 'Posting...' : 'Post';
+            }
+
+            if (progressWrap && progressBar && progressText && progressValue && uploadLabel) {
+                if (isUploading) {
+                    progressWrap.classList.remove('hidden');
+                    uploadLabel.classList.remove('hidden');
+                    const safeProgress = Math.max(0, Math.min(100, Math.round(progress)));
+                    progressBar.style.width = safeProgress + '%';
+                    progressText.textContent = message;
+                    progressValue.textContent = safeProgress + '%';
+                    uploadLabel.textContent = message;
+                } else {
+                    progressWrap.classList.add('hidden');
+                    uploadLabel.classList.add('hidden');
+                    progressBar.style.width = '0%';
+                    progressText.textContent = 'Preparing upload...';
+                    progressValue.textContent = '0%';
+                    uploadLabel.textContent = '';
+                }
+            }
+        }
+
+        function uploadApiForm(endpoint, formData, onProgress = null) {
+            return new Promise((resolve, reject) => {
+                const token = localStorage.getItem('jwt_token');
+                const apiBase = window.getApiBase ? window.getApiBase() : ((window.PORTAL_BASE_PREFIX || '') + 'api');
+                const xhr = new XMLHttpRequest();
+                xhr.open('POST', `${apiBase}/${endpoint}`, true);
+                if (token) {
+                    xhr.setRequestHeader('Authorization', `Bearer ${token}`);
+                }
+                xhr.upload.onprogress = (event) => {
+                    if (event.lengthComputable && typeof onProgress === 'function') {
+                        onProgress((event.loaded / event.total) * 100);
+                    }
+                };
+                xhr.onload = () => {
+                    let payload = {};
+                    try {
+                        payload = xhr.responseText ? JSON.parse(xhr.responseText) : {};
+                    } catch (_error) {
+                        payload = {
+                            success: false,
+                            status: 'error',
+                            message: xhr.responseText || 'Invalid server response'
+                        };
+                    }
+                    if (xhr.status >= 200 && xhr.status < 300) {
+                        resolve(payload);
+                    } else {
+                        reject(payload);
+                    }
+                };
+                xhr.onerror = () => reject({
+                    success: false,
+                    status: 'error',
+                    message: 'Upload request failed.'
+                });
+                xhr.send(formData);
+            });
         }
         
         async function loadFeed() {
@@ -1345,12 +1521,36 @@ include 'includes/sidebar.php';
                     await createPost();
                 });
             }
+
+            const postContentInput = document.getElementById('postContent');
+            if (postContentInput) {
+                postContentInput.addEventListener('input', queueFeedDraftSave);
+            }
+
+            const allowCommentsInput = document.getElementById('allowComments');
+            if (allowCommentsInput) {
+                allowCommentsInput.addEventListener('change', () => saveFeedDraft(false));
+            }
+
+            const saveDraftBtn = document.getElementById('saveDraftBtn');
+            if (saveDraftBtn) {
+                saveDraftBtn.addEventListener('click', () => saveFeedDraft(true));
+            }
+
+            const discardDraftBtn = document.getElementById('discardDraftBtn');
+            if (discardDraftBtn) {
+                discardDraftBtn.addEventListener('click', () => {
+                    clearPostForm();
+                });
+            }
             
             // Image upload preview
             const postImagesInput = document.getElementById('postImages');
             if (postImagesInput) {
                 postImagesInput.addEventListener('change', function() {
                     previewImages(this, 'imagePreviews');
+                    const mediaPanel = document.getElementById('postMediaPanel');
+                    if (mediaPanel && this.files.length) mediaPanel.classList.remove('hidden');
                 });
             }
             
@@ -1359,6 +1559,8 @@ include 'includes/sidebar.php';
             if (postFilesInput) {
                 postFilesInput.addEventListener('change', function() {
                     previewFiles(this, 'filePreviews');
+                    const mediaPanel = document.getElementById('postMediaPanel');
+                    if (mediaPanel && this.files.length) mediaPanel.classList.remove('hidden');
                 });
             }
 
@@ -1514,23 +1716,29 @@ include 'includes/sidebar.php';
             
             try {
                 isCreatingFeedPost = true;
-                const response = await makeApiCall('create_post.php', 'POST', formData);
+                setPostComposerUploading(true, 0, 'Preparing upload...');
+                const response = await uploadApiForm('create_post.php', formData, (progress) => {
+                    const hasHeavyFiles = imageInput.files.length > 0 || fileInput.files.length > 0;
+                    const label = hasHeavyFiles ? 'Uploading attachments...' : 'Publishing post...';
+                    setPostComposerUploading(true, progress, label);
+                });
                 
                 if (response && (response.success || response.status === 'success')) {
-                    clearPostForm();
+                    clearPostForm('Post published. Draft cleared.');
                     await prependNewlyCreatedPost(response.post_id);
                 } else {
                     alert(response.message || 'Failed to create post');
                 }
             } catch (error) {
                 console.error('Error creating post:', error);
-                alert('Error creating post');
+                alert(error.message || 'Error creating post');
             } finally {
+                setPostComposerUploading(false);
                 isCreatingFeedPost = false;
             }
         }
         
-        function clearPostForm() {
+        function clearPostForm(draftMessage = 'Draft discarded.') {
             document.getElementById('postContent').value = '';
             document.getElementById('postGifUrl').value = '';
             document.getElementById('allowComments').checked = true;
@@ -1541,6 +1749,7 @@ include 'includes/sidebar.php';
             document.getElementById('postFiles').value = '';
             const mediaPanel = document.getElementById('postMediaPanel');
             if (mediaPanel) mediaPanel.classList.add('hidden');
+            discardFeedDraft(draftMessage);
         }
 
         function clearGifPreview(container) {
@@ -1566,7 +1775,13 @@ include 'includes/sidebar.php';
                         : null;
                     if (input) input.value = '';
                     clearGifPreview(container);
+                    if (container.id === 'postGifPreview') {
+                        saveFeedDraft(false);
+                    }
                 });
+            }
+            if (container.id === 'postGifPreview') {
+                saveFeedDraft(false);
             }
         }
 
@@ -1591,21 +1806,45 @@ include 'includes/sidebar.php';
             const status = document.getElementById('gifPickerStatus');
             if (!grid || !status) return;
             grid.innerHTML = '<div class="col-span-full py-10 text-center text-slate-400">Loading GIFs...</div>';
-            const endpoint = query.trim()
-                ? `https://api.giphy.com/v1/gifs/search?api_key=${GIF_API_KEY}&limit=24&rating=pg&q=${encodeURIComponent(query.trim())}`
-                : `https://api.giphy.com/v1/gifs/trending?api_key=${GIF_API_KEY}&limit=24&rating=pg`;
-            status.textContent = query.trim() ? `Results for "${query.trim()}"` : 'Trending GIFs';
+            const normalizedQuery = query.trim();
+            status.textContent = normalizedQuery ? `Results for "${normalizedQuery}"` : 'Popular GIFs';
             try {
-                const response = await fetch(endpoint);
+                const searchTerm = normalizedQuery ? `${normalizedQuery} gif` : 'reaction gif';
+                const params = new URLSearchParams({
+                    action: 'query',
+                    generator: 'search',
+                    gsrsearch: `filemime:gif ${searchTerm}`,
+                    gsrnamespace: '6',
+                    gsrlimit: '24',
+                    prop: 'imageinfo',
+                    iiprop: 'url',
+                    iiurlwidth: '360',
+                    format: 'json',
+                    origin: '*'
+                });
+                const response = await fetch(`https://commons.wikimedia.org/w/api.php?${params.toString()}`);
                 const payload = await response.json();
-                const gifs = Array.isArray(payload?.data) ? payload.data : [];
+                const gifs = Object.values(payload?.query?.pages || {})
+                    .map((page) => {
+                        const imageInfo = Array.isArray(page?.imageinfo) ? page.imageinfo[0] : null;
+                        const originalUrl = imageInfo?.url || '';
+                        if (!originalUrl || !/\.gif(\?|$)/i.test(originalUrl)) {
+                            return null;
+                        }
+                        return {
+                            title: String(page?.title || 'GIF').replace(/^File:/i, ''),
+                            preview_url: imageInfo?.thumburl || originalUrl,
+                            url: originalUrl
+                        };
+                    })
+                    .filter(Boolean);
                 if (!gifs.length) {
                     grid.innerHTML = '<div class="col-span-full py-10 text-center text-slate-400">No GIFs found.</div>';
                     return;
                 }
                 grid.innerHTML = gifs.map((gif) => {
-                    const preview = gif?.images?.fixed_height?.url || gif?.images?.downsized?.url || '';
-                    const original = gif?.images?.original?.url || preview;
+                    const preview = gif?.preview_url || gif?.url || '';
+                    const original = gif?.url || preview;
                     const title = (gif?.title || 'GIF').replace(/"/g, '&quot;');
                     return `
                         <button type="button" class="gif-choice overflow-hidden rounded-xl border border-slate-700 bg-slate-900 hover:border-pink-500" data-gif-url="${original}">
