@@ -5,7 +5,7 @@ header("Access-Control-Allow-Methods: POST");
 
 require_once '../config/Database.php';
 require_once '../middleware/Auth.php';
-require_once '../helpers/FileStorageHelper.php';
+require_once __DIR__ . '/_asset_store.php';
 
 $database = new Database();
 $db = $database->getConnection();
@@ -38,22 +38,15 @@ $stmt = $db->prepare("SELECT cover_photo_url FROM profiles WHERE user_id = :uid"
 $stmt->execute([':uid' => $user_id]);
 $old = $stmt->fetch(PDO::FETCH_ASSOC);
 
-$uploadDir = dirname(__DIR__) . DIRECTORY_SEPARATOR . "storage" . DIRECTORY_SEPARATOR . "covers" . DIRECTORY_SEPARATOR;
-if (!is_dir($uploadDir)) {
-    mkdir($uploadDir, 0777, true);
-}
-
-$filename = FileStorageHelper::uniqueFileName('cover', (int)$user_id, $extension, 'banner');
-$abs = $uploadDir . $filename;
-$dbUrl = "storage/covers/" . $filename;
-
-if (!move_uploaded_file($file['tmp_name'], $abs)) {
+$stored = store_uploaded_asset($db, (int)$user_id, $file, 'image', 'profile_cover');
+if (!$stored || empty($stored['url'])) {
     http_response_code(500);
     echo json_encode(["success" => false, "message" => "Upload failed."]);
     exit;
 }
 
 if (!empty($old['cover_photo_url'])) {
+    delete_asset_by_url($db, (string)$old['cover_photo_url']);
     $oldAbs = dirname(__DIR__) . DIRECTORY_SEPARATOR . str_replace('/', DIRECTORY_SEPARATOR, (string)$old['cover_photo_url']);
     if (is_file($oldAbs)) {
         @unlink($oldAbs);
@@ -70,11 +63,11 @@ $upsert = $db->prepare("
 $upsert->execute([
     ':uid' => $user_id,
     ':full_name' => 'User ' . $user_id,
-    ':url' => $dbUrl
+    ':url' => (string)$stored['url']
 ]);
 
 echo json_encode([
     "success" => true,
     "message" => "Cover updated.",
-    "cover_url" => $dbUrl
+    "cover_url" => (string)$stored['url']
 ]);

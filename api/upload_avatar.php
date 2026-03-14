@@ -5,7 +5,7 @@ header("Access-Control-Allow-Methods: POST");
 
 include_once '../config/Database.php';
 include_once '../middleware/Auth.php';
-include_once '../helpers/FileStorageHelper.php';
+include_once __DIR__ . '/_asset_store.php';
 
 $database = new Database();
 $db = $database->getConnection();
@@ -30,57 +30,46 @@ if (isset($_FILES['avatar'])) {
         exit();
     }
 
-    // 1. Fetch old avatar path to delete it
+    // 1. Fetch old avatar path to replace it
     $stmt = $db->prepare("SELECT profile_picture_url FROM profiles WHERE user_id = :uid");
     $stmt->execute(['uid' => $user_id]);
     $old_avatar = $stmt->fetch(PDO::FETCH_ASSOC);
-
-    // 2. Setup paths
-    $filename = FileStorageHelper::uniqueFileName('avatar', (int)$user_id, $extension, 'profile');
-    $upload_dir = dirname(__DIR__) . DIRECTORY_SEPARATOR . "storage" . DIRECTORY_SEPARATOR . "profiles" . DIRECTORY_SEPARATOR;
-    if (!file_exists($upload_dir)) {
-        mkdir($upload_dir, 0777, true);
-    }
-    $upload_path = $upload_dir . $filename;
-    $db_url = "storage/profiles/" . $filename;
-
-    if (move_uploaded_file($file['tmp_name'], $upload_path)) {
-        
-        // 3. Delete old file from disk if it exists
-        if (!empty($old_avatar['profile_picture_url'])) {
-            $old_file_path = dirname(__DIR__) . DIRECTORY_SEPARATOR . str_replace('/', DIRECTORY_SEPARATOR, $old_avatar['profile_picture_url']);
-            if (file_exists($old_file_path)) {
-                unlink($old_file_path); // Physically remove the old image
-            }
-        }
-
-        // 4. Update DB
-        $insertOrUpdate = $db->prepare("
-            INSERT INTO profiles (user_id, full_name, profile_picture_url)
-            VALUES (:uid, :full_name, :url)
-            ON CONFLICT (user_id) DO UPDATE
-            SET profile_picture_url = EXCLUDED.profile_picture_url,
-                updated_at = CURRENT_TIMESTAMP
-        ");
-        $insertOrUpdate->execute([
-            'uid' => $user_id,
-            'full_name' => 'User ' . $user_id,
-            'url' => $db_url
-        ]);
-
-        echo json_encode([
-            "success" => true,
-            "status" => "success",
-            "message" => "Avatar updated.",
-            "url" => $db_url,
-            "avatar_url" => $db_url
-        ]);
-    } else {
+    $stored = store_uploaded_asset($db, (int)$user_id, $file, 'image', 'profile_avatar');
+    if (!$stored || empty($stored['url'])) {
         http_response_code(500);
         echo json_encode(["success" => false, "status" => "error", "message" => "Upload failed."]);
+        exit();
     }
+
+    if (!empty($old_avatar['profile_picture_url'])) {
+        delete_asset_by_url($db, (string)$old_avatar['profile_picture_url']);
+        $old_file_path = dirname(__DIR__) . DIRECTORY_SEPARATOR . str_replace('/', DIRECTORY_SEPARATOR, (string)$old_avatar['profile_picture_url']);
+        if (is_file($old_file_path)) {
+            @unlink($old_file_path);
+        }
+    }
+
+    $insertOrUpdate = $db->prepare("
+        INSERT INTO profiles (user_id, full_name, profile_picture_url)
+        VALUES (:uid, :full_name, :url)
+        ON CONFLICT (user_id) DO UPDATE
+        SET profile_picture_url = EXCLUDED.profile_picture_url,
+            updated_at = CURRENT_TIMESTAMP
+    ");
+    $insertOrUpdate->execute([
+        'uid' => $user_id,
+        'full_name' => 'User ' . $user_id,
+        'url' => (string)$stored['url']
+    ]);
+
+    echo json_encode([
+        "success" => true,
+        "status" => "success",
+        "message" => "Avatar updated.",
+        "url" => (string)$stored['url'],
+        "avatar_url" => (string)$stored['url']
+    ]);
 } else {
     http_response_code(400);
     echo json_encode(["success" => false, "status" => "error", "message" => "No avatar file received."]);
 }
-?>

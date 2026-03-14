@@ -5,37 +5,7 @@ header("Content-Type: application/json; charset=UTF-8");
 include_once '../config/Database.php';
 include_once '../middleware/Auth.php';
 include_once __DIR__ . '/_content_store.php';
-
-function clear_missing_local_asset(?string $path): string
-{
-    $path = trim((string)$path);
-    if ($path === '') {
-        return '';
-    }
-
-    if (stripos($path, 'data:image/') === 0) {
-        return $path;
-    }
-
-    if (preg_match('/\.php(?:\?|$)/i', $path)) {
-        return $path;
-    }
-
-    $normalized = str_replace('\\', '/', $path);
-    if (preg_match('#^https?://#i', $normalized)) {
-        $parts = parse_url($normalized);
-        $candidate = isset($parts['path']) ? ltrim((string)$parts['path'], '/') : '';
-        if ($candidate === '') {
-            return $normalized;
-        }
-        $abs = dirname(__DIR__) . DIRECTORY_SEPARATOR . str_replace('/', DIRECTORY_SEPARATOR, $candidate);
-        return file_exists($abs) ? $normalized : '';
-    }
-
-    $candidate = ltrim($normalized, '/');
-    $abs = dirname(__DIR__) . DIRECTORY_SEPARATOR . str_replace('/', DIRECTORY_SEPARATOR, $candidate);
-    return file_exists($abs) ? $normalized : '';
-}
+include_once __DIR__ . '/_profile_media.php';
 
 $database = new Database();
 $db = $database->getConnection();
@@ -124,7 +94,7 @@ try {
                 }
             }
         }
-        $avatar = clear_missing_local_asset($avatar);
+        $avatar = resolve_profile_media_url($db, (int)$row['user_id'], $avatar, 'profile_picture_url', 'profile_avatar');
 
         $userHasLikedVal = $row['user_has_liked'] ?? false;
         $userHasLiked = ($userHasLikedVal === true || $userHasLikedVal === 1 || $userHasLikedVal === '1' || $userHasLikedVal === 't');

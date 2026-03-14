@@ -301,6 +301,10 @@ include 'includes/sidebar.php';
         
         async function loadUserProfile() {
             try {
+                const createPostSection = document.getElementById('createPostSection');
+                if (createPostSection) {
+                    createPostSection.classList.add('hidden');
+                }
                 const userData = localStorage.getItem('user_data');
                 if (userData) {
                     const user = JSON.parse(userData);
@@ -323,6 +327,8 @@ include 'includes/sidebar.php';
                     const canPost = (user.role === 'admin' || user.role === 'faculty' || user.role === 'alumni');
                     if (canPost) {
                         document.getElementById('createPostSection').classList.remove('hidden');
+                    } else if (createPostSection) {
+                        createPostSection.classList.add('hidden');
                     }
                 }
 
@@ -345,6 +351,8 @@ include 'includes/sidebar.php';
                     const canPost = (user.role === 'admin' || user.role === 'faculty' || user.role === 'alumni');
                     if (canPost) {
                         document.getElementById('createPostSection').classList.remove('hidden');
+                    } else if (createPostSection) {
+                        createPostSection.classList.add('hidden');
                     }
                 }
             } catch (error) {

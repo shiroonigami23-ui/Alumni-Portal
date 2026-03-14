@@ -391,19 +391,32 @@ include 'includes/sidebar.php';
         
         async function loadCurrentUser() {
             try {
-                const userData = localStorage.getItem('user_data');
-                if (userData) {
-                    const user = JSON.parse(userData);
+                const createPostSection = document.getElementById('createPostSection');
+                if (createPostSection) {
+                    createPostSection.classList.add('hidden');
+                }
+                let user = null;
+                const me = await makeApiCall('me.php');
+                if (me && me.success && me.data) {
+                    user = me.data;
+                    localStorage.setItem('user_data', JSON.stringify(user));
+                } else {
+                    const userData = localStorage.getItem('user_data');
+                    if (userData) {
+                        user = JSON.parse(userData);
+                    }
+                }
+
+                if (user) {
                     currentUserId = parseInt(user.user_id || user.id || 0, 10) || null;
                     currentUserRole = String(user.role || '').toLowerCase();
-                    
-                    // If no profile ID specified, show current user's profile
-                    if (!profileUserId) {
-                        profileUserId = currentUserId;
-                        isOwnProfile = true;
-                    } else {
-                        isOwnProfile = (parseInt(profileUserId) === currentUserId);
-                    }
+                }
+
+                if (!profileUserId && currentUserId) {
+                    profileUserId = currentUserId;
+                    isOwnProfile = true;
+                } else if (profileUserId && currentUserId) {
+                    isOwnProfile = (parseInt(profileUserId, 10) === currentUserId);
                 }
             } catch (error) {
                 console.error('Error loading current user:', error);
@@ -1155,6 +1168,13 @@ include 'includes/sidebar.php';
                 const result = await response.json();
 
                 if (result && (result.success || result.status === 'success')) {
+                    try {
+                        const cached = JSON.parse(localStorage.getItem('user_data') || '{}');
+                        const nextUrl = result.url || result.avatar_url || '';
+                        cached.profile_picture_url = nextUrl;
+                        cached.profile_picture = nextUrl;
+                        localStorage.setItem('user_data', JSON.stringify(cached));
+                    } catch (_error) {}
                     alert('Profile picture updated successfully!');
                     window.location.reload();
                 } else {
@@ -1184,6 +1204,11 @@ include 'includes/sidebar.php';
                     if (cover) {
                         cover.style.backgroundImage = `url('${result.cover_url}')`;
                     }
+                    try {
+                        const cached = JSON.parse(localStorage.getItem('user_data') || '{}');
+                        cached.cover_photo_url = result.cover_url;
+                        localStorage.setItem('user_data', JSON.stringify(cached));
+                    } catch (_error) {}
                     alert('Cover photo updated successfully!');
                 } else {
                     alert((result && result.message) || 'Failed to update cover photo');

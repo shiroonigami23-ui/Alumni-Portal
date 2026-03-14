@@ -5,7 +5,7 @@ header("Access-Control-Allow-Methods: POST");
 
 include_once '../config/Database.php';
 include_once '../middleware/Auth.php';
-include_once '../helpers/FileStorageHelper.php';
+include_once __DIR__ . '/_asset_store.php';
 
 $database = new Database();
 $db = $database->getConnection();
@@ -52,21 +52,15 @@ if (isset($_FILES['attachment'])) {
         exit();
     }
 
-    // 4. Storage Logic
-    $filename = FileStorageHelper::uniqueFileName('file', (int)$user_id, $extension, $context);
-    $sub_folder = in_array($context, ['posts', 'events', 'comments', 'messages']) ? $context : 'posts';
-    if ($sub_folder === 'comments') $sub_folder = "comments/attachments";
+    $assetKind = in_array($extension, ['jpg', 'jpeg', 'png', 'gif', 'webp'], true)
+        ? (in_array($extension, ['gif'], true) ? 'gif' : 'image')
+        : 'file';
+    $stored = store_uploaded_asset($db, (int)$user_id, $file, $assetKind, $context ?: 'posts');
 
-    $upload_dir = dirname(__DIR__) . DIRECTORY_SEPARATOR . "storage" . DIRECTORY_SEPARATOR . $sub_folder . DIRECTORY_SEPARATOR;
-    if (!file_exists($upload_dir)) mkdir($upload_dir, 0777, true);
-    
-    $upload_path = $upload_dir . $filename;
-    $db_url = "storage/" . $sub_folder . "/" . $filename;
-
-    if (move_uploaded_file($file['tmp_name'], $upload_path)) {
+    if ($stored && !empty($stored['url'])) {
         echo json_encode([
             "message" => "File uploaded successfully to $context.",
-            "url" => $db_url,
+            "url" => (string)$stored['url'],
             "type" => $extension
         ]);
     } else {
@@ -77,4 +71,3 @@ if (isset($_FILES['attachment'])) {
     http_response_code(400);
     echo json_encode(["message" => "No file found. Use field 'attachment'."]);
 }
-?>

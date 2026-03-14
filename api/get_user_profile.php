@@ -8,6 +8,7 @@ require_once '../config/Database.php';
 require_once '../middleware/Auth.php';
 require_once '../helpers/TechStackHelper.php';
 require_once __DIR__ . '/_content_store.php';
+require_once __DIR__ . '/_profile_media.php';
 
 header('Content-Type: application/json');
 
@@ -31,27 +32,6 @@ function derive_joined_year(?string $rollNumber, ?string $email): ?int
     }
 
     return null;
-}
-
-function clear_missing_local_asset(?string $path): string
-{
-    $path = trim(str_replace('\\', '/', (string)$path));
-    if ($path === '' || stripos($path, 'data:image/') === 0) {
-        return $path;
-    }
-    if (preg_match('#\.php(?:$|\?)#i', $path)) {
-        return $path;
-    }
-    if (preg_match('#^https?://#i', $path)) {
-        $parsedPath = (string)(parse_url($path, PHP_URL_PATH) ?? '');
-        if ($parsedPath === '' || preg_match('#\.php$#i', $parsedPath)) {
-            return $path;
-        }
-        $path = ltrim(str_replace('\\', '/', $parsedPath), '/');
-    }
-    $path = ltrim($path, '/');
-    $abs = dirname(__DIR__) . DIRECTORY_SEPARATOR . str_replace('/', DIRECTORY_SEPARATOR, $path);
-    return is_file($abs) ? $path : '';
 }
 
 // Authenticate user (optional)
@@ -192,11 +172,11 @@ try {
             }
         }
     }
-    $profile['profile_picture_url'] = clear_missing_local_asset($profile['profile_picture_url'] ?? '');
+    $profile['profile_picture_url'] = resolve_profile_media_url($db, (int)$user_id, $profile['profile_picture_url'] ?? '', 'profile_picture_url', 'profile_avatar');
     if (!empty($profile['cover_photo_url'])) {
         $profile['cover_photo_url'] = str_replace('\\', '/', (string)$profile['cover_photo_url']);
     }
-    $profile['cover_photo_url'] = clear_missing_local_asset($profile['cover_photo_url'] ?? '');
+    $profile['cover_photo_url'] = resolve_profile_media_url($db, (int)$user_id, $profile['cover_photo_url'] ?? '', 'cover_photo_url', 'profile_cover');
     if (!isset($profile['is_private'])) {
         $profile['is_private'] = false;
     }

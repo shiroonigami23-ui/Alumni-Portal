@@ -5,6 +5,7 @@ header("Content-Type: application/json; charset=UTF-8");
 include_once '../config/Database.php';
 include_once '../middleware/Auth.php';
 include_once __DIR__ . '/_message_schema.php';
+include_once __DIR__ . '/_profile_media.php';
 
 function clear_missing_local_asset(?string $path): string
 {
@@ -174,7 +175,7 @@ try {
                 'member_role' => (string)($row['member_role'] ?? 'member'),
                 'full_name' => (string)($row['full_name'] ?? 'Member'),
                 'role' => (string)($row['role'] ?? ''),
-                'profile_picture_url' => clear_missing_local_asset($row['profile_picture_url'] ? str_replace('\\', '/', (string)$row['profile_picture_url']) : null),
+                'profile_picture_url' => resolve_profile_media_url($db, (int)$row['user_id'], $row['profile_picture_url'] ? str_replace('\\', '/', (string)$row['profile_picture_url']) : null, 'profile_picture_url', 'profile_avatar'),
             ];
         }, $membersStmt->fetchAll(PDO::FETCH_ASSOC));
 
@@ -208,7 +209,7 @@ try {
                 ),
                 "can_delete" => ((int)$msg['sender_user_id'] === $user_id),
                 "is_read" => true,
-                "sender_profile_picture" => clear_missing_local_asset($msg['sender_profile_picture'] ? str_replace('\\', '/', (string)$msg['sender_profile_picture']) : null)
+                "sender_profile_picture" => resolve_profile_media_url($db, (int)$msg['sender_user_id'], $msg['sender_profile_picture'] ? str_replace('\\', '/', (string)$msg['sender_profile_picture']) : null, 'profile_picture_url', 'profile_avatar')
             ];
         }
 
@@ -240,7 +241,7 @@ try {
                 'group_id' => $groupId,
                 'title' => (string)($groupMeta['title'] ?? 'Mentor Group'),
                 'mentor_name' => (string)($groupMeta['mentor_name'] ?? 'Mentor'),
-                'mentor_avatar' => clear_missing_local_asset($groupMeta['mentor_avatar'] ? str_replace('\\', '/', (string)$groupMeta['mentor_avatar']) : null),
+                'mentor_avatar' => resolve_profile_media_url($db, (int)$groupMeta['mentor_user_id'], $groupMeta['mentor_avatar'] ? str_replace('\\', '/', (string)$groupMeta['mentor_avatar']) : null, 'profile_picture_url', 'profile_avatar'),
                 'admin_user_id' => (int)($groupMeta['admin_user_id'] ?? 0),
                 'current_member_role' => (string)$currentMemberRole,
                 'members' => $members
@@ -302,7 +303,7 @@ try {
             ),
             "can_delete" => ((int)$msg['sender_user_id'] === $user_id),
             "is_read" => !is_null($msg['read_at']),
-                "sender_profile_picture" => clear_missing_local_asset($msg['sender_profile_picture'] ? str_replace('\\', '/', (string)$msg['sender_profile_picture']) : null)
+                "sender_profile_picture" => resolve_profile_media_url($db, (int)$msg['sender_user_id'], $msg['sender_profile_picture'] ? str_replace('\\', '/', (string)$msg['sender_profile_picture']) : null, 'profile_picture_url', 'profile_avatar')
         ];
     }
 

@@ -9,6 +9,7 @@
 
 require_once __DIR__ . '/../middleware/Auth.php';
 require_once __DIR__ . '/../config/Database.php';
+require_once __DIR__ . '/_profile_media.php';
 
 header('Content-Type: application/json');
 
@@ -286,7 +287,7 @@ try {
             'branch' => $row['branch'] ?? null,
             'department' => $row['department'] ?? null,
             'roll_number' => $row['roll_number'] ?? null,
-            'avatar' => clear_missing_local_asset($row['profile_picture_url'] ? str_replace('\\', '/', (string)$row['profile_picture_url']) : null) ?: null,
+            'avatar' => resolve_profile_media_url($db, (int)$row['user_id'], $row['profile_picture_url'] ? str_replace('\\', '/', (string)$row['profile_picture_url']) : null, 'profile_picture_url', 'profile_avatar') ?: null,
             'bio' => $row['bio'] ?? null,
             'skills' => $skills,
             'is_private' => false

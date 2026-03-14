@@ -4,27 +4,7 @@ header("Content-Type: application/json; charset=UTF-8");
 
 require_once __DIR__ . '/../config/Database.php';
 require_once __DIR__ . '/../middleware/Auth.php';
-
-function clear_missing_local_asset(?string $path): string
-{
-    $path = trim(str_replace('\\', '/', (string)$path));
-    if ($path === '' || stripos($path, 'data:image/') === 0) {
-        return $path;
-    }
-    if (preg_match('#\.php(?:$|\?)#i', $path)) {
-        return $path;
-    }
-    if (preg_match('#^https?://#i', $path)) {
-        $parsedPath = (string)(parse_url($path, PHP_URL_PATH) ?? '');
-        if ($parsedPath === '' || preg_match('#\.php$#i', $parsedPath)) {
-            return $path;
-        }
-        $path = ltrim(str_replace('\\', '/', $parsedPath), '/');
-    }
-    $path = ltrim($path, '/');
-    $abs = dirname(__DIR__) . DIRECTORY_SEPARATOR . str_replace('/', DIRECTORY_SEPARATOR, $path);
-    return is_file($abs) ? $path : '';
-}
+require_once __DIR__ . '/_profile_media.php';
 
 try {
     $database = new Database();
@@ -77,7 +57,7 @@ try {
             'email' => (string)$row['email'],
             'role' => (string)$row['role'],
             'branch' => $row['branch'] ?? null,
-            'profile_picture_url' => clear_missing_local_asset($row['profile_picture_url'] ? str_replace('\\', '/', (string)$row['profile_picture_url']) : null)
+            'profile_picture_url' => resolve_profile_media_url($db, (int)$row['user_id'], $row['profile_picture_url'] ? str_replace('\\', '/', (string)$row['profile_picture_url']) : null, 'profile_picture_url', 'profile_avatar')
         ]
     ]);
 } catch (Throwable $e) {

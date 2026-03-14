@@ -162,6 +162,16 @@ When verifying a fresh deploy, append `?refresh=<commit>` to bypass stale browse
   - added post draft controls plus upload-progress / upload-lock UI in the feed composer
   - mentorship page now uses accepted-request state as a fallback source of truth for the current mentor and refreshes requests before rendering mentor actions, so accepted mentees should no longer see `Current Mentor: none` plus extra `Request to Join` buttons
   - the remaining feed/comment/discovery avatar APIs now scrub dead local `storage/profiles/...` paths, and header/sidebar stop reusing stale cached local avatar URLs
+  - profile identity now resolves current-user state from `api/me.php` before falling back to `localStorage`, reducing the “sometimes blank profile” behavior when local cache is missing or stale
+  - avatar / cover uploads and generic file uploads now use DB-backed asset URLs; old local avatar/cover references are migrated or cleared on read
+  - bare legacy avatar filenames like `avatar_46_...jpg` are treated as stale local media and no longer reused blindly by header/sidebar/feed/profile
+  - `get_conversations.php` now includes the mentor owner id for mentor groups, preventing warning-leak / malformed JSON risk in group conversation payloads
+
+### Infra note
+
+- The live ALB currently serves HTTP on port `80`.
+- HTTPS on port `443` is not configured yet in `us-east-1` because there is no issued ACM certificate attached to the ALB listener.
+- If phones/browsers auto-upgrade to HTTPS, they can show `ERR_CONNECTION_REFUSED` even while desktop HTTP works.
 
 ### Stable behavior we now expect
 

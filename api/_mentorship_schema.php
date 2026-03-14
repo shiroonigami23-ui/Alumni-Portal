@@ -320,7 +320,45 @@ function getCurrentActiveMatch(PDO $db, int $menteeId): ?array
     ");
     $stmt->execute([':uid' => $menteeId]);
     $row = $stmt->fetch(PDO::FETCH_ASSOC);
-    return $row ?: null;
+    if ($row) {
+        return $row;
+    }
+
+    $fallbackStmt = $db->prepare("
+        SELECT
+            r.mentor_id,
+            r.mentee_id,
+            g.group_id,
+            COALESCE(r.updated_at, r.created_at) AS joined_at,
+            COALESCE(NULLIF(TRIM(p.full_name), ''), split_part(u.email, '@', 1)) AS mentor_name,
+            u.role AS mentor_role
+        FROM mentorship_requests r
+        JOIN users u ON u.user_id = r.mentor_id
+        LEFT JOIN profiles p ON p.user_id = u.user_id
+        LEFT JOIN mentorship_groups g ON g.mentor_user_id = r.mentor_id
+        JOIN mentorship_profiles mp ON mp.mentor_user_id = r.mentor_id
+        WHERE r.mentee_id = :uid
+          AND r.status = 'accepted'
+          AND mp.is_active = TRUE
+          AND mp.approval_status = 'approved'
+        ORDER BY COALESCE(r.updated_at, r.created_at) DESC, r.request_id DESC
+        LIMIT 1
+    ");
+    $fallbackStmt->execute([':uid' => $menteeId]);
+    $fallback = $fallbackStmt->fetch(PDO::FETCH_ASSOC);
+    if (!$fallback) {
+        return null;
+    }
+
+    return [
+        'match_id' => 0,
+        'mentor_id' => (int)$fallback['mentor_id'],
+        'mentee_id' => (int)$fallback['mentee_id'],
+        'group_id' => (int)($fallback['group_id'] ?? 0),
+        'joined_at' => $fallback['joined_at'],
+        'mentor_name' => $fallback['mentor_name'],
+        'mentor_role' => $fallback['mentor_role']
+    ];
 }
 
 function getActiveGroupBan(PDO $db, int $groupId, int $userId): ?array

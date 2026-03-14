@@ -26,6 +26,49 @@ function ensure_asset_store_schema(PDO $db): void
     $done = true;
 }
 
+function insert_binary_asset(
+    PDO $db,
+    int $ownerUserId,
+    string $scope,
+    string $kind,
+    string $original,
+    string $mimeType,
+    string $safeExt,
+    int $size,
+    string $binary
+): ?array {
+    ensure_asset_store_schema($db);
+
+    $token = bin2hex(random_bytes(24));
+    $stmt = $db->prepare("
+        INSERT INTO uploaded_assets
+            (public_token, owner_user_id, scope, asset_kind, original_name, mime_type, file_ext, file_size, binary_data)
+        VALUES
+            (:token, :owner_user_id, :scope, :asset_kind, :original_name, :mime_type, :file_ext, :file_size, :binary_data)
+        RETURNING asset_id
+    ");
+    $stmt->bindValue(':token', $token, PDO::PARAM_STR);
+    $stmt->bindValue(':owner_user_id', $ownerUserId, PDO::PARAM_INT);
+    $stmt->bindValue(':scope', $scope, PDO::PARAM_STR);
+    $stmt->bindValue(':asset_kind', $kind, PDO::PARAM_STR);
+    $stmt->bindValue(':original_name', $original, PDO::PARAM_STR);
+    $stmt->bindValue(':mime_type', $mimeType, PDO::PARAM_STR);
+    $stmt->bindValue(':file_ext', $safeExt, PDO::PARAM_STR);
+    $stmt->bindValue(':file_size', $size, PDO::PARAM_INT);
+    $stmt->bindValue(':binary_data', $binary, PDO::PARAM_LOB);
+    $stmt->execute();
+    $assetId = (int)($stmt->fetchColumn() ?: 0);
+
+    return [
+        'asset_id' => $assetId,
+        'type' => $kind,
+        'url' => 'api/asset.php?token=' . rawurlencode($token),
+        'name' => $original,
+        'mime_type' => $mimeType,
+        'size' => $size
+    ];
+}
+
 function store_uploaded_asset(PDO $db, int $ownerUserId, array $file, string $kind, string $scope = 'post'): ?array
 {
     if (($file['error'] ?? UPLOAD_ERR_NO_FILE) !== UPLOAD_ERR_OK) {
@@ -61,36 +104,60 @@ function store_uploaded_asset(PDO $db, int $ownerUserId, array $file, string $ki
         return null;
     }
 
-    ensure_asset_store_schema($db);
-
-    $token = bin2hex(random_bytes(24));
     $size = (int)($file['size'] ?? strlen($binary));
+    return insert_binary_asset($db, $ownerUserId, $scope, $kind, $original, $mimeType, $safeExt, $size, $binary);
+}
 
-    $stmt = $db->prepare("
-        INSERT INTO uploaded_assets
-            (public_token, owner_user_id, scope, asset_kind, original_name, mime_type, file_ext, file_size, binary_data)
-        VALUES
-            (:token, :owner_user_id, :scope, :asset_kind, :original_name, :mime_type, :file_ext, :file_size, :binary_data)
-        RETURNING asset_id
-    ");
-    $stmt->bindValue(':token', $token, PDO::PARAM_STR);
-    $stmt->bindValue(':owner_user_id', $ownerUserId, PDO::PARAM_INT);
-    $stmt->bindValue(':scope', $scope, PDO::PARAM_STR);
-    $stmt->bindValue(':asset_kind', $kind, PDO::PARAM_STR);
-    $stmt->bindValue(':original_name', $original, PDO::PARAM_STR);
-    $stmt->bindValue(':mime_type', $mimeType, PDO::PARAM_STR);
-    $stmt->bindValue(':file_ext', $safeExt, PDO::PARAM_STR);
-    $stmt->bindValue(':file_size', $size, PDO::PARAM_INT);
-    $stmt->bindValue(':binary_data', $binary, PDO::PARAM_LOB);
-    $stmt->execute();
-    $assetId = (int)($stmt->fetchColumn() ?: 0);
+function store_asset_from_path(PDO $db, int $ownerUserId, string $absolutePath, string $kind, string $scope = 'post', ?string $originalName = null): ?array
+{
+    if (!is_file($absolutePath)) {
+        return null;
+    }
 
-    return [
-        'asset_id' => $assetId,
-        'type' => $kind,
-        'url' => 'api/asset.php?token=' . rawurlencode($token),
-        'name' => $original,
-        'mime_type' => $mimeType,
-        'size' => $size
-    ];
+    $binary = @file_get_contents($absolutePath);
+    if ($binary === false) {
+        return null;
+    }
+
+    $original = $originalName ?: basename($absolutePath);
+    $ext = strtolower(pathinfo($original, PATHINFO_EXTENSION));
+    $safeExt = preg_replace('/[^a-z0-9]/', '', $ext);
+    if ($safeExt === '') {
+        $safeExt = 'bin';
+    }
+
+    $mimeType = '';
+    if (function_exists('finfo_open')) {
+        $finfo = finfo_open(FILEINFO_MIME_TYPE);
+        if ($finfo) {
+            $mimeType = (string)(finfo_file($finfo, $absolutePath) ?: '');
+            finfo_close($finfo);
+        }
+    }
+    if ($mimeType === '') {
+        $mimeType = 'application/octet-stream';
+    }
+
+    return insert_binary_asset($db, $ownerUserId, $scope, $kind, $original, $mimeType, $safeExt, filesize($absolutePath) ?: strlen($binary), $binary);
+}
+
+function delete_asset_by_url(PDO $db, ?string $url): void
+{
+    $url = trim((string)$url);
+    if ($url === '') {
+        return;
+    }
+
+    $token = '';
+    if (preg_match('/[?&]token=([^&]+)/', $url, $matches)) {
+        $token = rawurldecode((string)$matches[1]);
+    }
+
+    if ($token === '') {
+        return;
+    }
+
+    ensure_asset_store_schema($db);
+    $stmt = $db->prepare("DELETE FROM uploaded_assets WHERE public_token = :token");
+    $stmt->execute([':token' => $token]);
 }

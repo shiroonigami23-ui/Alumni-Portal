@@ -5,6 +5,7 @@ header("Content-Type: application/json; charset=UTF-8");
 require_once __DIR__ . '/../config/Database.php';
 require_once __DIR__ . '/../middleware/Auth.php';
 require_once __DIR__ . '/_message_schema.php';
+require_once __DIR__ . '/_profile_media.php';
 
 function clear_missing_local_asset(?string $path): string
 {
@@ -126,7 +127,7 @@ try {
             'conversation_id' => (string)$row['conversation_id'],
             'other_user_id' => (int)$row['other_user_id'],
             'full_name' => (string)$row['full_name'],
-            'profile_picture_url' => clear_missing_local_asset($row['profile_picture_url'] ? str_replace('\\', '/', (string)$row['profile_picture_url']) : null),
+            'profile_picture_url' => resolve_profile_media_url($db, (int)$row['conversation_id'], $row['profile_picture_url'] ? str_replace('\\', '/', (string)$row['profile_picture_url']) : null, 'profile_picture_url', 'profile_avatar'),
             'role' => (string)($row['role'] ?? ''),
             'branch' => $row['branch'] ?? null,
             'last_message' => $lastMessage,
@@ -141,6 +142,7 @@ try {
             g.group_id,
             g.title,
             g.updated_at,
+            g.mentor_user_id,
             g.admin_user_id,
             COALESCE(NULLIF(TRIM(p.full_name), ''), split_part(u.email, '@', 1)) AS mentor_name,
             p.profile_picture_url AS mentor_avatar,
@@ -193,7 +195,7 @@ try {
             'conversation_id' => 'group:' . (string)$group['group_id'],
             'other_user_id' => null,
             'full_name' => (string)($group['title'] ?: 'Mentor Group'),
-            'profile_picture_url' => clear_missing_local_asset($group['mentor_avatar'] ? str_replace('\\', '/', (string)$group['mentor_avatar']) : null),
+            'profile_picture_url' => resolve_profile_media_url($db, (int)$group['mentor_user_id'], $group['mentor_avatar'] ? str_replace('\\', '/', (string)$group['mentor_avatar']) : null, 'profile_picture_url', 'profile_avatar'),
             'role' => 'mentor_group',
             'branch' => (string)($group['mentor_name'] ? ('Led by ' . $group['mentor_name']) : 'Mentor group'),
             'last_message' => $lastMessage,

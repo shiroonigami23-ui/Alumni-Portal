@@ -314,8 +314,8 @@ include 'includes/sidebar.php';
             });
             const payload = await res.json();
             const rows = Array.isArray(payload?.data) ? payload.data : [];
-            const acceptedRequest = (mentorStatus?.can_request && !mentorStatus?.mentor_profile?.is_active)
-                ? rows.find((row) => row.status === 'accepted')
+            const acceptedRequest = mentorStatus?.can_request
+                ? rows.find((row) => String(row.status || '').toLowerCase() === 'accepted')
                 : null;
             if (acceptedRequest && !currentActiveMatch) {
                 currentActiveMatch = {

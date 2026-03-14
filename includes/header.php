@@ -180,15 +180,24 @@ $basePrefix = $isAdminPath ? '../' : '';
             if (value.startsWith('data:image/')) return value;
             if (/\.php(\?|$)/i.test(value)) return value;
             const normalized = value.replace(/\\/g, '/').toLowerCase();
-            if (normalized.includes('storage/profiles/')) return '';
+            if (normalized.includes('storage/profiles/') || normalized.includes('storage/covers/')) return '';
+            if (!/^https?:\/\//i.test(value) && !value.startsWith('/') && !normalized.startsWith('api/asset.php')) {
+                return '';
+            }
             try {
                 const resolved = new URL(value, window.location.origin);
-                if (resolved.origin === window.location.origin && resolved.pathname.toLowerCase().includes('/storage/profiles/')) {
+                if (
+                    resolved.origin === window.location.origin &&
+                    (
+                        resolved.pathname.toLowerCase().includes('/storage/profiles/') ||
+                        resolved.pathname.toLowerCase().includes('/storage/covers/')
+                    )
+                ) {
                     return '';
                 }
                 return resolved.href;
             } catch (_) {
-                return value;
+                return '';
             }
         }
         // Initialize Lucide icons
@@ -292,6 +301,11 @@ $basePrefix = $isAdminPath ? '../' : '';
                     const icon = document.getElementById('userAvatarIcon');
                     if (img) img.classList.add('hidden');
                     if (icon) icon.classList.remove('hidden');
+                }
+
+                if (user.role === 'admin') {
+                    const userMenu = document.getElementById('userMenuBtn');
+                    userMenu.classList.add('admin-border', 'border-2');
                 }
             } catch (e) {
                 console.error('Unable to refresh header user', e);

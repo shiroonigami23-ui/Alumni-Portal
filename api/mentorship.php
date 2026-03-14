@@ -6,6 +6,7 @@ header("Access-Control-Allow-Methods: GET, POST, OPTIONS");
 require_once __DIR__ . '/../config/Database.php';
 require_once __DIR__ . '/../middleware/Auth.php';
 require_once __DIR__ . '/_mentorship_schema.php';
+require_once __DIR__ . '/_profile_media.php';
 
 function jsonResponse(array $payload, int $statusCode = 200): void
 {
@@ -77,7 +78,11 @@ switch ($action) {
                 CASE WHEN u.role = 'faculty' THEN 0 WHEN u.role = 'admin' THEN 1 ELSE 2 END,
                 mp.updated_at DESC
         ");
-        jsonResponse(['success' => true, 'data' => $stmt->fetchAll(PDO::FETCH_ASSOC)]);
+        $rows = array_map(function (array $row) use ($db): array {
+            $row['avatar'] = resolve_profile_media_url($db, (int)$row['mentor_id'], $row['avatar'] ?? '', 'profile_picture_url', 'profile_avatar');
+            return $row;
+        }, $stmt->fetchAll(PDO::FETCH_ASSOC));
+        jsonResponse(['success' => true, 'data' => $rows]);
         break;
 
     case 'become_mentor':
@@ -176,7 +181,11 @@ switch ($action) {
               AND mp.approval_status = 'pending'
             ORDER BY mp.updated_at DESC, mp.created_at DESC
         ");
-        jsonResponse(['success' => true, 'data' => $stmt->fetchAll(PDO::FETCH_ASSOC)]);
+        $rows = array_map(function (array $row) use ($db): array {
+            $row['avatar'] = resolve_profile_media_url($db, (int)$row['applicant_id'], $row['avatar'] ?? '', 'profile_picture_url', 'profile_avatar');
+            return $row;
+        }, $stmt->fetchAll(PDO::FETCH_ASSOC));
+        jsonResponse(['success' => true, 'data' => $rows]);
         break;
 
     case 'review_application':
@@ -419,7 +428,11 @@ switch ($action) {
                 r.created_at DESC
         ");
         $stmt->execute([':mid' => $userId]);
-        jsonResponse(['success' => true, 'data' => $stmt->fetchAll(PDO::FETCH_ASSOC)]);
+        $rows = array_map(function (array $row) use ($db): array {
+            $row['mentee_avatar'] = resolve_profile_media_url($db, (int)$row['mentee_id'], $row['mentee_avatar'] ?? '', 'profile_picture_url', 'profile_avatar');
+            return $row;
+        }, $stmt->fetchAll(PDO::FETCH_ASSOC));
+        jsonResponse(['success' => true, 'data' => $rows]);
         break;
 
     case 'list_my_requests':
@@ -475,7 +488,11 @@ switch ($action) {
                 ORDER BY mm.joined_at ASC
             ");
             $stmt->execute([':uid' => $userId]);
-            jsonResponse(['success' => true, 'data' => $stmt->fetchAll(PDO::FETCH_ASSOC)]);
+            $rows = array_map(function (array $row) use ($db): array {
+                $row['mentee_avatar'] = resolve_profile_media_url($db, (int)$row['mentee_id'], $row['mentee_avatar'] ?? '', 'profile_picture_url', 'profile_avatar');
+                return $row;
+            }, $stmt->fetchAll(PDO::FETCH_ASSOC));
+            jsonResponse(['success' => true, 'data' => $rows]);
         }
 
         if (canRequestMentorship($role)) {

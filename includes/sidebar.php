@@ -248,15 +248,22 @@ $basePrefix = $isAdminPath ? '../' : '';
         if (value.startsWith('data:image/')) return value;
         if (/\.php(\?|$)/i.test(value)) return value;
         const normalized = value.replace(/\\/g, '/').toLowerCase();
-        if (normalized.includes('storage/profiles/')) return '';
+        if (normalized.includes('storage/profiles/') || normalized.includes('storage/covers/')) return '';
+        if (!/^https?:\/\//i.test(value) && !value.startsWith('/') && !normalized.startsWith('api/asset.php')) return '';
         try {
             const resolved = new URL(value, window.location.origin);
-            if (resolved.origin === window.location.origin && resolved.pathname.toLowerCase().includes('/storage/profiles/')) {
+            if (
+                resolved.origin === window.location.origin &&
+                (
+                    resolved.pathname.toLowerCase().includes('/storage/profiles/') ||
+                    resolved.pathname.toLowerCase().includes('/storage/covers/')
+                )
+            ) {
                 return '';
             }
             return resolved.href;
         } catch (_) {
-            return value;
+            return '';
         }
     }
     // Sidebar functionality
@@ -351,6 +358,7 @@ $basePrefix = $isAdminPath ? '../' : '';
         
         // Load unread messages count
         loadUnreadCounts();
+        refreshSidebarUser();
 
         // Mobile drawer behavior
         const openBtn = document.getElementById('mobileSidebarToggle');
@@ -379,6 +387,37 @@ $basePrefix = $isAdminPath ? '../' : '';
             });
         }
     });
+
+    async function refreshSidebarUser() {
+        try {
+            const response = await makeApiCall('me.php');
+            if (!response || !response.success || !response.data) return;
+            const user = response.data;
+            localStorage.setItem('user_data', JSON.stringify(user));
+            document.getElementById('sidebarUserName').textContent = user.full_name || user.name || user.email;
+            const avatar = sanitizeCachedAvatarUrl((user.profile_picture || user.profile_picture_url || '').replace(/\\/g, '/'));
+            const img = document.getElementById('sidebarAvatarImage');
+            const icon = document.getElementById('sidebarAvatarIcon');
+            if (avatar) {
+                if (img) {
+                    img.onerror = function() {
+                        this.onerror = null;
+                        this.src = '';
+                        this.classList.add('hidden');
+                        if (icon) icon.classList.remove('hidden');
+                    };
+                    img.src = avatar;
+                    img.classList.remove('hidden');
+                }
+                if (icon) icon.classList.add('hidden');
+            } else {
+                if (img) img.classList.add('hidden');
+                if (icon) icon.classList.remove('hidden');
+            }
+        } catch (e) {
+            console.error('Unable to refresh sidebar user', e);
+        }
+    }
     
     function toggleSidebar() {
         const sidebar = document.getElementById('desktopSidebar');
