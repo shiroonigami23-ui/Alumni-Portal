@@ -11,6 +11,7 @@ try {
     $database = new Database();
     $db = $database->getConnection();
     ensure_message_columns($db);
+    ensure_group_message_schema($db);
     $auth = new Auth($db);
     $userId = (int)$auth->validateRequest();
 
@@ -20,15 +21,18 @@ try {
     }
 
     $messageId = isset($payload['message_id']) ? (int)$payload['message_id'] : 0;
+    $messageScope = strtolower(trim((string)($payload['message_scope'] ?? 'direct')));
     if ($messageId <= 0) {
         http_response_code(400);
         echo json_encode(['success' => false, 'message' => 'message_id is required']);
         exit;
     }
 
+    $table = $messageScope === 'group' ? 'mentorship_group_messages' : 'messages';
+
     $stmt = $db->prepare("
         SELECT message_id, sender_user_id, deleted_at
-        FROM messages
+        FROM {$table}
         WHERE message_id = :mid
         LIMIT 1
     ");
@@ -50,7 +54,7 @@ try {
         exit;
     }
 
-    $upd = $db->prepare("UPDATE messages SET deleted_at = NOW() WHERE message_id = :mid");
+    $upd = $db->prepare("UPDATE {$table} SET deleted_at = NOW() WHERE message_id = :mid");
     $upd->execute([':mid' => $messageId]);
 
     echo json_encode([
@@ -66,4 +70,3 @@ try {
         'error' => $e->getMessage()
     ]);
 }
-

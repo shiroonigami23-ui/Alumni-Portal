@@ -39,6 +39,7 @@ try {
     $database = new Database();
     $db = $database->getConnection();
     ensure_message_columns($db);
+    ensure_group_message_schema($db);
     $auth = new Auth($db);
     $userId = (int)$auth->validateRequest();
 
@@ -109,9 +110,61 @@ try {
             'branch' => $row['branch'] ?? null,
             'last_message' => $lastMessage,
             'last_message_at' => $row['last_message_at'],
-            'unread_count' => (int)$row['unread_count']
+            'unread_count' => (int)$row['unread_count'],
+            'is_group' => false
         ];
     }
+
+    $groupStmt = $db->prepare("
+        SELECT
+            g.group_id,
+            g.title,
+            g.updated_at,
+            COALESCE(NULLIF(TRIM(p.full_name), ''), split_part(u.email, '@', 1)) AS mentor_name,
+            p.profile_picture_url AS mentor_avatar,
+            last_msg.message_id,
+            last_msg.content_file_path,
+            last_msg.deleted_at,
+            last_msg.created_at AS last_message_at
+        FROM mentorship_group_members gm
+        JOIN mentorship_groups g ON g.group_id = gm.group_id
+        JOIN users u ON u.user_id = g.mentor_user_id
+        LEFT JOIN profiles p ON p.user_id = g.mentor_user_id
+        LEFT JOIN LATERAL (
+            SELECT mgm.message_id, mgm.content_file_path, mgm.deleted_at, mgm.created_at
+            FROM mentorship_group_messages mgm
+            WHERE mgm.group_id = g.group_id
+            ORDER BY mgm.created_at DESC, mgm.message_id DESC
+            LIMIT 1
+        ) last_msg ON TRUE
+        WHERE gm.user_id = :uid
+        ORDER BY COALESCE(last_msg.created_at, g.updated_at, g.created_at) DESC
+    ");
+    $groupStmt->execute([':uid' => $userId]);
+    $groups = $groupStmt->fetchAll(PDO::FETCH_ASSOC);
+
+    foreach ($groups as $group) {
+        $lastMessage = !empty($group['deleted_at']) ? 'Message deleted' : read_message_content((string)($group['content_file_path'] ?? ''));
+        if ($lastMessage === '') {
+            $lastMessage = 'Mentor group is ready';
+        }
+        $data[] = [
+            'conversation_id' => 'group:' . (string)$group['group_id'],
+            'other_user_id' => null,
+            'full_name' => (string)($group['title'] ?: 'Mentor Group'),
+            'profile_picture_url' => $group['mentor_avatar'] ? str_replace('\\', '/', (string)$group['mentor_avatar']) : null,
+            'role' => 'mentor_group',
+            'branch' => (string)($group['mentor_name'] ? ('Led by ' . $group['mentor_name']) : 'Mentor group'),
+            'last_message' => $lastMessage,
+            'last_message_at' => $group['last_message_at'] ?: $group['updated_at'],
+            'unread_count' => 0,
+            'is_group' => true
+        ];
+    }
+
+    usort($data, static function (array $a, array $b): int {
+        return strtotime((string)($b['last_message_at'] ?? '1970-01-01')) <=> strtotime((string)($a['last_message_at'] ?? '1970-01-01'));
+    });
 
     echo json_encode([
         'success' => true,

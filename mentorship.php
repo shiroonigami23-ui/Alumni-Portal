@@ -17,6 +17,7 @@ include 'includes/sidebar.php';
                     <button id="becomeMentorBtn" class="bg-blue-700/30 border border-white/50 text-white px-5 py-2.5 rounded-lg font-semibold hover:bg-blue-700/50">Become a Mentor</button>
                 </div>
                 <p id="mentorRoleHint" class="text-sm mt-4 text-blue-100"></p>
+                <div id="mentorStatusBanner" class="hidden mt-4 rounded-xl border border-white/20 bg-white/10 px-4 py-3 text-sm text-blue-50"></div>
             </div>
         </div>
 
@@ -42,10 +43,18 @@ include 'includes/sidebar.php';
                     <div class="text-sm text-gray-500">Loading mentors...</div>
                 </div>
             </div>
-            <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-                <h2 class="text-xl font-bold text-gray-900 mb-4" id="requestsPanelTitle">Mentorship Requests</h2>
-                <div id="requestsList" class="space-y-3">
-                    <div class="text-sm text-gray-500">No requests yet.</div>
+            <div class="space-y-6">
+                <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                    <h2 class="text-xl font-bold text-gray-900 mb-4" id="requestsPanelTitle">Mentorship Requests</h2>
+                    <div id="requestsList" class="space-y-3">
+                        <div class="text-sm text-gray-500">No requests yet.</div>
+                    </div>
+                </div>
+                <div id="mentorApplicationsPanel" class="hidden bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                    <h2 class="text-xl font-bold text-gray-900 mb-4">Mentor Applications</h2>
+                    <div id="mentorApplicationsList" class="space-y-3">
+                        <div class="text-sm text-gray-500">No pending mentor applications.</div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -74,6 +83,7 @@ include 'includes/sidebar.php';
     lucide.createIcons();
     let currentUser = null;
     let currentRole = '';
+    let mentorStatus = null;
     const MENTORSHIP_API_BASE = (window.getApiBase ? window.getApiBase() : ((window.PORTAL_BASE_PREFIX || '') + 'api'));
 
     async function loadCurrentUser() {
@@ -90,26 +100,109 @@ include 'includes/sidebar.php';
         currentRole = String(currentUser?.role || '').toLowerCase();
     }
 
+    async function loadMentorStatus() {
+        try {
+            const res = await makeApiCall('mentorship.php?action=get_status');
+            mentorStatus = res && res.success ? (res.data || null) : null;
+        } catch (_e) {
+            mentorStatus = null;
+        }
+    }
+
+    function showMentorBanner(message, tone = 'info') {
+        const banner = document.getElementById('mentorStatusBanner');
+        if (!banner) return;
+        if (!message) {
+            banner.classList.add('hidden');
+            banner.textContent = '';
+            banner.className = 'hidden mt-4 rounded-xl border border-white/20 bg-white/10 px-4 py-3 text-sm text-blue-50';
+            return;
+        }
+        banner.className = 'mt-4 rounded-xl px-4 py-3 text-sm';
+        if (tone === 'success') {
+            banner.classList.add('border', 'border-emerald-300/40', 'bg-emerald-500/15', 'text-emerald-50');
+        } else if (tone === 'warning') {
+            banner.classList.add('border', 'border-amber-300/40', 'bg-amber-500/15', 'text-amber-50');
+        } else {
+            banner.classList.add('border', 'border-white/20', 'bg-white/10', 'text-blue-50');
+        }
+        banner.textContent = message;
+        banner.classList.remove('hidden');
+    }
+
     function initRoleBasedActions() {
         const hint = document.getElementById('mentorRoleHint');
         const becomeBtn = document.getElementById('becomeMentorBtn');
         const requestsTitle = document.getElementById('requestsPanelTitle');
-        if (['faculty', 'alumni', 'admin'].includes(currentRole)) {
-            hint.textContent = 'You can become a mentor and accept student requests.';
+        const appsPanel = document.getElementById('mentorApplicationsPanel');
+        const profile = mentorStatus?.mentor_profile || null;
+
+        if (currentRole === 'student') {
+            hint.textContent = 'Students can browse approved mentors and request to join them.';
+            becomeBtn.classList.add('hidden');
+            requestsTitle.textContent = 'My Requests';
+            if (appsPanel) appsPanel.classList.add('hidden');
+            showMentorBanner('');
+            return;
+        }
+
+        becomeBtn.classList.remove('hidden');
+
+        if (mentorStatus?.can_review_applications) {
+            if (appsPanel) appsPanel.classList.remove('hidden');
+        } else if (appsPanel) {
+            appsPanel.classList.add('hidden');
+        }
+
+        if (currentRole === 'faculty' || currentRole === 'admin') {
+            hint.textContent = 'Faculty and admins can mentor immediately and review alumni mentor applications.';
             becomeBtn.disabled = false;
             becomeBtn.classList.remove('opacity-60', 'cursor-not-allowed');
+            becomeBtn.textContent = profile?.is_active ? 'Update Mentor Profile' : 'Become a Mentor';
             requestsTitle.textContent = 'Incoming Requests';
-        } else if (currentRole === 'student') {
-            hint.textContent = 'Students can find mentors and send join requests.';
-            becomeBtn.disabled = true;
-            becomeBtn.classList.add('opacity-60', 'cursor-not-allowed');
-            requestsTitle.textContent = 'My Requests';
-        } else {
-            hint.textContent = 'Please sign in with a valid role to use mentorship actions.';
-            becomeBtn.disabled = true;
-            becomeBtn.classList.add('opacity-60', 'cursor-not-allowed');
-            requestsTitle.textContent = 'Mentorship Requests';
+            showMentorBanner(profile?.is_active ? 'Your mentor profile is active. Students can request to join your mentor group.' : '');
+            return;
         }
+
+        if (currentRole === 'alumni') {
+            requestsTitle.textContent = 'Incoming Requests';
+            if (profile?.approval_status === 'pending') {
+                hint.textContent = 'Alumni mentor applications need faculty or admin approval before students can see them.';
+                becomeBtn.disabled = true;
+                becomeBtn.textContent = 'Application Pending';
+                becomeBtn.classList.add('opacity-60', 'cursor-not-allowed');
+                showMentorBanner('Your mentor application is pending faculty/admin approval.', 'warning');
+                return;
+            }
+            if (profile?.approval_status === 'approved') {
+                hint.textContent = 'Your mentor profile is approved. Students can send requests, and accepted students join your mentor group.';
+                becomeBtn.disabled = false;
+                becomeBtn.textContent = 'Update Mentor Profile';
+                becomeBtn.classList.remove('opacity-60', 'cursor-not-allowed');
+                showMentorBanner('Your mentor profile is approved and active.', 'success');
+                return;
+            }
+            if (profile?.approval_status === 'rejected') {
+                hint.textContent = 'Alumni need faculty or admin approval before they can mentor.';
+                becomeBtn.disabled = false;
+                becomeBtn.textContent = 'Reapply to Be a Mentor';
+                becomeBtn.classList.remove('opacity-60', 'cursor-not-allowed');
+                showMentorBanner('Your previous mentor application was not approved. You can reapply with updated details.', 'warning');
+                return;
+            }
+
+            hint.textContent = 'Alumni can apply to become mentors. Approval from faculty or admin is required before students can find you.';
+            becomeBtn.disabled = false;
+            becomeBtn.textContent = 'Apply to Become a Mentor';
+            becomeBtn.classList.remove('opacity-60', 'cursor-not-allowed');
+            showMentorBanner('');
+            return;
+        }
+
+        hint.textContent = 'Please sign in with a valid role to use mentorship actions.';
+        becomeBtn.disabled = true;
+        becomeBtn.classList.add('opacity-60', 'cursor-not-allowed');
+        requestsTitle.textContent = 'Mentorship Requests';
     }
 
     async function loadMentorshipStats() {
@@ -159,7 +252,7 @@ include 'includes/sidebar.php';
                             <p class="text-sm text-gray-500 mt-1">${m.headline || 'Available for mentorship'}</p>
                             ${m.expertise ? `<p class="text-xs text-gray-500 mt-1">Expertise: ${m.expertise}</p>` : ''}
                         </div>
-                        ${currentRole === 'student' ? `<button class="request-mentor-btn bg-blue-600 text-white px-3 py-2 rounded-lg hover:bg-blue-700" data-mentor-id="${m.mentor_id}">Join</button>` : ''}
+                        ${currentRole === 'student' ? `<button class="request-mentor-btn bg-blue-600 text-white px-3 py-2 rounded-lg hover:bg-blue-700" data-mentor-id="${m.mentor_id}">Request to Join</button>` : ''}
                     </div>
                 </div>
             `).join('');
@@ -198,13 +291,49 @@ include 'includes/sidebar.php';
                                 <button class="mentor-respond-btn text-xs px-2 py-1 bg-green-600 text-white rounded" data-request-id="${r.request_id}" data-status="accepted">Accept</button>
                                 <button class="mentor-respond-btn text-xs px-2 py-1 bg-red-600 text-white rounded" data-request-id="${r.request_id}" data-status="rejected">Reject</button>
                             </div>
-                        ` : ''}
+                        ` : (r.status === 'accepted' && r.group_id ? `<a href="messages.php?group_id=${r.group_id}" class="text-xs text-blue-600 hover:text-blue-800">Open mentor group</a>` : '')}
                     </div>
                 </div>
             `).join('');
             bindMentorRespondButtons();
         } catch (e) {
             listEl.innerHTML = '<div class="text-sm text-red-600">Unable to load requests.</div>';
+        }
+    }
+
+    async function loadMentorApplications() {
+        const panel = document.getElementById('mentorApplicationsPanel');
+        const listEl = document.getElementById('mentorApplicationsList');
+        if (!panel || !listEl) return;
+        if (!mentorStatus?.can_review_applications) {
+            panel.classList.add('hidden');
+            return;
+        }
+
+        panel.classList.remove('hidden');
+
+        try {
+            const res = await makeApiCall('mentorship.php?action=list_mentor_applications');
+            const rows = Array.isArray(res?.data) ? res.data : [];
+            if (!rows.length) {
+                listEl.innerHTML = '<div class="text-sm text-gray-500">No pending mentor applications.</div>';
+                return;
+            }
+
+            listEl.innerHTML = rows.map((row) => `
+                <div class="border border-gray-200 rounded-lg p-3">
+                    <p class="font-medium text-gray-900 text-sm">${row.applicant_name || row.email || 'Alumni applicant'}</p>
+                    <p class="text-xs text-gray-500 mt-1">${row.headline || 'No headline added yet.'}</p>
+                    ${row.expertise ? `<p class="text-xs text-gray-500 mt-1">Expertise: ${row.expertise}</p>` : ''}
+                    <div class="flex items-center justify-end gap-2 mt-3">
+                        <button class="review-app-btn text-xs px-3 py-1.5 bg-green-600 text-white rounded" data-mentor-user-id="${row.applicant_id}" data-status="approved">Approve</button>
+                        <button class="review-app-btn text-xs px-3 py-1.5 bg-red-600 text-white rounded" data-mentor-user-id="${row.applicant_id}" data-status="rejected">Reject</button>
+                    </div>
+                </div>
+            `).join('');
+            bindMentorApplicationButtons();
+        } catch (e) {
+            listEl.innerHTML = '<div class="text-sm text-red-600">Unable to load mentor applications.</div>';
         }
     }
 
@@ -215,6 +344,26 @@ include 'includes/sidebar.php';
             btn.addEventListener('click', () => {
                 document.getElementById('requestMentorId').value = btn.getAttribute('data-mentor-id') || '';
                 document.getElementById('mentorshipRequestModal').classList.remove('hidden');
+            });
+        });
+    }
+
+    function bindMentorApplicationButtons() {
+        document.querySelectorAll('.review-app-btn').forEach((btn) => {
+            if (btn.dataset.bound === '1') return;
+            btn.dataset.bound = '1';
+            btn.addEventListener('click', async () => {
+                const mentor_user_id = Number(btn.getAttribute('data-mentor-user-id') || 0);
+                const status = btn.getAttribute('data-status') || '';
+                if (!mentor_user_id || !status) return;
+                const res = await makeApiCall('mentorship.php?action=review_application', 'POST', { mentor_user_id, status });
+                if (res && res.success) {
+                    await loadMentorApplications();
+                    await loadMentorList();
+                    await loadMentorshipStats();
+                } else {
+                    alert((res && res.message) || 'Failed to review mentor application');
+                }
             });
         });
     }
@@ -254,14 +403,17 @@ include 'includes/sidebar.php';
 
         if (becomeBtn) {
             becomeBtn.addEventListener('click', async () => {
-                if (!['faculty', 'alumni', 'admin'].includes(currentRole)) return;
+                if (!['faculty', 'alumni', 'admin'].includes(currentRole) || becomeBtn.disabled) return;
                 const headline = prompt('Add a short mentor headline (optional):', '') || '';
                 const expertise = prompt('Expertise (optional):', '') || '';
                 const res = await makeApiCall('mentorship.php?action=become_mentor', 'POST', { headline, expertise });
                 if (res && res.success) {
-                    alert('You are now listed as a mentor.');
+                    alert(res.message || 'Mentor profile updated.');
+                    await loadMentorStatus();
+                    initRoleBasedActions();
                     await loadMentorList();
                     await loadMentorshipStats();
+                    await loadMentorApplications();
                 } else {
                     alert((res && res.message) || 'Unable to become mentor');
                 }
@@ -293,11 +445,13 @@ include 'includes/sidebar.php';
 
     document.addEventListener('DOMContentLoaded', async () => {
         await loadCurrentUser();
+        await loadMentorStatus();
         initRoleBasedActions();
         initMentorshipActions();
         await loadMentorList();
         await loadRequestsPanel();
         await loadMentorshipStats();
+        await loadMentorApplications();
     });
 </script>
 

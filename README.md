@@ -141,6 +141,14 @@ When verifying a fresh deploy, append `?refresh=<commit>` to bypass stale browse
   - added feed draft support
   - added feed upload progress / post-button locking
   - polished dashboard quick links and collapse defaults
+- current worktree:
+  - aligned dashboard upcoming-event APIs with the real `events` schema (`start_datetime` / `event_status`)
+  - changed mentorship so:
+    - students only request approved mentors
+    - faculty/admin can become mentors immediately
+    - alumni submit mentor applications for faculty/admin approval
+    - accepted mentor requests create a mentor group
+  - surfaced mentor groups inside the existing Messages screen using `group:<id>` conversations
 
 ### Stable behavior we now expect
 
@@ -151,6 +159,9 @@ When verifying a fresh deploy, append `?refresh=<commit>` to bypass stale browse
 - Image/file attachments for new posts/comments should survive ECS task changes
 - GIF picker should show real GIF search results instead of a dead URL field
 - Dashboard count cards should hit real API endpoints instead of 404 routes
+- Mentorship should no longer show `Become a Mentor` to students
+- Alumni should move through a pending mentor-application flow instead of becoming mentors instantly
+- Accepted mentor/mentee matches should have a mentor group conversation available in Messages
 
 ### Known follow-up items
 
@@ -158,6 +169,7 @@ When verifying a fresh deploy, append `?refresh=<commit>` to bypass stale browse
 - Tailwind CDN warning still appears in console; this is a production warning, not a runtime blocker
 - Old posts created before the DB-backed attachment/content migrations may still show broken legacy media
 - Messages still need a cleanup pass for placeholder avatar/media fallbacks
+- Group-chat unread counts are not tracked yet; mentor groups show in Messages but currently report `0` unread
 
 ### Verification checklist before calling a deploy good
 

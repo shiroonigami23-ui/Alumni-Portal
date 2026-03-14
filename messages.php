@@ -197,6 +197,8 @@ include 'includes/sidebar.php';
         let loadingConversations = false;
         let loadingMessages = false;
         let pendingAttachment = null;
+        let conversationMap = {};
+        const DEFAULT_AVATAR = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='40' height='40' viewBox='0 0 40 40'%3E%3Crect width='40' height='40' rx='20' fill='%23e2e8f0'/%3E%3Ctext x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' font-family='Arial' font-size='12' fill='%2364748b'%3EU%3C/text%3E%3C/svg%3E";
         
         // DOM Elements
         const newMessageBtn = document.getElementById('newMessageBtn');
@@ -292,6 +294,7 @@ include 'includes/sidebar.php';
             return (items || []).map((conv) => {
                 return [
                     conv.conversation_id,
+                    conv.is_group ? 'group' : 'direct',
                     conv.last_message_at || '',
                     conv.unread_count || 0,
                     conv.last_message || ''
@@ -309,6 +312,7 @@ include 'includes/sidebar.php';
                     msg.message || '',
                     msg.edited_at || '',
                     msg.deleted_at || '',
+                    msg.message_scope || 'direct',
                     msg.attachment_url || '',
                     msg.attachment_name || '',
                     msg.attachment_type || ''
@@ -347,6 +351,10 @@ include 'includes/sidebar.php';
                 const data = await response.json();
                 const conversationsList = document.getElementById('conversationsList');
                 const list = (data.success && Array.isArray(data.data)) ? data.data : [];
+                conversationMap = {};
+                list.forEach((conv) => {
+                    conversationMap[String(conv.conversation_id)] = conv;
+                });
                 const nextSignature = getConversationSignature(list);
                 if (!forceRender && nextSignature === conversationsSignature) {
                     return;
@@ -357,19 +365,20 @@ include 'includes/sidebar.php';
                     conversationsList.innerHTML = list.map(conv => `
                         <div class="conversation-item p-4 border-b border-gray-100 hover:bg-gray-50 cursor-pointer ${conv.unread_count > 0 ? 'message-unread' : ''} ${String(currentConversationId) === String(conv.conversation_id) ? 'message-active' : ''}" 
                              data-conversation-id="${conv.conversation_id}" 
-                             data-user-id="${conv.other_user_id}"
-                             onclick="selectConversation('${conv.conversation_id}', '${conv.other_user_id}')">
+                             data-user-id="${conv.other_user_id || ''}"
+                             onclick="selectConversation('${conv.conversation_id}')">
                             <div class="flex items-center">
-                                <img src="${conv.profile_picture_url || 'https://via.placeholder.com/40'}" 
+                                <img src="${conv.profile_picture_url || DEFAULT_AVATAR}" 
                                      alt="${conv.full_name}" 
                                      class="h-10 w-10 rounded-full cursor-pointer"
-                                     onclick="event.stopPropagation(); openProfileFromMessages('${conv.other_user_id}')">
+                                     onclick="${conv.is_group ? 'event.stopPropagation();' : `event.stopPropagation(); openProfileFromMessages('${conv.other_user_id}')`}">
                                 <div class="ml-3 flex-1">
                                     <div class="flex justify-between">
-                                        <h3 class="font-semibold text-gray-900 cursor-pointer hover:underline" onclick="event.stopPropagation(); openProfileFromMessages('${conv.other_user_id}')">${conv.full_name}</h3>
+                                        <h3 class="font-semibold text-gray-900 ${conv.is_group ? '' : 'cursor-pointer hover:underline'}" onclick="${conv.is_group ? 'event.stopPropagation();' : `event.stopPropagation(); openProfileFromMessages('${conv.other_user_id}')`}">${conv.full_name}</h3>
                                         <span class="text-xs text-gray-500">${formatTime(conv.last_message_at)}</span>
                                     </div>
                                     <p class="text-sm text-gray-600 truncate">${conv.last_message || 'No messages yet'}</p>
+                                    ${conv.branch ? `<p class="text-xs text-gray-400 truncate mt-0.5">${conv.branch}</p>` : ''}
                                     ${conv.unread_count > 0 ? `
                                         <span class="inline-block mt-1 px-2 py-0.5 bg-blue-600 text-white text-xs rounded-full">
                                             ${conv.unread_count}
@@ -414,7 +423,7 @@ include 'includes/sidebar.php';
                         <div class="user-item p-3 border-b border-gray-100 hover:bg-gray-50 cursor-pointer flex items-center"
                              data-user-id="${user.user_id}"
                              onclick="selectUser('${user.user_id}')">
-                            <img src="${user.profile_picture_url || 'https://via.placeholder.com/40'}" 
+                            <img src="${user.profile_picture_url || DEFAULT_AVATAR}" 
                                  alt="${user.full_name}" 
                                  class="h-10 w-10 rounded-full cursor-pointer"
                                  onclick="event.stopPropagation(); openProfileFromMessages('${user.user_id}')">
@@ -474,7 +483,7 @@ include 'includes/sidebar.php';
                 if (data.success) {
                     // Reload conversations and select the new one
                     await loadConversations(true);
-                    selectConversation(data.conversation_id, userId);
+                    selectConversation(data.conversation_id);
                 } else {
                     alert(data.message || 'Failed to start conversation');
                 }
@@ -484,9 +493,10 @@ include 'includes/sidebar.php';
             }
         }
         
-        async function selectConversation(conversationId, userId) {
+        async function selectConversation(conversationId) {
+            const conversation = conversationMap[String(conversationId)] || null;
             currentConversationId = conversationId;
-            currentChatUserId = userId;
+            currentChatUserId = conversation && !conversation.is_group ? conversation.other_user_id : null;
             
             // Update UI
             document.querySelectorAll('.conversation-item').forEach(item => {
@@ -505,14 +515,25 @@ include 'includes/sidebar.php';
             sendMessageBtn.disabled = false;
             
             // Load conversation details and messages
-            await loadConversationDetails(userId);
+            await loadConversationDetails(conversation);
             await loadMessages(conversationId);
             await loadConversations(true);
         }
         
-        async function loadConversationDetails(userId) {
+        async function loadConversationDetails(conversation) {
+            if (!conversation) return;
+            if (conversation.is_group) {
+                document.getElementById('chatUserImage').src = conversation.profile_picture_url || DEFAULT_AVATAR;
+                document.getElementById('chatUserName').textContent = conversation.full_name || 'Mentor Group';
+                document.getElementById('chatUserStatus').textContent = conversation.branch || 'Mentor group chat';
+                if (openChatProfileBtn) openChatProfileBtn.classList.add('hidden');
+                if (audioCallBtn) audioCallBtn.classList.add('hidden');
+                if (videoCallBtn) videoCallBtn.classList.add('hidden');
+                return;
+            }
             try {
                 const token = localStorage.getItem('jwt_token');
+                const userId = conversation.other_user_id;
                 const response = await fetch(`${window.getApiBase ? window.getApiBase() : (window.PORTAL_BASE_PREFIX || '') + 'api'}/get_user.php?id=${userId}`, {
                     headers: {
                         'Authorization': `Bearer ${token}`
@@ -523,9 +544,12 @@ include 'includes/sidebar.php';
                 
                 if (data.success) {
                     const user = data.data;
-                    document.getElementById('chatUserImage').src = user.profile_picture_url || 'https://via.placeholder.com/40';
+                    document.getElementById('chatUserImage').src = user.profile_picture_url || DEFAULT_AVATAR;
                     document.getElementById('chatUserName').textContent = user.full_name;
                     document.getElementById('chatUserStatus').textContent = `${user.role} - ${user.branch || 'RJIT Alumni'}`;
+                    if (openChatProfileBtn) openChatProfileBtn.classList.remove('hidden');
+                    if (audioCallBtn) audioCallBtn.classList.remove('hidden');
+                    if (videoCallBtn) videoCallBtn.classList.remove('hidden');
                 }
             } catch (error) {
                 console.error('Error loading conversation details:', error);
@@ -565,21 +589,22 @@ include 'includes/sidebar.php';
                                 ${renderAttachmentHtml(msg)}
                             `;
                         const editedTag = (isCurrentUser && msg.is_edited) ? '<span class="ml-1 text-[11px] text-gray-400">(edited)</span>' : '';
+                        const messageScope = msg.message_scope || 'direct';
                         const actionsMenu = isCurrentUser && !msg.is_deleted ? `
                             <div class="relative msg-actions">
                                 <button class="msg-menu-toggle p-1 rounded hover:bg-gray-200 text-gray-500" onclick="toggleMessageMenu(${msg.message_id})">
                                     <i data-lucide="more-vertical" class="h-4 w-4"></i>
                                 </button>
                                 <div id="msgMenu-${msg.message_id}" class="hidden absolute right-0 mt-1 w-32 bg-white border border-gray-200 rounded-md shadow-lg z-20">
-                                    ${msg.can_edit ? `<button class="w-full text-left px-3 py-2 text-sm hover:bg-gray-50" onclick="editMessagePrompt(${msg.message_id}, '${encodeURIComponent(msg.message || '')}')">Edit</button>` : ''}
-                                    <button class="w-full text-left px-3 py-2 text-sm text-red-600 hover:bg-red-50" onclick="deleteMessage(${msg.message_id})">Delete</button>
+                                    ${msg.can_edit ? `<button class="w-full text-left px-3 py-2 text-sm hover:bg-gray-50" onclick="editMessagePrompt(${msg.message_id}, '${encodeURIComponent(msg.message || '')}', '${messageScope}')">Edit</button>` : ''}
+                                    <button class="w-full text-left px-3 py-2 text-sm text-red-600 hover:bg-red-50" onclick="deleteMessage(${msg.message_id}, '${messageScope}')">Delete</button>
                                 </div>
                             </div>
                         ` : '';
                         return `
                             <div class="msg-row flex mb-4 ${isCurrentUser ? 'justify-end' : ''}">
                                 ${!isCurrentUser ? `
-                                    <img src="${msg.sender_profile_picture || 'https://via.placeholder.com/32'}" 
+                                    <img src="${msg.sender_profile_picture || DEFAULT_AVATAR}" 
                                          alt="User" 
                                          class="h-8 w-8 rounded-full mt-1">
                                 ` : ''}
@@ -598,7 +623,7 @@ include 'includes/sidebar.php';
                                 ${isCurrentUser ? actionsMenu : ''}
                                 
                                 ${isCurrentUser ? `
-                                    <img src="${msg.sender_profile_picture || 'https://via.placeholder.com/32'}" 
+                                    <img src="${msg.sender_profile_picture || DEFAULT_AVATAR}" 
                                          alt="You" 
                                          class="h-8 w-8 rounded-full mt-1">
                                 ` : ''}
@@ -769,7 +794,7 @@ include 'includes/sidebar.php';
             }
         }
 
-        async function editMessagePrompt(messageId, encodedText) {
+        async function editMessagePrompt(messageId, encodedText, messageScope = 'direct') {
             closeAllMessageMenus();
             const currentText = decodeURIComponent(String(encodedText || ''));
             const nextText = prompt('Edit message (allowed for 30 minutes):', currentText || '');
@@ -789,6 +814,7 @@ include 'includes/sidebar.php';
                     },
                     body: JSON.stringify({
                         message_id: messageId,
+                        message_scope: messageScope,
                         message: trimmed
                     })
                 });
@@ -805,7 +831,7 @@ include 'includes/sidebar.php';
             }
         }
 
-        async function deleteMessage(messageId) {
+        async function deleteMessage(messageId, messageScope = 'direct') {
             closeAllMessageMenus();
             if (!confirm('Delete this message?')) return;
             try {
@@ -817,7 +843,8 @@ include 'includes/sidebar.php';
                         'Content-Type': 'application/json'
                     },
                     body: JSON.stringify({
-                        message_id: messageId
+                        message_id: messageId,
+                        message_scope: messageScope
                     })
                 });
                 const data = await response.json();
@@ -903,6 +930,12 @@ include 'includes/sidebar.php';
         loadConversations();
         (async function bootstrapFromQuery() {
             const params = new URLSearchParams(window.location.search);
+            const groupId = parseInt(params.get('group_id') || '0', 10);
+            if (groupId > 0) {
+                await loadConversations(true);
+                selectConversation(`group:${groupId}`);
+                return;
+            }
             const uid = parseInt(params.get('user_id') || '0', 10);
             if (uid > 0) {
                 await startNewConversation(uid);

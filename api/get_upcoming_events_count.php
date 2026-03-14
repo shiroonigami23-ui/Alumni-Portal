@@ -14,8 +14,8 @@ try {
     $stmt = $db->query("
         SELECT COUNT(*)::int
         FROM events
-        WHERE event_date >= CURRENT_DATE
-          AND status = 'approved'
+        WHERE DATE(start_datetime) >= CURRENT_DATE
+          AND status = 'approved'::event_status
     ");
 
     echo json_encode([

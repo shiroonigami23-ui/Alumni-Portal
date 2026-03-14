@@ -36,6 +36,7 @@ try {
     $database = new Database();
     $db = $database->getConnection();
     ensure_message_columns($db);
+    ensure_group_message_schema($db);
     $auth = new Auth($db);
     $userId = (int)$auth->validateRequest();
 
@@ -45,6 +46,7 @@ try {
     }
 
     $messageId = isset($payload['message_id']) ? (int)$payload['message_id'] : 0;
+    $messageScope = strtolower(trim((string)($payload['message_scope'] ?? 'direct')));
     $message = trim((string)($payload['message'] ?? ''));
 
     if ($messageId <= 0 || $message === '') {
@@ -53,9 +55,11 @@ try {
         exit;
     }
 
+    $table = $messageScope === 'group' ? 'mentorship_group_messages' : 'messages';
+
     $stmt = $db->prepare("
         SELECT message_id, sender_user_id, content_file_path, created_at, deleted_at
-        FROM messages
+        FROM {$table}
         WHERE message_id = :mid
         LIMIT 1
     ");
@@ -98,7 +102,7 @@ try {
         exit;
     }
 
-    $upd = $db->prepare("UPDATE messages SET edited_at = NOW() WHERE message_id = :mid");
+    $upd = $db->prepare("UPDATE {$table} SET edited_at = NOW() WHERE message_id = :mid");
     $upd->execute([':mid' => $messageId]);
 
     echo json_encode([

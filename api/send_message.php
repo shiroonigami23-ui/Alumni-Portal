@@ -11,15 +11,20 @@ include_once __DIR__ . '/_message_schema.php';
 $database = new Database();
 $db = $database->getConnection();
 ensure_message_columns($db);
+ensure_group_message_schema($db);
 $auth = new Auth($db);
 
 $sender_id = $auth->validateRequest();
 $data = json_decode(file_get_contents("php://input"));
 
 $receiver_id = 0;
+$group_id = 0;
+if (!empty($data->conversation_id) && is_string($data->conversation_id) && strpos($data->conversation_id, 'group:') === 0) {
+    $group_id = (int)substr((string)$data->conversation_id, 6);
+}
 if (!empty($data->receiver_id)) {
     $receiver_id = (int)$data->receiver_id;
-} elseif (!empty($data->conversation_id)) {
+} elseif (!empty($data->conversation_id) && !$group_id) {
     // Compatibility for conversation-based clients where conversation_id == other user id
     $receiver_id = (int)$data->conversation_id;
 } elseif (!empty($data->other_user_id)) {
@@ -31,25 +36,44 @@ $attachmentUrl = trim((string)($data->attachment_url ?? ''));
 $attachmentType = trim((string)($data->attachment_type ?? ''));
 $attachmentName = trim((string)($data->attachment_name ?? ''));
 
-if ($receiver_id > 0 && ($messageText !== '' || $attachmentUrl !== '')) {
+if (($receiver_id > 0 || $group_id > 0) && ($messageText !== '' || $attachmentUrl !== '')) {
     
     // 1. Get Roles for Hierarchy Logic
     $stmt = $db->prepare("SELECT role FROM users WHERE user_id = :sid");
     $stmt->execute(['sid' => $sender_id]);
     $sender_role = $stmt->fetchColumn();
 
-    $stmt = $db->prepare("SELECT role FROM users WHERE user_id = :rid");
-    $stmt->execute(['rid' => $receiver_id]);
-    $receiver_role = $stmt->fetchColumn();
-    if (!$receiver_role) {
-        http_response_code(404);
-        echo json_encode(["success" => false, "message" => "Receiver not found."]);
-        exit();
+    $receiver_role = null;
+    if ($receiver_id > 0) {
+        $stmt = $db->prepare("SELECT role FROM users WHERE user_id = :rid");
+        $stmt->execute(['rid' => $receiver_id]);
+        $receiver_role = $stmt->fetchColumn();
+        if (!$receiver_role) {
+            http_response_code(404);
+            echo json_encode(["success" => false, "message" => "Receiver not found."]);
+            exit();
+        }
     }
 
     // 2. Admin Bypass (Blueprint Section 4.D)
     // Admin is above all; they skip Block and Privacy checks.
-    if ($sender_role !== 'admin') {
+    if ($group_id > 0) {
+        $membership = $db->prepare("
+            SELECT 1
+            FROM mentorship_group_members
+            WHERE group_id = :gid AND user_id = :uid
+            LIMIT 1
+        ");
+        $membership->execute([
+            'gid' => $group_id,
+            'uid' => $sender_id
+        ]);
+        if (!$membership->fetchColumn()) {
+            http_response_code(403);
+            echo json_encode(["success" => false, "message" => "You are not a member of this mentor group."]);
+            exit();
+        }
+    } elseif ($sender_role !== 'admin') {
         
         // 3. Block Check (Blueprint Section 18.2 - Mutual Invisibility)
         // Using verified column names: blocker_user_id, blocked_user_id
@@ -97,33 +121,53 @@ if ($receiver_id > 0 && ($messageText !== '' || $attachmentUrl !== '')) {
     if ($payloadJson !== false && file_put_contents($storage_dir . $filename, $payloadJson)) {
         
         // 6. Insert Message into DB
-        $query = "INSERT INTO messages (sender_user_id, receiver_user_id, content_file_path) VALUES (:sid, :rid, :path)";
-        $stmt = $db->prepare($query);
-        
-        if($stmt->execute(['sid' => $sender_id, 'rid' => $receiver_id, 'path' => $relative_path])) {
-            $messageId = (int)$db->lastInsertId();
-            
-            // 7. Notification Trigger (Section 10.B)
-            $notif_query = "INSERT INTO notifications (user_id, notification_type, related_user_id, content) 
-                            VALUES (:target, 'new_message', :sender, :msg)";
-            $db->prepare($notif_query)->execute([
-                'target' => $receiver_id,
-                'sender' => $sender_id,
-                'msg' => "You have a new message."
-            ]);
+        if ($group_id > 0) {
+            $query = "INSERT INTO mentorship_group_messages (group_id, sender_user_id, content_file_path) VALUES (:gid, :sid, :path)";
+            $stmt = $db->prepare($query);
 
-            echo json_encode([
-                "success" => true,
-                "message" => "Message delivered.",
-                "data" => [
-                    "message_id" => $messageId,
-                    "receiver_id" => $receiver_id,
-                    "conversation_id" => (string)$receiver_id
-                ]
-            ]);
+            if ($stmt->execute(['gid' => $group_id, 'sid' => $sender_id, 'path' => $relative_path])) {
+                $messageId = (int)$db->lastInsertId();
+                echo json_encode([
+                    "success" => true,
+                    "message" => "Message delivered.",
+                    "data" => [
+                        "message_id" => $messageId,
+                        "conversation_id" => 'group:' . (string)$group_id
+                    ]
+                ]);
+            } else {
+                http_response_code(500);
+                echo json_encode(["success" => false, "message" => "Failed to log group message in database."]);
+            }
         } else {
-            http_response_code(500);
-            echo json_encode(["success" => false, "message" => "Failed to log message in database."]);
+            $query = "INSERT INTO messages (sender_user_id, receiver_user_id, content_file_path) VALUES (:sid, :rid, :path)";
+            $stmt = $db->prepare($query);
+
+            if($stmt->execute(['sid' => $sender_id, 'rid' => $receiver_id, 'path' => $relative_path])) {
+                $messageId = (int)$db->lastInsertId();
+                
+                // 7. Notification Trigger (Section 10.B)
+                $notif_query = "INSERT INTO notifications (user_id, notification_type, related_user_id, content) 
+                                VALUES (:target, 'new_message', :sender, :msg)";
+                $db->prepare($notif_query)->execute([
+                    'target' => $receiver_id,
+                    'sender' => $sender_id,
+                    'msg' => "You have a new message."
+                ]);
+
+                echo json_encode([
+                    "success" => true,
+                    "message" => "Message delivered.",
+                    "data" => [
+                        "message_id" => $messageId,
+                        "receiver_id" => $receiver_id,
+                        "conversation_id" => (string)$receiver_id
+                    ]
+                ]);
+            } else {
+                http_response_code(500);
+                echo json_encode(["success" => false, "message" => "Failed to log message in database."]);
+            }
         }
     } else {
         http_response_code(500);
@@ -131,6 +175,6 @@ if ($receiver_id > 0 && ($messageText !== '' || $attachmentUrl !== '')) {
     }
 } else {
     http_response_code(400);
-    echo json_encode(["success" => false, "message" => "Incomplete data. receiver_id and either message or attachment required."]);
+    echo json_encode(["success" => false, "message" => "Incomplete data. A conversation target and either message or attachment are required."]);
 }
 ?>
