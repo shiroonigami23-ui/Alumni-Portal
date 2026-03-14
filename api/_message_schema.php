@@ -35,6 +35,51 @@ function ensure_calls_table(PDO $db): void
     $done = true;
 }
 
+function ensure_group_call_schema(PDO $db): void
+{
+    static $done = false;
+    if ($done) {
+        return;
+    }
+
+    ensure_group_message_schema($db);
+
+    $db->exec("
+        CREATE TABLE IF NOT EXISTS mentorship_group_calls (
+            group_call_id BIGSERIAL PRIMARY KEY,
+            group_id BIGINT NOT NULL REFERENCES mentorship_groups(group_id) ON DELETE CASCADE,
+            initiator_user_id BIGINT NOT NULL REFERENCES users(user_id) ON DELETE CASCADE,
+            call_type VARCHAR(10) NOT NULL CHECK (call_type IN ('audio', 'video')),
+            room_code VARCHAR(255) NOT NULL,
+            room_url TEXT NOT NULL,
+            status VARCHAR(20) NOT NULL DEFAULT 'active' CHECK (status IN ('active', 'ended')),
+            created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+            updated_at TIMESTAMP NOT NULL DEFAULT NOW(),
+            ended_at TIMESTAMP NULL
+        )
+    ");
+
+    $db->exec("CREATE INDEX IF NOT EXISTS idx_mentorship_group_calls_group ON mentorship_group_calls(group_id, status, created_at DESC)");
+    $db->exec("CREATE UNIQUE INDEX IF NOT EXISTS uq_mentorship_group_calls_active_group ON mentorship_group_calls(group_id) WHERE status = 'active'");
+
+    $done = true;
+}
+
+function expire_stale_group_calls(PDO $db, string $ttl = '8 hours'): void
+{
+    ensure_group_call_schema($db);
+
+    $safeTtl = preg_replace('/[^0-9a-zA-Z ]/', '', $ttl) ?: '8 hours';
+    $db->exec("
+        UPDATE mentorship_group_calls
+        SET status = 'ended',
+            updated_at = NOW(),
+            ended_at = COALESCE(ended_at, NOW())
+        WHERE status = 'active'
+          AND created_at < (NOW() - INTERVAL '{$safeTtl}')
+    ");
+}
+
 function ensure_group_message_schema(PDO $db): void
 {
     static $done = false;

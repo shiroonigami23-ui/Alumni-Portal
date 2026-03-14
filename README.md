@@ -189,7 +189,12 @@ When verifying a fresh deploy, append `?refresh=<commit>` to bypass stale browse
   - direct messages call flow is now real instead of placeholder UI:
     - starting an audio/video call opens a live Jitsi room immediately for the caller
     - the receiver gets a clickable notification that opens the same room
-    - mentor-group chats hide the direct-call buttons because group calling is not implemented yet
+    - mentor-group chats now support one live shared mentor space at a time:
+      - members can start or join an audio/video mentor space from the group header
+      - the active space is reused for all members until it is ended or expires
+      - group admins or the person who started the space can end it from Messages
+  - the shared header theme toggle is now visible on small screens across pages instead of disappearing outside Discovery
+  - Messages now use app-styled custom dialogs for edit/delete/disband/error flows instead of browser alert/confirm/prompt popups
   - forgot-password is now a real email-reset flow:
     - new `forgot-password.php` and `reset.php` pages exist
     - reset tokens are issued securely, expire after 30 minutes, and are invalidated after use
@@ -237,7 +242,9 @@ When verifying a fresh deploy, append `?refresh=<commit>` to bypass stale browse
 - Disbanding a mentor group should remove all members, end active matches, and delete the GC/messages by cascade
 - Discovery should open in a compact mobile layout with collapsed filters and list view on phones
 - Direct 1:1 message audio/video calls should open a working Jitsi room for both the caller and the callee
-- Mentor-group chats should not show direct audio/video call buttons until real group calling exists
+- Mentor-group chats should support one active shared mentor space that members can join safely from the chat header
+- The theme toggle should remain visible in the shared mobile header, not just on Discovery
+- Messages should use custom in-app dialogs for edit/delete/disband/call errors instead of browser popups
 
 ### Known follow-up items
 
@@ -281,7 +288,10 @@ When verifying a fresh deploy, append `?refresh=<commit>` to bypass stale browse
    - mentor-group conversation list shows unread counts and header member chips
    - starting an audio/video call from a direct message opens a live Jitsi room without popup-blocker regressions
    - the receiving user gets a call notification that opens the same room from the header notification tray
-   - mentor-group conversations do not show direct audio/video call buttons
+   - mentor-group audio/video buttons open or join one active mentor space for the whole group
+   - group admins or the space starter can end the current mentor space
+   - mobile pages keep the theme toggle visible in the shared header
+   - Messages edit/delete/disband flows use the custom app dialog rather than browser popup chrome
    - discovery on mobile starts in list mode with filters collapsed and the top-companies block hidden
 4. Verify any new API route directly from the live ALB URL.
 

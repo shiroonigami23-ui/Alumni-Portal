@@ -88,6 +88,23 @@ include 'includes/sidebar.php';
                                         </span>
                                         <span id="chatGroupMemberCount" class="text-xs text-gray-500"></span>
                                     </div>
+                                    <div id="chatGroupCallBanner" class="hidden mb-3 rounded-2xl border border-blue-100 bg-blue-50/80 px-3 py-3">
+                                        <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                                            <div>
+                                                <p id="chatGroupCallTitle" class="text-sm font-semibold text-blue-900">Mentor Space Ready</p>
+                                                <p id="chatGroupCallMetaText" class="text-xs text-blue-700"></p>
+                                            </div>
+                                            <div class="flex flex-wrap items-center gap-2">
+                                                <button id="joinGroupSpaceBtn" type="button" class="inline-flex items-center rounded-full bg-blue-600 px-3 py-2 text-xs font-semibold text-white hover:bg-blue-700">
+                                                    <i data-lucide="radio" class="mr-1.5 h-3.5 w-3.5"></i>
+                                                    Join Space
+                                                </button>
+                                                <button id="endGroupSpaceBtn" type="button" class="hidden inline-flex items-center rounded-full border border-blue-200 bg-white px-3 py-2 text-xs font-semibold text-blue-700 hover:bg-blue-100">
+                                                    End Space
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
                                     <div id="chatGroupMembers" class="flex flex-wrap gap-2"></div>
                                 </div>
                             </div>
@@ -237,6 +254,11 @@ include 'includes/sidebar.php';
         const audioCallBtn = document.getElementById('audioCallBtn');
         const videoCallBtn = document.getElementById('videoCallBtn');
         const groupDisbandBtn = document.getElementById('groupDisbandBtn');
+        const chatGroupCallBanner = document.getElementById('chatGroupCallBanner');
+        const chatGroupCallTitle = document.getElementById('chatGroupCallTitle');
+        const chatGroupCallMetaText = document.getElementById('chatGroupCallMetaText');
+        const joinGroupSpaceBtn = document.getElementById('joinGroupSpaceBtn');
+        const endGroupSpaceBtn = document.getElementById('endGroupSpaceBtn');
         const chatUserImage = document.getElementById('chatUserImage');
         if (chatUserImage) {
             chatUserImage.onerror = function() {
@@ -313,6 +335,12 @@ include 'includes/sidebar.php';
         if (videoCallBtn) {
             videoCallBtn.addEventListener('click', () => startCall('video'));
         }
+        if (joinGroupSpaceBtn) {
+            joinGroupSpaceBtn.addEventListener('click', () => joinActiveGroupSpace());
+        }
+        if (endGroupSpaceBtn) {
+            endGroupSpaceBtn.addEventListener('click', endActiveGroupSpace);
+        }
         if (groupDisbandBtn) {
             groupDisbandBtn.addEventListener('click', disbandCurrentGroup);
         }
@@ -362,19 +390,99 @@ include 'includes/sidebar.php';
                 .replace(/'/g, '&#39;');
         }
 
+        async function showMessageDialog(message, options = {}) {
+            if (window.portalDialog && typeof window.portalDialog.alert === 'function') {
+                return window.portalDialog.alert({
+                    eyebrow: 'Messages',
+                    title: options.title || 'Messages',
+                    message: message,
+                    confirmText: options.confirmText || 'Okay',
+                    icon: options.icon || 'message-square',
+                    iconTone: options.iconTone || 'info'
+                });
+            }
+            alert(message);
+            return true;
+        }
+
+        async function confirmMessageDialog(message, options = {}) {
+            if (window.portalDialog && typeof window.portalDialog.confirm === 'function') {
+                return window.portalDialog.confirm({
+                    eyebrow: 'Messages',
+                    title: options.title || 'Please confirm',
+                    message: message,
+                    confirmText: options.confirmText || 'Confirm',
+                    cancelText: options.cancelText || 'Cancel',
+                    icon: options.icon || 'shield-alert',
+                    iconTone: options.iconTone || 'danger'
+                });
+            }
+            return confirm(message);
+        }
+
+        async function promptMessageDialog(message, options = {}) {
+            if (window.portalDialog && typeof window.portalDialog.prompt === 'function') {
+                return window.portalDialog.prompt({
+                    eyebrow: 'Messages',
+                    title: options.title || 'Update message',
+                    message: message,
+                    confirmText: options.confirmText || 'Save',
+                    cancelText: options.cancelText || 'Cancel',
+                    icon: options.icon || 'pencil-line',
+                    inputLabel: options.inputLabel || 'Message',
+                    defaultValue: options.defaultValue || ''
+                });
+            }
+            return prompt(message, options.defaultValue || '');
+        }
+
+        function getActiveGroupSpace() {
+            const activeMeta = currentConversationMeta && currentConversationMeta.is_group ? currentConversationMeta : null;
+            return activeMeta && activeMeta.active_call
+                ? currentConversationMeta.active_call
+                : null;
+        }
+
+        function renderGroupSpaceBanner(meta) {
+            if (!chatGroupCallBanner || !chatGroupCallTitle || !chatGroupCallMetaText || !joinGroupSpaceBtn || !endGroupSpaceBtn) return;
+            const activeCall = meta && meta.active_call ? meta.active_call : null;
+            if (!activeCall) {
+                chatGroupCallBanner.classList.add('hidden');
+                endGroupSpaceBtn.classList.add('hidden');
+                return;
+            }
+            const callMode = activeCall.call_type === 'video' ? 'Video' : 'Audio';
+            chatGroupCallTitle.textContent = `${callMode} mentor space live`;
+            chatGroupCallMetaText.textContent = `${activeCall.initiator_name || 'A group member'} started this space. Tap join to hop in together.`;
+            joinGroupSpaceBtn.innerHTML = `
+                <i data-lucide="${activeCall.call_type === 'video' ? 'video' : 'radio'}" class="mr-1.5 h-3.5 w-3.5"></i>
+                Join ${callMode} Space
+            `;
+            joinGroupSpaceBtn.dataset.roomUrl = String(activeCall.room_url || '');
+            endGroupSpaceBtn.classList.toggle('hidden', !activeCall.can_end);
+            chatGroupCallBanner.classList.remove('hidden');
+        }
+
         function syncChatHeaderActions(conversation = null) {
+            const hasConversation = !!conversation;
+            const isGroupConversation = !!(conversation && conversation.is_group);
             const isDirectConversation = !!(conversation && !conversation.is_group && Number(conversation.other_user_id || 0) > 0);
             if (openChatProfileBtn) {
                 openChatProfileBtn.classList.toggle('hidden', !isDirectConversation);
             }
             if (audioCallBtn) {
-                audioCallBtn.classList.toggle('hidden', !isDirectConversation);
+                audioCallBtn.classList.toggle('hidden', !hasConversation);
+                audioCallBtn.title = isGroupConversation ? 'Start or join audio space' : 'Audio call';
             }
             if (videoCallBtn) {
-                videoCallBtn.classList.toggle('hidden', !isDirectConversation);
+                videoCallBtn.classList.toggle('hidden', !hasConversation);
+                videoCallBtn.title = isGroupConversation ? 'Start or join video space' : 'Video call';
             }
             if (groupDisbandBtn) {
                 groupDisbandBtn.classList.add('hidden');
+            }
+            if (chatGroupCallBanner && !isGroupConversation) {
+                chatGroupCallBanner.classList.add('hidden');
             }
         }
 
@@ -539,11 +647,19 @@ include 'includes/sidebar.php';
                     await loadConversations(true);
                     selectConversation(data.conversation_id);
                 } else {
-                    alert(data.message || 'Failed to start conversation');
+                    await showMessageDialog(data.message || 'Failed to start conversation', {
+                        title: 'Conversation unavailable',
+                        icon: 'triangle-alert',
+                        iconTone: 'danger'
+                    });
                 }
             } catch (error) {
                 console.error('Error starting conversation:', error);
-                alert('Error starting conversation');
+                await showMessageDialog('Error starting conversation', {
+                    title: 'Conversation unavailable',
+                    icon: 'triangle-alert',
+                    iconTone: 'danger'
+                });
             }
         }
         
@@ -587,6 +703,7 @@ include 'includes/sidebar.php';
                 document.getElementById('chatUserName').textContent = conversation.full_name || 'Mentor Group';
                 document.getElementById('chatUserStatus').textContent = conversation.branch || 'Mentor group chat';
                 if (groupMeta) groupMeta.classList.remove('hidden');
+                if (chatGroupCallBanner) chatGroupCallBanner.classList.add('hidden');
                 if (groupMemberCount) groupMemberCount.textContent = conversation.member_count ? `${conversation.member_count} members` : '';
                 if (groupMembers) {
                     groupMembers.innerHTML = `
@@ -596,8 +713,6 @@ include 'includes/sidebar.php';
                     `;
                 }
                 if (openChatProfileBtn) openChatProfileBtn.classList.add('hidden');
-                if (audioCallBtn) audioCallBtn.classList.add('hidden');
-                if (videoCallBtn) videoCallBtn.classList.add('hidden');
                 if (groupDisbandBtn) groupDisbandBtn.classList.add('hidden');
                 return;
             }
@@ -765,22 +880,48 @@ include 'includes/sidebar.php';
                     delete groupDisbandBtn.dataset.groupId;
                 }
             }
+            if (audioCallBtn) {
+                const activeCall = meta && meta.active_call ? meta.active_call : null;
+                audioCallBtn.title = activeCall ? `Join current ${activeCall.call_type === 'video' ? 'video' : 'audio'} space` : 'Start or join audio space';
+            }
+            if (videoCallBtn) {
+                const activeCall = meta && meta.active_call ? meta.active_call : null;
+                videoCallBtn.title = activeCall ? `Join current ${activeCall.call_type === 'video' ? 'video' : 'audio'} space` : 'Start or join video space';
+            }
+            renderGroupSpaceBanner(meta);
             lucide.createIcons();
         }
 
         async function disbandCurrentGroup() {
             const groupId = Number(groupDisbandBtn?.dataset?.groupId || currentConversationMeta?.group_id || 0);
             if (!groupId) return;
-            if (!confirm('Disband this mentor group? All members will be removed and the group chat will be deleted.')) {
+            const shouldDisband = await confirmMessageDialog(
+                'Disband this mentor group? All members will be removed and the group chat will be deleted.',
+                {
+                    title: 'Disband mentor group',
+                    confirmText: 'Disband',
+                    icon: 'shield-x',
+                    iconTone: 'danger'
+                }
+            );
+            if (!shouldDisband) {
                 return;
             }
             try {
                 const res = await makeApiCall('mentorship.php?action=disband_group', 'POST', { group_id: groupId });
                 if (!res || !res.success) {
-                    alert((res && res.message) || 'Failed to disband this mentor group.');
+                    await showMessageDialog((res && res.message) || 'Failed to disband this mentor group.', {
+                        title: 'Unable to disband group',
+                        icon: 'triangle-alert',
+                        iconTone: 'danger'
+                    });
                     return;
                 }
-                alert(res.message || 'Mentor group disbanded.');
+                await showMessageDialog(res.message || 'Mentor group disbanded.', {
+                    title: 'Mentor group removed',
+                    icon: 'shield-check',
+                    iconTone: 'success'
+                });
                 currentConversationId = null;
                 currentConversationMeta = null;
                 currentChatUserId = null;
@@ -800,7 +941,11 @@ include 'includes/sidebar.php';
                 await loadConversations(true);
             } catch (error) {
                 console.error('Error disbanding mentor group:', error);
-                alert('Failed to disband this mentor group.');
+                await showMessageDialog('Failed to disband this mentor group.', {
+                    title: 'Unable to disband group',
+                    icon: 'triangle-alert',
+                    iconTone: 'danger'
+                });
             }
         }
 
@@ -843,11 +988,19 @@ include 'includes/sidebar.php';
                     // Reload conversations to update last message
                     await loadConversations(true);
                 } else {
-                    alert(data.message || 'Failed to send message');
+                    await showMessageDialog(data.message || 'Failed to send message', {
+                        title: 'Message not sent',
+                        icon: 'triangle-alert',
+                        iconTone: 'danger'
+                    });
                 }
             } catch (error) {
                 console.error('Error sending message:', error);
-                alert('Error sending message');
+                await showMessageDialog('Error sending message', {
+                    title: 'Message not sent',
+                    icon: 'triangle-alert',
+                    iconTone: 'danger'
+                });
             }
         }
 
@@ -949,11 +1102,21 @@ include 'includes/sidebar.php';
         async function editMessagePrompt(messageId, encodedText, messageScope = 'direct') {
             closeAllMessageMenus();
             const currentText = decodeURIComponent(String(encodedText || ''));
-            const nextText = prompt('Edit message (allowed for 30 minutes):', currentText || '');
+            const nextText = await promptMessageDialog('Edit message. Press Ctrl+Enter to save quickly.', {
+                title: 'Edit message',
+                inputLabel: 'Message',
+                defaultValue: currentText || '',
+                confirmText: 'Save changes',
+                icon: 'pencil-line'
+            });
             if (nextText === null) return;
             const trimmed = String(nextText).trim();
             if (!trimmed) {
-                alert('Message cannot be empty.');
+                await showMessageDialog('Message cannot be empty.', {
+                    title: 'Empty message',
+                    icon: 'triangle-alert',
+                    iconTone: 'danger'
+                });
                 return;
             }
             try {
@@ -972,20 +1135,34 @@ include 'includes/sidebar.php';
                 });
                 const data = await response.json();
                 if (!data.success) {
-                    alert(data.message || 'Failed to edit message');
+                    await showMessageDialog(data.message || 'Failed to edit message', {
+                        title: 'Edit failed',
+                        icon: 'triangle-alert',
+                        iconTone: 'danger'
+                    });
                     return;
                 }
                 await loadMessages(currentConversationId);
                 await loadConversations(true);
             } catch (error) {
                 console.error('Error editing message:', error);
-                alert('Error editing message');
+                await showMessageDialog('Error editing message', {
+                    title: 'Edit failed',
+                    icon: 'triangle-alert',
+                    iconTone: 'danger'
+                });
             }
         }
 
         async function deleteMessage(messageId, messageScope = 'direct') {
             closeAllMessageMenus();
-            if (!confirm('Delete this message?')) return;
+            const shouldDelete = await confirmMessageDialog('Delete this message?', {
+                title: 'Delete message',
+                confirmText: 'Delete',
+                icon: 'trash-2',
+                iconTone: 'danger'
+            });
+            if (!shouldDelete) return;
             try {
                 const token = localStorage.getItem('jwt_token');
                 const response = await fetch(`${window.getApiBase ? window.getApiBase() : (window.PORTAL_BASE_PREFIX || '') + 'api'}/delete_message.php`, {
@@ -1001,35 +1178,123 @@ include 'includes/sidebar.php';
                 });
                 const data = await response.json();
                 if (!data.success) {
-                    alert(data.message || 'Failed to delete message');
+                    await showMessageDialog(data.message || 'Failed to delete message', {
+                        title: 'Delete failed',
+                        icon: 'triangle-alert',
+                        iconTone: 'danger'
+                    });
                     return;
                 }
                 await loadMessages(currentConversationId);
                 await loadConversations(true);
             } catch (error) {
                 console.error('Error deleting message:', error);
-                alert('Error deleting message');
+                await showMessageDialog('Error deleting message', {
+                    title: 'Delete failed',
+                    icon: 'triangle-alert',
+                    iconTone: 'danger'
+                });
             }
         }
 
-        async function startCall(callType) {
-            if (!currentChatUserId || (currentConversationMeta && currentConversationMeta.is_group)) {
-                alert('Audio and video calls are available only in direct conversations.');
-                return;
-            }
+        function openCallWindowShell(label) {
             const callWindow = window.open('', '_blank');
             if (callWindow) {
                 callWindow.document.write(`
                     <title>Starting call...</title>
                     <body style="font-family: Inter, Arial, sans-serif; margin: 0; display: grid; place-items: center; min-height: 100vh; background: #f8fafc; color: #0f172a;">
                         <div style="text-align: center; padding: 24px;">
-                            <div style="font-size: 18px; font-weight: 700; margin-bottom: 8px;">Starting your ${callType} call...</div>
+                            <div style="font-size: 18px; font-weight: 700; margin-bottom: 8px;">Starting your ${label}...</div>
                             <div style="font-size: 14px; color: #475569;">We are preparing the secure meeting room.</div>
                         </div>
                     </body>
                 `);
                 callWindow.document.close();
             }
+            return callWindow;
+        }
+
+        function finalizeCallWindow(callWindow, roomUrl) {
+            if (callWindow && !callWindow.closed) {
+                callWindow.location.href = roomUrl;
+                return true;
+            }
+            window.open(roomUrl, '_blank');
+            return false;
+        }
+
+        async function joinActiveGroupSpace() {
+            const activeCall = getActiveGroupSpace();
+            if (!activeCall || !activeCall.room_url) {
+                await showMessageDialog('There is no active mentor space to join right now.', {
+                    title: 'No live space',
+                    icon: 'radio',
+                    iconTone: 'info'
+                });
+                return;
+            }
+            finalizeCallWindow(openCallWindowShell(`${activeCall.call_type === 'video' ? 'video' : 'audio'} space`), activeCall.room_url);
+        }
+
+        async function endActiveGroupSpace() {
+            const activeCall = getActiveGroupSpace();
+            const activeConversation = conversationMap[String(currentConversationId)] || null;
+            const groupId = Number((currentConversationMeta && currentConversationMeta.group_id) || (activeConversation && activeConversation.group_id) || 0);
+            if (!activeCall || !groupId) return;
+            const shouldEnd = await confirmMessageDialog('End the current mentor space for everyone in this group?', {
+                title: 'End mentor space',
+                confirmText: 'End space',
+                icon: 'phone-off',
+                iconTone: 'danger'
+            });
+            if (!shouldEnd) return;
+            try {
+                const response = await makeApiCall('end_group_call.php', 'POST', {
+                    group_id: groupId
+                });
+                if (!response || !response.success) {
+                    await showMessageDialog((response && response.message) || 'Unable to end this mentor space.', {
+                        title: 'Unable to end space',
+                        icon: 'triangle-alert',
+                        iconTone: 'danger'
+                    });
+                    return;
+                }
+                await showMessageDialog(response.message || 'Mentor space ended.', {
+                    title: 'Mentor space ended',
+                    icon: 'phone-off',
+                    iconTone: 'success'
+                });
+                await loadMessages(currentConversationId);
+                await loadConversations(true);
+            } catch (error) {
+                console.error('Error ending mentor space:', error);
+                await showMessageDialog('Unable to end this mentor space right now.', {
+                    title: 'Unable to end space',
+                    icon: 'triangle-alert',
+                    iconTone: 'danger'
+                });
+            }
+        }
+
+        async function startCall(callType) {
+            const activeConversation = conversationMap[String(currentConversationId)] || null;
+            const isGroupConversation = !!(
+                (currentConversationMeta && currentConversationMeta.is_group) ||
+                (activeConversation && activeConversation.is_group)
+            );
+            if (!isGroupConversation && !currentChatUserId) {
+                await showMessageDialog('Select a direct conversation before starting a call.', {
+                    title: 'No active conversation',
+                    icon: 'phone',
+                    iconTone: 'info'
+                });
+                return;
+            }
+            const callLabel = isGroupConversation
+                ? `${callType} mentor space`
+                : `${callType} call`;
+            const callWindow = openCallWindowShell(callLabel);
             try {
                 const token = localStorage.getItem('jwt_token');
                 const response = await fetch(`${window.getApiBase ? window.getApiBase() : (window.PORTAL_BASE_PREFIX || '') + 'api'}/start_call.php`, {
@@ -1039,7 +1304,8 @@ include 'includes/sidebar.php';
                         'Content-Type': 'application/json'
                     },
                     body: JSON.stringify({
-                        receiver_id: Number(currentChatUserId),
+                        receiver_id: isGroupConversation ? 0 : Number(currentChatUserId),
+                        group_id: isGroupConversation ? Number((currentConversationMeta && currentConversationMeta.group_id) || (activeConversation && activeConversation.group_id) || 0) : 0,
                         call_type: callType
                     })
                 });
@@ -1048,20 +1314,28 @@ include 'includes/sidebar.php';
                     if (callWindow && !callWindow.closed) {
                         callWindow.close();
                     }
-                    alert(data.message || 'Unable to start call');
+                    await showMessageDialog(data.message || 'Unable to start call', {
+                        title: isGroupConversation ? 'Unable to start mentor space' : 'Unable to start call',
+                        icon: 'triangle-alert',
+                        iconTone: 'danger'
+                    });
                     return;
                 }
-                if (callWindow && !callWindow.closed) {
-                    callWindow.location.href = data.data.room_url;
-                    return;
+                finalizeCallWindow(callWindow, data.data.room_url);
+                if (isGroupConversation) {
+                    await loadMessages(currentConversationId);
+                    await loadConversations(true);
                 }
-                window.open(data.data.room_url, '_blank');
             } catch (error) {
                 console.error('Error starting call:', error);
                 if (callWindow && !callWindow.closed) {
                     callWindow.close();
                 }
-                alert('Error starting call');
+                await showMessageDialog('Error starting call', {
+                    title: isGroupConversation ? 'Unable to start mentor space' : 'Unable to start call',
+                    icon: 'triangle-alert',
+                    iconTone: 'danger'
+                });
             }
         }
         

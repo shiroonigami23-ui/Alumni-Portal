@@ -72,6 +72,24 @@ $basePrefix = $isAdminPath ? '../' : '';
             color: white;
         }
 
+        .portal-dialog-backdrop {
+            background: rgba(15, 23, 42, 0.72);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+        }
+
+        .portal-dialog-card {
+            background:
+                radial-gradient(circle at top right, rgba(59, 130, 246, 0.18), transparent 38%),
+                linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(248, 250, 252, 0.98));
+            box-shadow: 0 32px 80px rgba(15, 23, 42, 0.28);
+        }
+
+        .portal-dialog-card textarea {
+            resize: vertical;
+            min-height: 120px;
+        }
+
         @media (max-width: 767px) {
             .portal-topbar .max-w-7xl {
                 padding-left: 0.75rem;
@@ -94,6 +112,12 @@ $basePrefix = $isAdminPath ? '../' : '';
 
             .portal-topbar-actions {
                 gap: 0.375rem;
+            }
+
+            .portal-topbar-actions .vu-theme-toggle {
+                padding: 0.55rem;
+                min-width: 2.5rem;
+                min-height: 2.5rem;
             }
 
             .portal-topbar-icon-btn {
@@ -155,7 +179,7 @@ $basePrefix = $isAdminPath ? '../' : '';
 
                 <!-- Right Side Navigation -->
                 <div class="portal-topbar-actions flex items-center space-x-4">
-                    <button id="themeModeBtn" class="vu-theme-toggle hidden sm:inline-flex" type="button">
+                    <button id="themeModeBtn" class="vu-theme-toggle inline-flex" type="button">
                         <i data-lucide="palette" class="h-4 w-4"></i>
                     </button>
                     <button id="installAppBtn" class="hidden px-3 py-1.5 border border-gray-300 rounded-full text-sm text-gray-700 hover:bg-gray-100">
@@ -209,6 +233,30 @@ $basePrefix = $isAdminPath ? '../' : '';
         </div>
     </nav>
 
+    <div id="portalDialog" class="portal-dialog-backdrop fixed inset-0 z-[180] hidden items-end justify-center p-4 sm:items-center">
+        <div class="portal-dialog-dismiss absolute inset-0" data-dialog-close="1"></div>
+        <div class="portal-dialog-card relative z-[181] w-full max-w-lg overflow-hidden rounded-[28px] border border-white/50 p-6 sm:p-7">
+            <div class="flex items-start gap-4">
+                <div id="portalDialogIconWrap" class="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-blue-100 text-blue-700 ring-1 ring-blue-200">
+                    <i id="portalDialogIcon" data-lucide="message-square" class="h-5 w-5"></i>
+                </div>
+                <div class="min-w-0 flex-1">
+                    <p id="portalDialogEyebrow" class="text-[11px] font-semibold uppercase tracking-[0.24em] text-blue-600">RJIT Portal</p>
+                    <h3 id="portalDialogTitle" class="mt-1 text-xl font-semibold text-slate-900">Notice</h3>
+                    <p id="portalDialogMessage" class="mt-3 whitespace-pre-wrap text-sm leading-6 text-slate-600"></p>
+                </div>
+            </div>
+            <div id="portalDialogInputWrap" class="mt-5 hidden">
+                <label id="portalDialogInputLabel" for="portalDialogInput" class="mb-2 block text-sm font-medium text-slate-700">Update</label>
+                <textarea id="portalDialogInput" class="w-full rounded-2xl border border-slate-200 bg-white/90 px-4 py-3 text-sm text-slate-800 shadow-sm focus:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-200"></textarea>
+            </div>
+            <div class="mt-6 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
+                <button id="portalDialogCancelBtn" type="button" class="rounded-full border border-slate-200 px-4 py-2.5 text-sm font-medium text-slate-600 transition hover:bg-slate-100">Cancel</button>
+                <button id="portalDialogConfirmBtn" type="button" class="rounded-full bg-blue-600 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-700">Okay</button>
+            </div>
+        </div>
+    </div>
+
     <script>
         window.PORTAL_BASE_PREFIX = "<?php echo $basePrefix; ?>";
         function sanitizeCachedAvatarUrl(url) {
@@ -240,6 +288,102 @@ $basePrefix = $isAdminPath ? '../' : '';
         // Initialize Lucide icons
         lucide.createIcons();
         let __lastNotifKey = '';
+        let __portalDialogState = null;
+
+        function closePortalDialog(result) {
+            const root = document.getElementById('portalDialog');
+            if (!root) return;
+            root.classList.add('hidden');
+            root.classList.remove('flex');
+            const resolver = __portalDialogState && typeof __portalDialogState.resolve === 'function'
+                ? __portalDialogState.resolve
+                : null;
+            __portalDialogState = null;
+            if (resolver) {
+                resolver(result);
+            }
+        }
+
+        function openPortalDialog(options = {}) {
+            const root = document.getElementById('portalDialog');
+            const title = document.getElementById('portalDialogTitle');
+            const message = document.getElementById('portalDialogMessage');
+            const eyebrow = document.getElementById('portalDialogEyebrow');
+            const iconWrap = document.getElementById('portalDialogIconWrap');
+            const icon = document.getElementById('portalDialogIcon');
+            const inputWrap = document.getElementById('portalDialogInputWrap');
+            const input = document.getElementById('portalDialogInput');
+            const inputLabel = document.getElementById('portalDialogInputLabel');
+            const confirmBtn = document.getElementById('portalDialogConfirmBtn');
+            const cancelBtn = document.getElementById('portalDialogCancelBtn');
+            if (!root || !title || !message || !eyebrow || !iconWrap || !icon || !inputWrap || !input || !inputLabel || !confirmBtn || !cancelBtn) {
+                return Promise.resolve(null);
+            }
+
+            const mode = String(options.mode || 'alert');
+            title.textContent = String(options.title || 'Notice');
+            message.textContent = String(options.message || '');
+            eyebrow.textContent = String(options.eyebrow || 'RJIT Portal');
+            icon.setAttribute('data-lucide', String(options.icon || 'message-square'));
+            iconWrap.className = `flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl ring-1 ${
+                options.iconTone === 'danger'
+                    ? 'bg-rose-100 text-rose-700 ring-rose-200'
+                    : options.iconTone === 'success'
+                        ? 'bg-emerald-100 text-emerald-700 ring-emerald-200'
+                        : 'bg-blue-100 text-blue-700 ring-blue-200'
+            }`;
+            confirmBtn.textContent = String(options.confirmText || 'Okay');
+            cancelBtn.textContent = String(options.cancelText || 'Cancel');
+            cancelBtn.classList.toggle('hidden', mode === 'alert');
+            inputWrap.classList.toggle('hidden', mode !== 'prompt');
+            inputLabel.textContent = String(options.inputLabel || 'Update');
+            input.value = String(options.defaultValue || '');
+            root.classList.remove('hidden');
+            root.classList.add('flex');
+            lucide.createIcons();
+
+            if (mode === 'prompt') {
+                setTimeout(() => input.focus(), 0);
+            } else {
+                setTimeout(() => confirmBtn.focus(), 0);
+            }
+
+            return new Promise((resolve) => {
+                __portalDialogState = { mode, resolve };
+            });
+        }
+
+        document.addEventListener('click', function(event) {
+            const root = document.getElementById('portalDialog');
+            if (!root || root.classList.contains('hidden')) return;
+            if (event.target && event.target.matches('[data-dialog-close="1"]')) {
+                closePortalDialog(__portalDialogState && __portalDialogState.mode === 'alert' ? true : null);
+            }
+        });
+
+        document.addEventListener('keydown', function(event) {
+            const root = document.getElementById('portalDialog');
+            if (!root || root.classList.contains('hidden')) return;
+            if (event.key === 'Escape') {
+                event.preventDefault();
+                closePortalDialog(__portalDialogState && __portalDialogState.mode === 'alert' ? true : null);
+            }
+        });
+
+        window.portalDialog = {
+            alert: function(options = {}) {
+                return openPortalDialog({ ...options, mode: 'alert' }).then(() => true);
+            },
+            confirm: function(options = {}) {
+                return openPortalDialog({ ...options, mode: 'confirm' }).then((value) => value === true);
+            },
+            prompt: function(options = {}) {
+                return openPortalDialog({ ...options, mode: 'prompt' }).then((value) => {
+                    if (typeof value !== 'string') return null;
+                    return value;
+                });
+            }
+        };
 
         // Load user data
         document.addEventListener('DOMContentLoaded', function() {
@@ -316,6 +460,37 @@ $basePrefix = $isAdminPath ? '../' : '';
                 notificationDropdown.classList.add('hidden');
                 userDropdown.classList.add('hidden');
             });
+
+            const dialogConfirmBtn = document.getElementById('portalDialogConfirmBtn');
+            const dialogCancelBtn = document.getElementById('portalDialogCancelBtn');
+            const dialogInput = document.getElementById('portalDialogInput');
+
+            if (dialogConfirmBtn) {
+                dialogConfirmBtn.addEventListener('click', function() {
+                    if (!__portalDialogState) return;
+                    if (__portalDialogState.mode === 'prompt') {
+                        closePortalDialog(dialogInput ? dialogInput.value : '');
+                        return;
+                    }
+                    closePortalDialog(true);
+                });
+            }
+
+            if (dialogCancelBtn) {
+                dialogCancelBtn.addEventListener('click', function() {
+                    closePortalDialog(__portalDialogState && __portalDialogState.mode === 'alert' ? true : null);
+                });
+            }
+
+            if (dialogInput) {
+                dialogInput.addEventListener('keydown', function(event) {
+                    if (!__portalDialogState || __portalDialogState.mode !== 'prompt') return;
+                    if ((event.ctrlKey || event.metaKey) && event.key === 'Enter') {
+                        event.preventDefault();
+                        closePortalDialog(dialogInput.value);
+                    }
+                });
+            }
 
             // Check for live streams
             checkLiveStreams();

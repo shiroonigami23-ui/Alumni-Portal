@@ -32,6 +32,8 @@ $database = new Database();
 $db = $database->getConnection();
 ensure_message_columns($db);
 ensure_group_message_schema($db);
+ensure_group_call_schema($db);
+expire_stale_group_calls($db);
 $auth = new Auth($db);
 
 $user_id = $auth->validateRequest();
@@ -180,6 +182,37 @@ try {
             ];
         }, $membersStmt->fetchAll(PDO::FETCH_ASSOC));
 
+        $activeCallStmt = $db->prepare("
+            SELECT
+                gc.group_call_id,
+                gc.call_type,
+                gc.room_url,
+                gc.created_at,
+                gc.initiator_user_id,
+                COALESCE(NULLIF(TRIM(p.full_name), ''), split_part(u.email, '@', 1)) AS initiator_name
+            FROM mentorship_group_calls gc
+            JOIN users u ON u.user_id = gc.initiator_user_id
+            LEFT JOIN profiles p ON p.user_id = gc.initiator_user_id
+            WHERE gc.group_id = :gid
+              AND gc.status = 'active'
+            ORDER BY gc.created_at DESC, gc.group_call_id DESC
+            LIMIT 1
+        ");
+        $activeCallStmt->execute([':gid' => $groupId]);
+        $activeCallRow = $activeCallStmt->fetch(PDO::FETCH_ASSOC) ?: null;
+        $activeCall = $activeCallRow ? [
+            'group_call_id' => (int)$activeCallRow['group_call_id'],
+            'call_type' => (string)$activeCallRow['call_type'],
+            'room_url' => (string)$activeCallRow['room_url'],
+            'created_at' => $activeCallRow['created_at'],
+            'initiator_user_id' => (int)$activeCallRow['initiator_user_id'],
+            'initiator_name' => (string)($activeCallRow['initiator_name'] ?? 'Group member'),
+            'can_end' => (
+                ((int)$activeCallRow['initiator_user_id'] === $user_id) ||
+                ((string)$currentMemberRole === 'admin')
+            )
+        ] : null;
+
         $history = [];
         foreach ($messages as $msg) {
             $isDeleted = !empty($msg['deleted_at']);
@@ -245,7 +278,8 @@ try {
                 'mentor_avatar' => resolve_profile_media_url($db, (int)$groupMeta['mentor_user_id'], $groupMeta['mentor_avatar'] ? str_replace('\\', '/', (string)$groupMeta['mentor_avatar']) : null, 'profile_picture_url', 'profile_avatar'),
                 'admin_user_id' => (int)($groupMeta['admin_user_id'] ?? 0),
                 'current_member_role' => (string)$currentMemberRole,
-                'members' => $members
+                'members' => $members,
+                'active_call' => $activeCall
             ]
         ]);
         exit;
