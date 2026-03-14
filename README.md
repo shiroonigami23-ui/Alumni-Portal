@@ -109,3 +109,77 @@ Latest local verification result:
 - API/model/cron lint: pass
 - API runtime fatal sweep: pass
 - Full feature matrix: pass
+
+## 8. Working Memory
+
+Use this section as the quick project memory for both local work and live AWS checks.
+
+### Live production URL
+
+- Base URL: `http://alumni-portal-alb-616743364.us-east-1.elb.amazonaws.com/`
+- Feed: `http://alumni-portal-alb-616743364.us-east-1.elb.amazonaws.com/feed.php`
+- Dashboard: `http://alumni-portal-alb-616743364.us-east-1.elb.amazonaws.com/dashboard.php`
+
+When verifying a fresh deploy, append `?refresh=<commit>` to bypass stale browser caches.
+
+### Recent live fixes
+
+- `259264a`:
+  - fixed feed like/share/reply UI crashes
+  - fixed shared footer `classList` null errors affecting jobs/events/mentorship
+- `a7ff122`:
+  - moved post/comment attachments into DB-backed asset storage
+- `c2d6d1e`:
+  - moved post/comment payload content off ECS task-local files into DB-backed content payloads
+- `e09ff7a`:
+  - fixed feed crash regression
+  - added first GIF picker UI
+  - made dashboard sections collapsible
+- `2c0b9e5`:
+  - added dashboard stats count endpoints
+  - replaced dead Giphy calls with live GIF search against Wikimedia Commons
+  - added feed draft support
+  - added feed upload progress / post-button locking
+  - polished dashboard quick links and collapse defaults
+
+### Stable behavior we now expect
+
+- Feed loads on AWS without fatal JS crashes
+- Profile posting no longer double-submits
+- Reporting is limited to one report per account per post
+- Share action exists and should either open native sharing or copy the link
+- Image/file attachments for new posts/comments should survive ECS task changes
+- GIF picker should show real GIF search results instead of a dead URL field
+- Dashboard count cards should hit real API endpoints instead of 404 routes
+
+### Known follow-up items
+
+- Drafts are currently browser-local, not server-synced across devices
+- Tailwind CDN warning still appears in console; this is a production warning, not a runtime blocker
+- Old posts created before the DB-backed attachment/content migrations may still show broken legacy media
+- Messages still need a cleanup pass for placeholder avatar/media fallbacks
+
+### Verification checklist before calling a deploy good
+
+1. Open:
+   - `feed.php?refresh=<commit>`
+   - `profile.php?refresh=<commit>`
+   - `dashboard.php?refresh=<commit>`
+   - `jobs.php?refresh=<commit>`
+   - `events.php?refresh=<commit>`
+   - `mentorship.php?refresh=<commit>`
+2. Confirm there are no new console errors except the Tailwind CDN warning.
+3. Confirm:
+   - post create works
+   - comments/replies work
+   - like/share work
+   - GIF picker shows real results
+   - attachment upload shows progress and renders after posting
+   - dashboard cards load counts without 404/API parse errors
+4. Verify any new API route directly from the live ALB URL.
+
+### Notes for future work
+
+- Keep this section updated after every meaningful deploy.
+- Add commit ID + what changed + any remaining known issue.
+- Prefer recording live behavior here instead of relying on chat memory.
