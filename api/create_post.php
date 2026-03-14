@@ -8,6 +8,7 @@ include_once '../middleware/Auth.php';
 include_once '../models/Session.php'; // Required for Security
 include_once '../middleware/Security.php';
 include_once '../helpers/Logger.php'; // Added Logger
+include_once __DIR__ . '/_asset_store.php';
 
 $database = new Database();
 $db = $database->getConnection();
@@ -66,30 +67,11 @@ if (is_array($_POST) && !empty($_POST)) {
     $gif_url = trim((string)($data->gif_url ?? ''));
 }
 
-// Collect uploaded media/files with collision-safe names
-$saveUpload = function(array $file, string $kind) use ($user_id, &$attachments) {
-    if (($file['error'] ?? UPLOAD_ERR_NO_FILE) !== UPLOAD_ERR_OK) {
-        return;
-    }
-    $original = (string)($file['name'] ?? 'file');
-    $ext = strtolower(pathinfo($original, PATHINFO_EXTENSION));
-    $safeExt = preg_replace('/[^a-z0-9]/', '', $ext);
-    if ($safeExt === '') {
-        $safeExt = 'bin';
-    }
-    $rand = bin2hex(random_bytes(6));
-    $name = "post_{$user_id}_{$kind}_{$rand}_" . time() . "." . $safeExt;
-    $uploadDir = dirname(__DIR__) . DIRECTORY_SEPARATOR . "storage" . DIRECTORY_SEPARATOR . "posts_uploads" . DIRECTORY_SEPARATOR;
-    if (!is_dir($uploadDir)) {
-        mkdir($uploadDir, 0777, true);
-    }
-    $dest = $uploadDir . $name;
-    if (move_uploaded_file($file['tmp_name'], $dest)) {
-        $attachments[] = [
-            'type' => $kind === 'image' ? 'image' : 'file',
-            'url' => "storage/posts_uploads/" . $name,
-            'name' => $original
-        ];
+// Collect uploaded media/files using durable DB-backed storage.
+$saveUpload = function(array $file, string $kind) use ($db, $user_id, &$attachments) {
+    $stored = store_uploaded_asset($db, (int)$user_id, $file, $kind === 'image' ? 'image' : 'file', 'post');
+    if ($stored) {
+        $attachments[] = $stored;
     }
 };
 

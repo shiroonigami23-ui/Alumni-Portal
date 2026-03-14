@@ -5,6 +5,7 @@ header("Access-Control-Allow-Methods: POST");
 
 include_once '../config/Database.php';
 include_once '../middleware/Auth.php';
+include_once __DIR__ . '/_asset_store.php';
 
 $database = new Database();
 $db = $database->getConnection();
@@ -57,27 +58,11 @@ try {
     }
 
     $uploads = [];
-    $uploadDir = dirname(__DIR__) . DIRECTORY_SEPARATOR . 'storage' . DIRECTORY_SEPARATOR . 'comments_uploads' . DIRECTORY_SEPARATOR;
-    if (!is_dir($uploadDir)) {
-        mkdir($uploadDir, 0777, true);
-    }
 
-    $saveFile = function (array $file, string $type) use ($uploadDir, $user_id, &$uploads) {
-        if (($file['error'] ?? UPLOAD_ERR_NO_FILE) !== UPLOAD_ERR_OK) {
-            return;
-        }
-        $original = (string)($file['name'] ?? 'file');
-        $ext = strtolower(pathinfo($original, PATHINFO_EXTENSION));
-        $safeExt = preg_replace('/[^a-z0-9]/', '', $ext);
-        if ($safeExt === '') $safeExt = 'bin';
-        $name = "cmt_{$user_id}_" . bin2hex(random_bytes(4)) . "_" . time() . "." . $safeExt;
-        $destAbs = $uploadDir . $name;
-        if (move_uploaded_file($file['tmp_name'], $destAbs)) {
-            $uploads[] = [
-                'type' => $type,
-                'url' => 'storage/comments_uploads/' . $name,
-                'name' => $original
-            ];
+    $saveFile = function (array $file, string $type) use ($db, $user_id, &$uploads) {
+        $stored = store_uploaded_asset($db, (int)$user_id, $file, $type, 'comment');
+        if ($stored) {
+            $uploads[] = $stored;
         }
     };
 
