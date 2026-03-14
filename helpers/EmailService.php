@@ -20,7 +20,7 @@ class EmailService
     public function send($to, $subject, $body, $isHtml = true)
     {
         // Try AWS SES first if configured
-        if (AWSHelper::isConfigured()) {
+        if ($this->aws && $this->aws->hasSesClient()) {
             $result = $this->aws->sendEmail($to, $subject, $body);
             if ($result) {
                 return ['success' => true, 'method' => 'SES', 'message_id' => $result];

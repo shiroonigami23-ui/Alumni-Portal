@@ -177,11 +177,13 @@ When verifying a fresh deploy, append `?refresh=<commit>` to bypass stale browse
     - reset tokens are issued securely, expire after 30 minutes, and are invalidated after use
     - reset emails are sent through the shared `EmailService`
     - the old localhost/token-in-response simulation flow is gone
+    - SES delivery should use the ECS runtime/SDK path first; if delivery fails, the API now returns an error instead of silently pretending success
   - profile timeline now treats reposts as first-class activity:
     - the profile page fetches both authored posts and reposts
     - student profiles relabel the first timeline tab to `Activity`
     - students still cannot create top-level posts, but their repost activity can populate the profile timeline
     - the dedicated `Reposts` tab now uses the profile owner's repost activity instead of the viewer's repost state
+  - discovery directory relies on `api/search_directory.php`; a mapper bug around profile avatar resolution can break the whole alumni response, so verify discovery after avatar/media changes
 
 ### Infra note
 

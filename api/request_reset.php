@@ -55,7 +55,7 @@ if ($user) {
     $safeUrl = htmlspecialchars($resetUrl, ENT_QUOTES, 'UTF-8');
 
     $emailService = new EmailService();
-    $emailService->send(
+    $delivery = $emailService->send(
         $email,
         'Reset your RJIT Alumni Portal password',
         "
@@ -81,6 +81,14 @@ if ($user) {
         ",
         true
     );
+
+    if (empty($delivery['success'])) {
+        $db->prepare("DELETE FROM password_resets WHERE email = :email")->execute(['email' => $email]);
+        error_log('Password reset email delivery failed for ' . $email . ' via ' . ($delivery['method'] ?? 'unknown'));
+        http_response_code(500);
+        echo json_encode(["message" => "We couldn't send the reset email right now. Please try again in a few minutes."]);
+        exit;
+    }
 }
 
 echo json_encode(["message" => "If the email exists, a reset link has been sent."]);

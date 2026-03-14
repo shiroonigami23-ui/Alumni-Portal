@@ -254,7 +254,7 @@ try {
     $stmt->execute();
 
     $results = $stmt->fetchAll(PDO::FETCH_ASSOC);
-    $mapped = array_map(static function (array $row): array {
+    $mapped = array_map(static function (array $row) use ($db): array {
         $location = trim(implode(', ', array_filter([$row['location_city'] ?? '', $row['location_country'] ?? ''])));
         $skills = array_values(array_filter(array_map('trim', explode(',', (string)($row['tech_stack'] ?? '')))));
         $role = (string)($row['role'] ?? '');

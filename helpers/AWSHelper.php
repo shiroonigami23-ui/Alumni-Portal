@@ -29,6 +29,11 @@ class AWSHelper
         }
     }
 
+    public function hasSesClient(): bool
+    {
+        return $this->ses !== null;
+    }
+
     public function uploadFile($key, $sourcePath)
     {
         if (!$this->s3) return false;
@@ -79,6 +84,6 @@ class AWSHelper
 
     public static function isConfigured()
     {
-        return getenv('AWS_ACCESS_KEY_ID') && getenv('AWS_SECRET_ACCESS_KEY');
+        return class_exists('Aws\Sdk');
     }
 }
