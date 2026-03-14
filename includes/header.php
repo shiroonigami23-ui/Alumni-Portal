@@ -115,9 +115,6 @@ $basePrefix = $isAdminPath ? '../' : '';
 
                 <!-- Right Side Navigation -->
                 <div class="flex items-center space-x-4">
-                    <button id="mobileSidebarToggle" class="md:hidden p-2 rounded-full hover:bg-gray-100" type="button" aria-label="Open navigation menu">
-                        <i data-lucide="menu" class="h-5 w-5 text-gray-700"></i>
-                    </button>
                     <button id="themeModeBtn" class="vu-theme-toggle" type="button">
                         <i data-lucide="palette" class="h-4 w-4"></i>
                     </button>

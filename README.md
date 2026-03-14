@@ -166,6 +166,7 @@ When verifying a fresh deploy, append `?refresh=<commit>` to bypass stale browse
   - avatar / cover uploads and generic file uploads now use DB-backed asset URLs; old local avatar/cover references are migrated or cleared on read
   - bare legacy avatar filenames like `avatar_46_...jpg` are treated as stale local media and no longer reused blindly by header/sidebar/feed/profile
   - `get_conversations.php` now includes the mentor owner id for mentor groups, preventing warning-leak / malformed JSON risk in group conversation payloads
+  - mobile navigation now uses a bottom-bar-first pattern on small screens with a `More` sheet for secondary destinations instead of a persistent left drawer
 
 ### Infra note
 
@@ -176,6 +177,7 @@ When verifying a fresh deploy, append `?refresh=<commit>` to bypass stale browse
 ### Stable behavior we now expect
 
 - Feed loads on AWS without fatal JS crashes
+- Mobile screens should no longer be dominated by the left navigation; small screens should use the bottom nav plus `More` sheet
 - Profile posting no longer double-submits
 - Reporting is limited to one report per account per post
 - Share action exists and should either open native sharing or copy the link
