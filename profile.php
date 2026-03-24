@@ -234,12 +234,23 @@ include 'includes/sidebar.php';
                                     
                                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                                         <div>
+                                            <label class="block text-sm font-medium text-gray-500">Joining Year</label>
+                                            <p id="aboutJoiningYear" class="mt-1 text-gray-900">-</p>
+                                        </div>
+                                        <div>
                                             <label class="block text-sm font-medium text-gray-500">Graduation Year</label>
                                             <p id="aboutGraduationYear" class="mt-1 text-gray-900">-</p>
                                         </div>
+                                    </div>
+                                    
+                                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                                         <div>
                                             <label class="block text-sm font-medium text-gray-500">Current Status</label>
                                             <p id="aboutCurrentStatus" class="mt-1 text-gray-900">-</p>
+                                        </div>
+                                        <div>
+                                            <label class="block text-sm font-medium text-gray-500">How You Can Help Alumni Mates</label>
+                                            <p id="aboutHelpAlumni" class="mt-1 text-gray-900 whitespace-pre-line">-</p>
                                         </div>
                                     </div>
                                     
@@ -579,7 +590,8 @@ include 'includes/sidebar.php';
         
         function getProfileTitle(data) {
             if (data.role === 'alumni') {
-                return `Class of ${data.graduation_year || 'N/A'} • ${data.current_position || 'Alumni'}`;
+                const yearLabel = data.joining_year ? `Joined ${data.joining_year}` : `Class of ${data.graduation_year || 'N/A'}`;
+                return `${yearLabel} • ${data.job_role || 'Alumni'}`;
             } else if (data.role === 'faculty') {
                 return `${data.designation || 'Faculty'} • ${data.department || 'RJIT'}`;
             } else if (data.role === 'student') {
@@ -667,43 +679,60 @@ include 'includes/sidebar.php';
             document.getElementById('aboutEmail').textContent = data.email || 'N/A';
             document.getElementById('aboutRole').textContent = data.role ? data.role.charAt(0).toUpperCase() + data.role.slice(1) : 'N/A';
             document.getElementById('aboutBranch').textContent = data.branch || data.department || 'N/A';
+            document.getElementById('aboutJoiningYear').textContent = data.joining_year || '-';
             document.getElementById('aboutGraduationYear').textContent = data.graduation_year || '-';
             document.getElementById('aboutCurrentStatus').textContent = getCurrentStatus(data);
             document.getElementById('aboutBio').textContent = data.bio || 'No bio yet';
+            document.getElementById('aboutHelpAlumni').textContent = data.help_alumni_mates || '-';
             
             // Education
             const educationDetails = document.getElementById('educationDetails');
             if (data.role === 'student' || data.role === 'alumni') {
-                educationDetails.textContent = `${data.course || 'B.Tech'} in ${data.branch || 'CSE'} (${data.graduation_year || 'Expected'})`;
+                const yearText = data.joining_year
+                    ? `Joined in ${data.joining_year}`
+                    : (data.graduation_year || 'Expected');
+                educationDetails.textContent = `${data.course || 'B.Tech'} in ${data.branch || 'CSE'} (${yearText})`;
             } else if (data.role === 'faculty') {
                 educationDetails.textContent = `${data.qualification || 'N/A'} • ${data.department || 'Department'}`;
             }
             
             // Work Experience
             const workExpList = document.getElementById('workExperienceList');
-            if (data.current_company && data.current_position) {
+            if (data.current_company || data.job_role) {
                 workExpList.innerHTML = `
                     <div class="pl-7">
-                        <p class="font-medium text-gray-900">${data.current_position}</p>
-                        <p class="text-gray-600">${data.current_company}</p>
+                        <p class="font-medium text-gray-900">${data.job_role || 'Professional'}</p>
+                        <p class="text-gray-600">${data.current_company || 'Independent'}</p>
                         ${data.work_experience ? `<p class="text-gray-500 text-sm mt-1">${data.work_experience}</p>` : ''}
+                    </div>
+                `;
+            } else {
+                workExpList.innerHTML = `
+                    <div class="pl-7">
+                        <p class="text-gray-500">No work experience added</p>
                     </div>
                 `;
             }
             
             // Skills
             const skillsList = document.getElementById('skillsList');
-            if (data.skills && data.skills.length > 0) {
-                skillsList.innerHTML = data.skills.map(skill => `
-                    <span class="skill-badge px-3 py-1 rounded-full text-sm">${skill}</span>
+            const rawSkills = Array.isArray(data.skills)
+                ? data.skills
+                : String(data.skills || '').split(',').map(s => s.trim()).filter(Boolean);
+            if (rawSkills.length > 0) {
+                skillsList.innerHTML = rawSkills.map(skill => `
+                    <span class="skill-badge px-3 py-1 rounded-full text-sm">${escapeHtml(skill)}</span>
                 `).join('');
+            } else {
+                skillsList.innerHTML = '<p class="text-gray-500">No skills added</p>';
             }
             
             // Contact Info
             document.getElementById('contactEmail').textContent = data.email || 'N/A';
-            document.getElementById('contactPhone').textContent = data.phone || 'Not provided';
-            document.getElementById('contactLocation').textContent = data.location || 'Not provided';
-            document.getElementById('contactWebsite').textContent = data.website || 'Not provided';
+            document.getElementById('contactPhone').textContent = data.contact_number || 'Not provided';
+            const locationBits = [data.location_city, data.location_country].filter(Boolean);
+            document.getElementById('contactLocation').textContent = locationBits.length ? locationBits.join(', ') : 'Not provided';
+            document.getElementById('contactWebsite').textContent = data.personal_website || 'Not provided';
             
             // Social Links
             const socialLinks = document.getElementById('socialLinks');
@@ -726,7 +755,7 @@ include 'includes/sidebar.php';
         
         function getCurrentStatus(data) {
             if (data.role === 'alumni') {
-                return `${data.current_position || 'Professional'} at ${data.current_company || 'Various Companies'}`;
+                return `${data.job_role || 'Professional'} at ${data.current_company || 'Various Companies'}`;
             } else if (data.role === 'faculty') {
                 return `${data.designation || 'Faculty'} at RJIT`;
             } else if (data.role === 'student') {

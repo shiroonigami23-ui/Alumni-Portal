@@ -24,6 +24,7 @@ try {
         'current_company', 'job_role',
         'department', 'branch', 'designation',
         'contact_number',
+        'joining_year', 'help_alumni_mates',
         'location_city', 'location_country',
         'personal_website',
         'linkedin_url', 'github_url', 'twitter_url'
@@ -32,7 +33,15 @@ try {
     $payload = [];
     foreach ($fields as $f) {
         if (array_key_exists($f, $data)) {
-            $payload[$f] = is_string($data[$f]) ? trim($data[$f]) : $data[$f];
+            $value = is_string($data[$f]) ? trim($data[$f]) : $data[$f];
+            if ($f === 'joining_year') {
+                if ($value === '' || $value === null) {
+                    $value = null;
+                } else {
+                    $value = (int)$value;
+                }
+            }
+            $payload[$f] = $value;
         }
     }
 

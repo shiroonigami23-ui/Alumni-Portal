@@ -241,16 +241,6 @@ if (!in_array($type, $validTypes)) {
                 
                 <!-- Alumni Registration Form -->
                 <form id="alumniForm" class="space-y-6 <?php echo $type !== 'alumni' ? 'hidden' : ''; ?>" enctype="multipart/form-data" data-endpoint="register_alumni.php">
-                    <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
-                        <div class="flex">
-                            <i data-lucide="key" class="h-5 w-5 text-blue-600 mr-3 mt-0.5"></i>
-                            <div>
-                                <h4 class="font-semibold text-blue-800 mb-1">Alumni Invitation Required</h4>
-                                <p class="text-blue-700 text-sm">You need an invitation token from an existing alumni or the administration to register.</p>
-                            </div>
-                        </div>
-                    </div>
-                    
                     <!-- Profile Picture Upload -->
                     <div class="flex flex-col items-center mb-6">
                         <div class="relative mb-4">
@@ -272,13 +262,12 @@ if (!in_array($type, $validTypes)) {
                     
                     <div class="grid md:grid-cols-2 gap-6">
                         <div>
-                            <label for="alumni_name" class="block text-sm font-medium text-gray-700 mb-2">Full Name *</label>
+                            <label for="alumni_name" class="block text-sm font-medium text-gray-700 mb-2">Full Name</label>
                             <input type="text" 
                                    id="alumni_name" 
                                    name="name"
-                                   required
                                    class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                                   placeholder="Jane Smith">
+                                   placeholder="Shekhar">
                         </div>
                         
                         <div>
@@ -294,50 +283,14 @@ if (!in_array($type, $validTypes)) {
                     
                     <div class="grid md:grid-cols-2 gap-6">
                         <div>
-                            <label for="alumni_password" class="block text-sm font-medium text-gray-700 mb-2">Password *</label>
-                            <input type="password" 
-                                   id="alumni_password" 
-                                   name="password"
-                                   required
-                                   minlength="8"
-                                   class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                                   placeholder="••••••••">
-                            <p class="mt-1 text-sm text-gray-500">Minimum 8 characters</p>
-                        </div>
-                        
-                        <div>
-                            <label for="alumni_confirm_password" class="block text-sm font-medium text-gray-700 mb-2">Confirm Password *</label>
-                            <input type="password" 
-                                   id="alumni_confirm_password" 
-                                   name="confirm_password"
-                                   required
-                                   class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                                   placeholder="••••••••">
-                        </div>
-                    </div>
-                    
-                    <div>
-                        <label for="alumni_invite_token" class="block text-sm font-medium text-gray-700 mb-2">Invitation Token *</label>
-                        <input type="text" 
-                               id="alumni_invite_token" 
-                               name="invite_token"
-                               required
-                               class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                               placeholder="Enter your invitation token">
-                        <p class="mt-1 text-sm text-gray-500">Contact alumni@rjit.ac.in if you need a token</p>
-                    </div>
-                    
-                    <div class="grid md:grid-cols-2 gap-6">
-                        <div>
-                            <label for="alumni_graduation_year" class="block text-sm font-medium text-gray-700 mb-2">Graduation Year *</label>
-                            <select id="alumni_graduation_year" 
-                                    name="graduation_year"
-                                    required
+                            <label for="alumni_joining_year" class="block text-sm font-medium text-gray-700 mb-2">Joining Year</label>
+                            <select id="alumni_joining_year" 
+                                    name="joining_year"
                                     class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent">
                                 <option value="">Select Year</option>
                                 <?php
                                 $currentYear = date('Y');
-                                for ($i = 1990; $i <= $currentYear; $i++) {
+                                for ($i = 1999; $i <= $currentYear; $i++) {
                                     echo "<option value=\"$i\">$i</option>";
                                 }
                                 ?>
@@ -345,10 +298,9 @@ if (!in_array($type, $validTypes)) {
                         </div>
                         
                         <div>
-                            <label for="alumni_branch" class="block text-sm font-medium text-gray-700 mb-2">Branch *</label>
+                            <label for="alumni_branch" class="block text-sm font-medium text-gray-700 mb-2">Branch</label>
                             <select id="alumni_branch" 
                                     name="branch"
-                                    required
                                     class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent">
                                 <option value="">Select Branch</option>
                                 <option value="CSE">Computer Science & Engineering</option>
@@ -361,14 +313,25 @@ if (!in_array($type, $validTypes)) {
                             </select>
                         </div>
                     </div>
-                    
-                    <div>
-                        <label for="alumni_current_company" class="block text-sm font-medium text-gray-700 mb-2">Current Company</label>
-                        <input type="text" 
-                               id="alumni_current_company" 
-                               name="current_company"
-                               class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                               placeholder="Google, Microsoft, etc.">
+
+                    <div class="grid md:grid-cols-2 gap-6">
+                        <div>
+                            <label for="alumni_mobile_number" class="block text-sm font-medium text-gray-700 mb-2">Mobile Number</label>
+                            <input type="text" 
+                                   id="alumni_mobile_number" 
+                                   name="mobile_number"
+                                   class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                   placeholder="+91 XXXXX XXXXX">
+                        </div>
+                        
+                        <div>
+                            <label for="alumni_current_company" class="block text-sm font-medium text-gray-700 mb-2">Current Company</label>
+                            <input type="text" 
+                                   id="alumni_current_company" 
+                                   name="current_company"
+                                   class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                   placeholder="Google, Microsoft, etc.">
+                        </div>
                     </div>
                     
                     <div>
@@ -380,11 +343,28 @@ if (!in_array($type, $validTypes)) {
                                placeholder="Software Engineer, Product Manager, etc.">
                     </div>
                     
+                    <div>
+                        <label for="alumni_bio" class="block text-sm font-medium text-gray-700 mb-2">Bio</label>
+                        <textarea id="alumni_bio"
+                               name="bio"
+                               rows="3"
+                               class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                               placeholder="Tell us a little about yourself..."></textarea>
+                    </div>
+
+                    <div>
+                        <label for="alumni_help_alumni_mates" class="block text-sm font-medium text-gray-700 mb-2">How You Can Help Your Alma Mates</label>
+                        <textarea id="alumni_help_alumni_mates"
+                               name="help_alumni_mates"
+                               rows="3"
+                               class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                               placeholder="Mentorship, referrals, guidance, mock interviews, etc."></textarea>
+                    </div>
+                    
                     <div class="flex items-center">
                         <input type="checkbox" 
                                id="alumni_terms" 
                                name="terms"
-                               required
                                class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded">
                         <label for="alumni_terms" class="ml-2 block text-sm text-gray-700">
                             I agree to the <a href="terms.php" class="text-blue-600 hover:text-blue-800">Terms of Service</a> and <a href="policy.php" class="text-blue-600 hover:text-blue-800">Privacy Policy</a>
@@ -612,16 +592,21 @@ document.querySelectorAll('form').forEach(form => {
         document.getElementById('errorMessage').classList.add('hidden');
         document.getElementById('successMessage').classList.add('hidden');
         
-        // 1. Password Validation
-        const password = this.querySelector('input[name="password"]').value;
-        const confirmPassword = this.querySelector('input[name="confirm_password"]').value;
-        if (password !== confirmPassword) {
-            showError('Passwords do not match!');
-            return;
+        // 1. Password Validation (only for forms that include password fields)
+        const passwordInput = this.querySelector('input[name="password"]');
+        const confirmPasswordInput = this.querySelector('input[name="confirm_password"]');
+        if (passwordInput || confirmPasswordInput) {
+            const password = passwordInput ? passwordInput.value : '';
+            const confirmPassword = confirmPasswordInput ? confirmPasswordInput.value : '';
+            if (password !== confirmPassword) {
+                showError('Passwords do not match!');
+                return;
+            }
         }
         
-        // 2. Terms Validation
-        if (!this.querySelector('input[name="terms"]').checked) {
+        // 2. Terms Validation (only when the checkbox is marked as required)
+        const termsCheckbox = this.querySelector('input[name="terms"]');
+        if (termsCheckbox && termsCheckbox.required && !termsCheckbox.checked) {
             showError('You must agree to the terms and conditions!');
             return;
         }

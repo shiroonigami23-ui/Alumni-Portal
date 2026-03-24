@@ -142,6 +142,12 @@ include 'includes/header.php';
                                 <h3 class="text-lg font-semibold text-gray-900 mb-3">Education & Work</h3>
                                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                                     <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-2">Joining Year</label>
+                                        <input id="settingsJoiningYearInput" type="number" min="1999" max="2099"
+                                               class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                               placeholder="e.g. 2010">
+                                    </div>
+                                    <div>
                                         <label class="block text-sm font-medium text-gray-700 mb-2">Current Company</label>
                                         <input id="settingsCurrentCompanyInput" type="text"
                                                class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
@@ -168,7 +174,7 @@ include 'includes/header.php';
                                 <h3 class="text-lg font-semibold text-gray-900 mb-3">Contact & Social</h3>
                                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                                     <div>
-                                        <label class="block text-sm font-medium text-gray-700 mb-2">Contact Number</label>
+                                        <label class="block text-sm font-medium text-gray-700 mb-2">Mobile Number</label>
                                         <input id="settingsContactNumberInput" type="text"
                                                class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
                                     </div>
@@ -201,6 +207,12 @@ include 'includes/header.php';
                                         <label class="block text-sm font-medium text-gray-700 mb-2">Twitter URL</label>
                                         <input id="settingsTwitterInput" type="url"
                                                class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                    </div>
+                                    <div class="md:col-span-2">
+                                        <label class="block text-sm font-medium text-gray-700 mb-2">How You Can Help Your Alumni Mates</label>
+                                        <textarea id="settingsHelpAlumniInput" rows="3"
+                                                  class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                                  placeholder="Mentorship, referrals, interview prep, networking, etc."></textarea>
                                     </div>
                                 </div>
                             </div>
@@ -339,12 +351,14 @@ include 'includes/header.php';
                 setIf('settingsDepartmentInput', p.department || p.branch || '');
                 setIf('settingsDesignationInput', p.designation || '');
                 setIf('settingsContactNumberInput', p.contact_number || '');
+                setIf('settingsJoiningYearInput', p.joining_year || '');
                 setIf('settingsLocationCityInput', p.location_city || '');
                 setIf('settingsLocationCountryInput', p.location_country || '');
                 setIf('settingsWebsiteInput', p.personal_website || '');
                 setIf('settingsLinkedinInput', p.linkedin_url || '');
                 setIf('settingsGithubInput', p.github_url || '');
                 setIf('settingsTwitterInput', p.twitter_url || '');
+                setIf('settingsHelpAlumniInput', p.help_alumni_mates || '');
             }
         } catch (error) {
             console.error('Error loading settings user:', error);
@@ -455,12 +469,14 @@ include 'includes/header.php';
                         branch: document.getElementById('settingsDepartmentInput').value.trim(),
                         designation: document.getElementById('settingsDesignationInput').value.trim(),
                         contact_number: document.getElementById('settingsContactNumberInput').value.trim(),
+                        joining_year: document.getElementById('settingsJoiningYearInput').value.trim(),
                         location_city: document.getElementById('settingsLocationCityInput').value.trim(),
                         location_country: document.getElementById('settingsLocationCountryInput').value.trim(),
                         personal_website: document.getElementById('settingsWebsiteInput').value.trim(),
                         linkedin_url: document.getElementById('settingsLinkedinInput').value.trim(),
                         github_url: document.getElementById('settingsGithubInput').value.trim(),
-                        twitter_url: document.getElementById('settingsTwitterInput').value.trim()
+                        twitter_url: document.getElementById('settingsTwitterInput').value.trim(),
+                        help_alumni_mates: document.getElementById('settingsHelpAlumniInput').value.trim()
                     });
                     if (!res || res.message === 'Failed to update profile.') {
                         throw new Error((res && res.message) || 'Failed to save settings');
