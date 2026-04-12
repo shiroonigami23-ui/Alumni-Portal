@@ -94,6 +94,9 @@ include 'includes/sidebar.php';
     let currentActiveMatch = null;
     let currentAdminGroupMembership = null;
     const MENTORSHIP_API_BASE = (window.getApiBase ? window.getApiBase() : ((window.PORTAL_BASE_PREFIX || '') + 'api'));
+    function shouldUseOwnRequestsView() {
+        return Boolean(mentorStatus?.can_request && !mentorStatus?.mentor_profile?.is_active);
+    }
 
     async function loadCurrentUser() {
         try {
@@ -168,13 +171,14 @@ include 'includes/sidebar.php';
         }
 
         if (currentRole === 'faculty' || currentRole === 'admin') {
+            const ownRequestsView = shouldUseOwnRequestsView();
             hint.textContent = currentRole === 'admin'
                 ? 'Admins can mentor immediately, review alumni mentor applications, and manage any mentor group.'
                 : 'Faculty can mentor immediately, review alumni mentor applications, and can also join admin-led mentor groups.';
             becomeBtn.disabled = false;
             becomeBtn.classList.remove('opacity-60', 'cursor-not-allowed');
             becomeBtn.textContent = profile?.is_active ? 'Update Mentor Profile' : 'Become a Mentor';
-            requestsTitle.textContent = 'Incoming Requests';
+            requestsTitle.textContent = ownRequestsView ? 'My Requests' : 'Incoming Requests';
             if (activeTitle) activeTitle.textContent = 'Mentor Group';
             showMentorBanner(profile?.is_active ? 'Your mentor profile is active. Students can request to join your mentor group.' : '');
             return;
@@ -232,7 +236,7 @@ include 'includes/sidebar.php';
             const mentorsPayload = await mentorsRes.json();
             const mentors = Array.isArray(mentorsPayload?.data) ? mentorsPayload.data : [];
 
-            const reqAction = (currentRole === 'student' || (currentRole === 'alumni' && !mentorStatus?.mentor_profile?.is_active))
+            const reqAction = (currentRole === 'student' || shouldUseOwnRequestsView())
                 ? 'list_my_requests'
                 : 'list_requests';
             const reqRes = await fetch(`${MENTORSHIP_API_BASE}/mentorship.php?action=${reqAction}`, {
@@ -330,7 +334,7 @@ include 'includes/sidebar.php';
                 listEl.innerHTML = '<div class="text-sm text-gray-500">Sign in to view requests.</div>';
                 return;
             }
-        const action = (mentorStatus?.can_request && !mentorStatus?.mentor_profile?.is_active)
+        const action = shouldUseOwnRequestsView()
                 ? 'list_my_requests'
                 : 'list_requests';
             const res = await fetch(`${MENTORSHIP_API_BASE}/mentorship.php?action=${action}`, {
@@ -360,7 +364,7 @@ include 'includes/sidebar.php';
                     <p class="text-xs text-gray-500 mt-1">${r.message || ''}</p>
                     <div class="flex items-center justify-between mt-2">
                         <span class="text-xs px-2 py-0.5 rounded-full ${r.status === 'accepted' ? 'bg-green-100 text-green-700' : (r.status === 'rejected' ? 'bg-red-100 text-red-700' : 'bg-yellow-100 text-yellow-700')}">${r.status}</span>
-                        ${((['faculty', 'admin'].includes(currentRole) || (currentRole === 'alumni' && mentorStatus?.mentor_profile?.is_active)) && r.status === 'pending') ? `
+                        ${(action !== 'list_my_requests' && (['faculty', 'admin'].includes(currentRole) || (currentRole === 'alumni' && mentorStatus?.mentor_profile?.is_active)) && r.status === 'pending') ? `
                             <div class="flex gap-2">
                                 <button class="mentor-respond-btn text-xs px-2 py-1 bg-green-600 text-white rounded" data-request-id="${r.request_id}" data-status="accepted">Accept</button>
                                 <button class="mentor-respond-btn text-xs px-2 py-1 bg-red-600 text-white rounded" data-request-id="${r.request_id}" data-status="rejected">Reject</button>

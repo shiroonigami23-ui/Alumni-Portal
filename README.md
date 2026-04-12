@@ -12,21 +12,26 @@ The repo already includes:
 - Cron jobs in `cron/`
 - AWS infra in `terraform/`
 - Deployment scripts in `deployment/`
-- Full local verification script: `verify_feature_matrix.ps1`
+- Full local verification script: `tests/local/verify_feature_matrix.ps1`
 
 ## 1. Local Setup (Windows + XAMPP + PostgreSQL/MySQL)
 
 ### Step 1: Start services
 
-- Start Apache (XAMPP)
-- Start PostgreSQL (port `5432`)
+Use the one-click local starter:
+
+```bat
+scripts\start_local_xampp.bat
+```
+
+This starts Apache and XAMPP PostgreSQL (port `5433`).
 
 ### Step 2: Set DB environment variables (PowerShell)
 
 ```powershell
 $env:DB_DRIVER="pgsql"   # use "mysql" for MySQL
 $env:DB_HOST="127.0.0.1"
-$env:DB_PORT="5432"      # use 3306 for MySQL
+$env:DB_PORT="5433"      # use 3306 for MySQL
 $env:DB_NAME="alumni_portal"
 $env:DB_USER="postgres"  # use MySQL user when DB_DRIVER=mysql
 $env:DB_PASSWORD="postgres"
@@ -60,8 +65,8 @@ Expected: connection success message.
 Run this to test major features end-to-end with placeholder data:
 
 ```powershell
-$env:PGPASSWORD="postgres"
-powershell -ExecutionPolicy Bypass -File .\verify_feature_matrix.ps1
+$env:PGPASSWORD=""
+powershell -ExecutionPolicy Bypass -File .\tests\local\verify_feature_matrix.ps1
 ```
 
 It validates:
@@ -102,8 +107,8 @@ If you want copy-paste production deployment, follow:
 - `deployment/deploy-aws.sh` - build/push image and redeploy ECS
 - `deployment/migrate-to-rds.sh` - local PostgreSQL to AWS RDS migration
 - `deployment/sql/2026_02_20_create_mentorship_requests.sql` - required migration for mentorship
-- `verify_local.ps1` - lightweight local health checks
-- `verify_feature_matrix.ps1` - full feature matrix
+- `tests/local/verify_local.ps1` - lightweight local health checks
+- `tests/local/verify_feature_matrix.ps1` - full feature matrix
 
 ## 6. Notes for Production
 
