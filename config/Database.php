@@ -26,22 +26,34 @@ class Database
     {
         $this->conn = null;
 
-        try {
-            if ($this->driver === 'mysql') {
-                $dsn = "mysql:host=" . $this->host . ";port=" . $this->port . ";dbname=" . $this->db_name . ";charset=utf8mb4";
-            } else {
-                $dsn = "pgsql:host=" . $this->host . ";port=" . $this->port . ";dbname=" . $this->db_name;
+        $ports = [$this->port];
+        // Local fallback for XAMPP PostgreSQL when another service owns 5432.
+        if ($this->driver === 'pgsql' && $this->port === '5432') {
+            $ports[] = '5433';
+        }
+
+        $lastException = null;
+        foreach ($ports as $port) {
+            try {
+                if ($this->driver === 'mysql') {
+                    $dsn = "mysql:host=" . $this->host . ";port=" . $port . ";dbname=" . $this->db_name . ";charset=utf8mb4";
+                } else {
+                    $dsn = "pgsql:host=" . $this->host . ";port=" . $port . ";dbname=" . $this->db_name;
+                }
+                $this->conn = new PDO($dsn, $this->username, $this->password, [
+                    PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
+                    PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
+                    PDO::ATTR_EMULATE_PREPARES => false
+                ]);
+                break;
+            } catch (PDOException $exception) {
+                $lastException = $exception;
+                $this->conn = null;
             }
-            $this->conn = new PDO($dsn, $this->username, $this->password, [
-                PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
-                PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
-                PDO::ATTR_EMULATE_PREPARES => false
-            ]);
-        } catch (PDOException $exception) {
-            // Log error instead of echoing in production
-            error_log("Connection error: " . $exception->getMessage());
-            // Do NOT echo error to avoid breaking JSON responses
-            // echo "Connection error: " . $exception->getMessage(); 
+        }
+
+        if ($this->conn === null && $lastException !== null) {
+            error_log("Connection error: " . $lastException->getMessage());
         }
 
         return $this->conn;
