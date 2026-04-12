@@ -1,66 +1,117 @@
-# Alumni Portal (XAMPP + PostgreSQL + AWS Ready)
+# Alumni Portal (XAMPP + PostgreSQL/MySQL + AWS)
 
-This project runs in two modes:
+This README is written as a beginner-friendly setup guide.
 
-1. Local mode (XAMPP + PostgreSQL) for fast development/testing.
-2. AWS mode (Terraform + ECS + RDS + S3) for production hosting.
+Use one of these:
 
-The repo already includes:
+1. Local XAMPP + PostgreSQL (`5433`) (recommended for this repo).
+2. Local XAMPP + MySQL (`3306`) (for college server compatibility).
+3. AWS deploy (Terraform + ECS + RDS + S3).
 
-- 77 API endpoints in `api/`
-- Models in `models/`
-- Cron jobs in `cron/`
-- AWS infra in `terraform/`
-- Deployment scripts in `deployment/`
-- Full local verification script: `tests/local/verify_feature_matrix.ps1`
+---
 
-## 1. Local Setup (Windows + XAMPP + PostgreSQL/MySQL)
+## 1. Local Setup On Windows (XAMPP)
 
-### Step 1: Start services
+### 1A. Fast start (PostgreSQL in XAMPP)
 
-Use the one-click local starter:
+From project root:
 
 ```bat
 scripts\start_local_xampp.bat
 ```
 
-This starts Apache and XAMPP PostgreSQL (port `5433`).
+This starts:
 
-### Step 2: Set DB environment variables (PowerShell)
+- XAMPP PostgreSQL at `127.0.0.1:5433`
+- Apache web server
 
-```powershell
-$env:DB_DRIVER="pgsql"   # use "mysql" for MySQL
-$env:DB_HOST="127.0.0.1"
-$env:DB_PORT="5433"      # use 3306 for MySQL
-$env:DB_NAME="alumni_portal"
-$env:DB_USER="postgres"  # use MySQL user when DB_DRIVER=mysql
-$env:DB_PASSWORD="postgres"
+Then open:
+
+- `http://127.0.0.1:8088/`
+
+### 1B. MySQL setup on XAMPP (step-by-step)
+
+Use this if you want local behavior close to a MySQL-based server.
+
+### Step 1: Start XAMPP services
+
+In XAMPP Control Panel, start:
+
+- `Apache`
+- `MySQL`
+
+### Step 2: Create database
+
+```bat
+C:\xampp\mysql\bin\mysql.exe -u root -e "CREATE DATABASE IF NOT EXISTS alumni_portal CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;"
 ```
 
-If your DB password is different, set that value.
+If MySQL root has a password, use `-p`:
 
-For MySQL deployments, run:
-
-- `deployment/sql/2026_04_12_moderator_post_workflow_mysql.sql`
-- `deployment/db.sql` (one-shot bootstrap schema for fresh local setup)
-
-For PostgreSQL deployments, run:
-
-- `deployment/sql/2026_04_12_moderator_post_workflow_pg.sql`
-
-### Step 3: Verify DB connection
-
-```powershell
-C:\xampp\php\php.exe .\db_test.php
+```bat
+C:\xampp\mysql\bin\mysql.exe -u root -p -e "CREATE DATABASE IF NOT EXISTS alumni_portal CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;"
 ```
 
-Expected: connection success message.
+### Step 3: Import schema + required MySQL migration
 
-### Step 4: Open app
+```bat
+C:\xampp\mysql\bin\mysql.exe -u root alumni_portal < deployment\db.sql
+C:\xampp\mysql\bin\mysql.exe -u root alumni_portal < deployment\sql\2026_04_12_moderator_post_workflow_mysql.sql
+```
+
+If using password:
+
+```bat
+C:\xampp\mysql\bin\mysql.exe -u root -p alumni_portal < deployment\db.sql
+C:\xampp\mysql\bin\mysql.exe -u root -p alumni_portal < deployment\sql\2026_04_12_moderator_post_workflow_mysql.sql
+```
+
+### Step 4: Set app DB env vars for Apache runtime
+
+Important: this app reads DB settings from process environment (`getenv`).  
+Set vars inside Apache config so browser requests use MySQL too.
+
+Edit file:
+
+- `C:\xampp\apache\conf\extra\httpd-vhosts.conf`  
+  (or your active Apache vhost file)
+
+Add inside your `<VirtualHost ...>` block:
+
+```apache
+SetEnv DB_DRIVER mysql
+SetEnv DB_HOST 127.0.0.1
+SetEnv DB_PORT 3306
+SetEnv DB_NAME alumni_portal
+SetEnv DB_USER root
+SetEnv DB_PASSWORD
+```
+
+If root has password:
+
+```apache
+SetEnv DB_PASSWORD your_mysql_password
+```
+
+Restart Apache after saving config.
+
+### Step 5: Verify DB connection
+
+```bat
+C:\xampp\php\php.exe db_test.php
+```
+
+Expected output: successful connection.
+
+### Step 6: Run app
+
+Open:
 
 - `http://localhost/alumni_portal`
 
-## 2. Full Local Verification
+---
+
+## 2. Local Verification Script
 
 Run this to test major features end-to-end with placeholder data:
 
@@ -83,7 +134,119 @@ It validates:
 - Search endpoints
 - Live stream lifecycle
 
-## 3. PostgreSQL Setup Guide
+---
+
+## 3. AWS Deployment (Beginner Checklist)
+
+This is the safest sequence for first deployment.
+
+### Step 1: Install required tools
+
+- AWS CLI
+- Terraform
+- Docker Desktop
+- Git
+- PostgreSQL client tools (`psql`)
+
+Quick check:
+
+```bash
+aws --version
+terraform version
+docker --version
+psql --version
+```
+
+### Step 2: Configure AWS credentials
+
+```bash
+aws configure
+```
+
+Set:
+
+- Access key
+- Secret key
+- Region (example: `us-east-1`)
+- Output: `json`
+
+### Step 3: Configure Terraform variables
+
+```bash
+cd terraform
+cp terraform.tfvars.example terraform.tfvars
+```
+
+Edit `terraform.tfvars` and set at least:
+
+- `aws_region`
+- `environment`
+- `db_password`
+- sizing/count variables as needed
+
+### Step 4: Create AWS infrastructure
+
+```bash
+terraform init
+terraform plan
+terraform apply
+```
+
+Check outputs:
+
+```bash
+terraform output
+terraform output -raw alb_dns_name
+terraform output -raw rds_address
+terraform output -raw ecr_repository_url
+```
+
+### Step 5: Build and push app image
+
+From repo root, run:
+
+```bash
+./deployment/deploy-aws.sh
+```
+
+On Windows, run from Git Bash.
+
+### Step 6: Migrate database to RDS
+
+```bash
+./deployment/migrate-to-rds.sh
+```
+
+### Step 7: Run required SQL migration on RDS
+
+```bash
+psql -h <RDS_ENDPOINT> -U admin -d alumni_portal -f deployment/sql/2026_02_20_create_mentorship_requests.sql
+```
+
+### Step 8: Ensure ECS runtime env vars are set
+
+Required:
+
+- `DB_HOST=<rds endpoint>`
+- `DB_PORT=5432`
+- `DB_NAME=alumni_portal`
+- `DB_USER=<db user>`
+- `DB_PASSWORD=<db password>`
+- `AWS_REGION=<region>`
+- `AWS_BUCKET=<bucket name>`
+- `APP_ENV=production`
+- `APP_DEBUG=false`
+
+### Step 9: Validate live service
+
+```bash
+curl http://<alb_dns_name>/live.php
+curl http://<alb_dns_name>/
+```
+
+---
+
+## 4. PostgreSQL Setup Guide
 
 See detailed DB guide:
 
@@ -95,14 +258,14 @@ This includes:
 - Backup and restore commands
 - RDS migration commands
 
-## 4. AWS Deployment
+## 5. AWS Deployment Reference
 
 If you want copy-paste production deployment, follow:
 
 1. `QUICKSTART_AWS.md` (fast path)
 2. `AWS_DEPLOYMENT.md` (complete details)
 
-## 5. Important Files
+## 6. Important Files
 
 - `deployment/deploy-aws.sh` - build/push image and redeploy ECS
 - `deployment/migrate-to-rds.sh` - local PostgreSQL to AWS RDS migration
@@ -110,14 +273,14 @@ If you want copy-paste production deployment, follow:
 - `tests/local/verify_local.ps1` - lightweight local health checks
 - `tests/local/verify_feature_matrix.ps1` - full feature matrix
 
-## 6. Notes for Production
+## 7. Notes for Production
 
 - Never commit `.env` files.
 - Keep DB credentials in AWS Secrets Manager / ECS env vars.
 - Use RDS for DB and S3 for uploads in production.
 - Run SQL migrations on RDS before first production traffic.
 
-## 7. Current Status
+## 8. Current Status
 
 Latest local verification result:
 
@@ -125,7 +288,7 @@ Latest local verification result:
 - API runtime fatal sweep: pass
 - Full feature matrix: pass
 
-## 8. Working Memory
+## 9. Working Memory
 
 Use this section as the quick project memory for both local work and live AWS checks.
 
