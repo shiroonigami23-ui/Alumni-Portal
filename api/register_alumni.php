@@ -7,6 +7,7 @@ header("Access-Control-Allow-Headers: Content-Type");
 include_once '../config/Database.php';
 include_once '../middleware/Auth.php';
 include_once '../helpers/StudentLifecycleHelper.php';
+include_once '../config/DbCompat.php';
 
 $database = new Database();
 $db = $database->getConnection();
@@ -22,11 +23,20 @@ if ($authGuard->isCurrentDeviceBanned()) {
     exit();
 }
 
-if (!$data || empty($data->email)) {
+if (!$db) {
+    http_response_code(503);
+    echo json_encode([
+        "success" => false,
+        "message" => "Database unavailable."
+    ]);
+    exit();
+}
+
+if (!$data || empty($data->email) || empty($data->mobile_number)) {
     http_response_code(400);
     echo json_encode([
         "success" => false,
-        "message" => "Email is required for alumni registration."
+        "message" => "Email and mobile number are required for alumni registration."
     ]);
     exit();
 }
@@ -83,6 +93,14 @@ try {
     $position = trim((string)($data->position ?? ''));
     $bio = trim((string)($data->bio ?? ''));
     $mobile = trim((string)($data->mobile_number ?? ''));
+    if ($mobile === '') {
+        http_response_code(400);
+        echo json_encode([
+            "success" => false,
+            "message" => "Mobile number is required for alumni registration."
+        ]);
+        exit();
+    }
     $helpAlumniMates = trim((string)($data->help_alumni_mates ?? ''));
 
     // Password is optional for alumni signup UI; generate one when omitted.
@@ -97,13 +115,20 @@ try {
     $uStmt = $db->prepare("
         INSERT INTO users (email, password_hash, role, status)
         VALUES (:email, :password_hash, 'alumni', 'pending')
-        RETURNING user_id
     ");
     $uStmt->execute([
         'email' => $email,
         'password_hash' => $hash
     ]);
-    $userId = $uStmt->fetchColumn();
+    $userId = (int)$db->lastInsertId();
+    if (db_is_pgsql($db) && $userId <= 0) {
+        $uidLookup = $db->prepare("SELECT user_id FROM users WHERE email = :email ORDER BY user_id DESC LIMIT 1");
+        $uidLookup->execute(['email' => $email]);
+        $userId = (int)$uidLookup->fetchColumn();
+    }
+    if ($userId <= 0) {
+        throw new RuntimeException('Failed to create alumni user record.');
+    }
 
     $pStmt = $db->prepare("
         INSERT INTO profiles (

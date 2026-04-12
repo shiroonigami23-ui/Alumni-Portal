@@ -37,6 +37,7 @@ If your DB password is different, set that value.
 For MySQL deployments, run:
 
 - `deployment/sql/2026_04_12_moderator_post_workflow_mysql.sql`
+- `deployment/db.sql` (one-shot bootstrap schema for fresh local setup)
 
 For PostgreSQL deployments, run:
 

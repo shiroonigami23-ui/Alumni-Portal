@@ -28,6 +28,7 @@ function normalize_public_image_url($value)
 
 try {
     require_once __DIR__ . '/config/Database.php';
+    require_once __DIR__ . '/config/DbCompat.php';
     $database = new Database();
     $conn = $database->getConnection();
 
@@ -39,17 +40,17 @@ try {
                 (SELECT COUNT(*) FROM posts WHERE status = 'published') AS total_posts,
                 (SELECT COUNT(DISTINCT p.current_company)
                  FROM profiles p
-                 JOIN users u ON u.user_id = p.user_id
+                 INNER JOIN users u ON u.user_id = p.user_id
                  WHERE u.role = 'alumni'
                    AND COALESCE(TRIM(p.current_company), '') <> '') AS companies,
                 (SELECT COUNT(*)
                  FROM profiles p
-                 JOIN users u ON u.user_id = p.user_id
+                 INNER JOIN users u ON u.user_id = p.user_id
                  WHERE u.role = 'alumni'
                    AND COALESCE(TRIM(p.linkedin_url), '') <> '') AS linkedin_profiles,
                 (SELECT COUNT(DISTINCT p.branch)
                  FROM profiles p
-                 JOIN users u ON u.user_id = p.user_id
+                 INNER JOIN users u ON u.user_id = p.user_id
                  WHERE u.role = 'alumni'
                    AND COALESCE(TRIM(p.branch), '') <> '') AS branches
         ");
@@ -65,6 +66,9 @@ try {
             ];
         }
 
+        $photoOrderExpr = db_is_mysql($conn)
+            ? "ORDER BY (p.updated_at IS NULL), p.updated_at DESC, p.profile_id DESC"
+            : "ORDER BY p.updated_at DESC NULLS LAST, p.profile_id DESC";
         $photoStmt = $conn->query("
             SELECT
                 p.full_name,
@@ -72,18 +76,48 @@ try {
                 p.graduation_year,
                 p.profile_picture_url
             FROM profiles p
-            JOIN users u ON u.user_id = p.user_id
+            INNER JOIN users u ON u.user_id = p.user_id
             WHERE u.role = 'alumni'
               AND u.status = 'active'
-              AND COALESCE(p.is_private, false) = false
+              AND COALESCE(p.is_private, FALSE) = FALSE
               AND COALESCE(TRIM(p.profile_picture_url), '') <> ''
-            ORDER BY p.updated_at DESC NULLS LAST, p.profile_id DESC
+            {$photoOrderExpr}
             LIMIT 24
         ");
         $publicAlumniPhotos = $photoStmt ? ($photoStmt->fetchAll(PDO::FETCH_ASSOC) ?: []) : [];
     }
 } catch (Throwable $e) {
     // Keep graceful fallbacks if DB is unavailable.
+}
+
+if (($landingStats['alumni_network'] ?? 0) <= 0) {
+    $featuredPath = __DIR__ . '/storage/featured_alumni/featured_alumni.json';
+    if (is_file($featuredPath)) {
+        $featured = json_decode((string)file_get_contents($featuredPath), true);
+        if (is_array($featured)) {
+            $landingStats['alumni_network'] = max($landingStats['alumni_network'], count($featured));
+            $companies = [];
+            $branches = [];
+            foreach ($featured as $row) {
+                $company = trim((string)($row['company'] ?? ''));
+                $branch = trim((string)($row['branch'] ?? ''));
+                if ($company !== '') $companies[$company] = true;
+                if ($branch !== '') $branches[$branch] = true;
+            }
+            $landingStats['companies'] = max($landingStats['companies'], count($companies));
+            $landingStats['branches'] = max($landingStats['branches'], count($branches));
+        }
+    }
+}
+
+if (($landingStats['total_posts'] ?? 0) <= 0) {
+    $fallbackPostsPath = __DIR__ . '/fallback_content/posts.json';
+    if (is_file($fallbackPostsPath)) {
+        $fallbackPosts = json_decode((string)file_get_contents($fallbackPostsPath), true);
+        if (is_array($fallbackPosts)) {
+            $landingStats['total_posts'] = max($landingStats['total_posts'], count($fallbackPosts));
+        }
+    }
 }
 ?>
 <!DOCTYPE html>
@@ -157,6 +191,9 @@ try {
                     </a>
                 </div>
                 <div class="flex items-center gap-2 sm:gap-4">
+                    <button id="themeModeBtn" class="vu-theme-toggle inline-flex" type="button">
+                        <i data-lucide="palette" class="h-4 w-4"></i>
+                    </button>
                     <a href="login.php" class="text-sm sm:text-base text-gray-700 hover:text-blue-600 font-medium px-2 py-1">Login</a>
                     <a href="register.php" class="text-sm sm:text-base bg-blue-600 text-white px-3 sm:px-4 py-2 rounded-lg hover:bg-blue-700 font-medium">Register</a>
                 </div>

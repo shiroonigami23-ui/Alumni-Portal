@@ -5,6 +5,7 @@
  */
 
 require_once '../config/Database.php';
+require_once '../config/DbCompat.php';
 require_once '../middleware/Auth.php';
 require_once '../helpers/TechStackHelper.php';
 require_once __DIR__ . '/_content_store.php';
@@ -35,7 +36,13 @@ function derive_joined_year(?string $rollNumber, ?string $email): ?int
 }
 
 // Authenticate user (optional)
-$database = new Database(); $db = $database->getConnection(); $auth = new Auth($db);
+$database = new Database(); $db = $database->getConnection();
+if (!$db) {
+    http_response_code(503);
+    echo json_encode(['success' => false, 'status' => 'error', 'message' => 'Database unavailable']);
+    exit;
+}
+$auth = new Auth($db);
 $current_user = $auth->validateRequest();
 $current_user_role = null;
 if ($current_user) {
@@ -96,8 +103,7 @@ try {
     $profile['followers_count'] = 0;
     $profile['following_count'] = 0;
     $profile['is_connected'] = false;
-    $connTable = $db->query("SELECT to_regclass('public.connections')")->fetchColumn();
-    if ($connTable) {
+    if (db_table_exists($db, 'connections')) {
         $cCount = $db->prepare("
             SELECT COUNT(*)
             FROM connections c
@@ -216,7 +222,7 @@ try {
                             p.created_at, p.is_edited
                      FROM pinned_posts pp
                      JOIN posts p ON pp.post_id = p.post_id
-                     WHERE pp.user_id = :user_id AND p.status = 'published'::post_status
+                     WHERE pp.user_id = :user_id AND p.status = 'published'
                      ORDER BY pp.pin_order ASC";
     $pinned_stmt = $db->prepare($pinned_query);
     $pinned_stmt->execute(['user_id' => $user_id]);

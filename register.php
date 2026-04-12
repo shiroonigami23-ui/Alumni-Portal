@@ -316,10 +316,11 @@ if (!in_array($type, $validTypes)) {
 
                     <div class="grid md:grid-cols-2 gap-6">
                         <div>
-                            <label for="alumni_mobile_number" class="block text-sm font-medium text-gray-700 mb-2">Mobile Number</label>
+                            <label for="alumni_mobile_number" class="block text-sm font-medium text-gray-700 mb-2">Mobile Number *</label>
                             <input type="text" 
                                    id="alumni_mobile_number" 
                                    name="mobile_number"
+                                   required
                                    class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                                    placeholder="+91 XXXXX XXXXX">
                         </div>

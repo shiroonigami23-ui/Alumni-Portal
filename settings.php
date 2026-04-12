@@ -148,6 +148,12 @@ include 'includes/header.php';
                                                placeholder="e.g. 2010">
                                     </div>
                                     <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-2">Graduation Year</label>
+                                        <input id="settingsGraduationYearInput" type="number" min="1999" max="2099"
+                                               class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                               placeholder="e.g. 2014">
+                                    </div>
+                                    <div>
                                         <label class="block text-sm font-medium text-gray-700 mb-2">Current Company</label>
                                         <input id="settingsCurrentCompanyInput" type="text"
                                                class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
@@ -301,6 +307,27 @@ include 'includes/header.php';
         return role.charAt(0).toUpperCase() + role.slice(1);
     }
 
+    function applyStudentProfileLock(role) {
+        if (String(role || '').toLowerCase() !== 'student') return;
+        const form = document.getElementById('settingsProfileForm');
+        if (!form) return;
+        form.querySelectorAll('input, textarea, select, button').forEach((el) => {
+            if (el.id === 'settingsEmailInput') return;
+            if (el.id === 'settingsSaveBtn' || el.id === 'settingsUploadPhotoBtn' || el.id === 'settingsRemovePhotoBtn') {
+                el.disabled = true;
+                el.classList.add('hidden');
+                return;
+            }
+            if (el.tagName === 'BUTTON') return;
+            el.disabled = true;
+            el.classList.add('bg-gray-50', 'cursor-not-allowed');
+        });
+        const notice = document.createElement('div');
+        notice.className = 'mb-4 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800';
+        notice.textContent = 'Student profile editing is disabled by institute policy.';
+        form.prepend(notice);
+    }
+
     async function loadSettingsUser() {
         try {
             const response = await makeApiCall('me.php');
@@ -352,6 +379,7 @@ include 'includes/header.php';
                 setIf('settingsDesignationInput', p.designation || '');
                 setIf('settingsContactNumberInput', p.contact_number || '');
                 setIf('settingsJoiningYearInput', p.joining_year || '');
+                setIf('settingsGraduationYearInput', p.graduation_year || '');
                 setIf('settingsLocationCityInput', p.location_city || '');
                 setIf('settingsLocationCountryInput', p.location_country || '');
                 setIf('settingsWebsiteInput', p.personal_website || '');
@@ -360,6 +388,7 @@ include 'includes/header.php';
                 setIf('settingsTwitterInput', p.twitter_url || '');
                 setIf('settingsHelpAlumniInput', p.help_alumni_mates || '');
             }
+            applyStudentProfileLock(window.settingsCurrentUserRole);
         } catch (error) {
             console.error('Error loading settings user:', error);
         }
@@ -470,6 +499,7 @@ include 'includes/header.php';
                         designation: document.getElementById('settingsDesignationInput').value.trim(),
                         contact_number: document.getElementById('settingsContactNumberInput').value.trim(),
                         joining_year: document.getElementById('settingsJoiningYearInput').value.trim(),
+                        graduation_year: document.getElementById('settingsGraduationYearInput').value.trim(),
                         location_city: document.getElementById('settingsLocationCityInput').value.trim(),
                         location_country: document.getElementById('settingsLocationCountryInput').value.trim(),
                         personal_website: document.getElementById('settingsWebsiteInput').value.trim(),

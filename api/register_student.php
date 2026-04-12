@@ -9,10 +9,19 @@ header("Access-Control-Allow-Methods: POST");
 header("Access-Control-Allow-Headers: Content-Type");
 
 include_once '../config/Database.php';
+include_once '../config/DbCompat.php';
 include_once '../middleware/Auth.php';
 
 $database = new Database();
 $db = $database->getConnection();
+if (!$db) {
+    http_response_code(503);
+    echo json_encode([
+        "success" => false,
+        "message" => "Database unavailable."
+    ]);
+    exit();
+}
 $authGuard = new Auth($db);
 
 if ($authGuard->isCurrentDeviceBanned()) {
@@ -85,10 +94,15 @@ try {
 
     // Insert into users - Using 'active' as per the enum values
     // Remove transaction for now to simplify
-    $query = "INSERT INTO users (email, password_hash, role, status) VALUES (:e, :p, 'student', 'active') RETURNING user_id";
+    $query = "INSERT INTO users (email, password_hash, role, status) VALUES (:e, :p, 'student', 'active')";
     $stmt = $db->prepare($query);
     $stmt->execute(['e' => $data->email, 'p' => $hash]);
-    $user_id = $stmt->fetchColumn();
+    $user_id = (int)$db->lastInsertId();
+    if (db_is_pgsql($db) && $user_id <= 0) {
+        $uidLookup = $db->prepare("SELECT user_id FROM users WHERE email = :email ORDER BY user_id DESC LIMIT 1");
+        $uidLookup->execute(['email' => $data->email]);
+        $user_id = (int)$uidLookup->fetchColumn();
+    }
     
     if (!$user_id) {
         throw new Exception("Failed to get user_id after insertion");

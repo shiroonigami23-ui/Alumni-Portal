@@ -25,6 +25,7 @@ credentials
 deployment/db-backups/
 *.backup
 !deployment/sql/*.sql
+!deployment/db.sql
 !scripts/ensure_perf_indexes.sql
 
 # Logs

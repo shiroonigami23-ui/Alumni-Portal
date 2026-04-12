@@ -8,10 +8,31 @@ include_once '../middleware/Auth.php';
 
 $database = new Database();
 $db = $database->getConnection();
+if (!$db) {
+    http_response_code(503);
+    echo json_encode([
+        "success" => false,
+        "status" => "error",
+        "message" => "Database unavailable."
+    ]);
+    exit;
+}
 $auth = new Auth($db);
 
 try {
     $user_id = (int)$auth->validateRequest();
+    $roleStmt = $db->prepare("SELECT role FROM users WHERE user_id = :uid LIMIT 1");
+    $roleStmt->execute([':uid' => $user_id]);
+    $userRole = strtolower((string)$roleStmt->fetchColumn());
+    if ($userRole === 'student') {
+        http_response_code(403);
+        echo json_encode([
+            "success" => false,
+            "status" => "error",
+            "message" => "Students cannot edit profile details."
+        ]);
+        exit;
+    }
     $data = json_decode(file_get_contents("php://input"), true) ?: [];
 
     $check = $db->prepare("SELECT profile_id FROM profiles WHERE user_id = :uid");
@@ -23,6 +44,7 @@ try {
         'profile_picture_url', 'cover_photo_url',
         'current_company', 'job_role',
         'department', 'branch', 'designation',
+        'course', 'graduation_year',
         'contact_number',
         'joining_year', 'help_alumni_mates',
         'location_city', 'location_country',
@@ -35,6 +57,13 @@ try {
         if (array_key_exists($f, $data)) {
             $value = is_string($data[$f]) ? trim($data[$f]) : $data[$f];
             if ($f === 'joining_year') {
+                if ($value === '' || $value === null) {
+                    $value = null;
+                } else {
+                    $value = (int)$value;
+                }
+            }
+            if ($f === 'graduation_year') {
                 if ($value === '' || $value === null) {
                     $value = null;
                 } else {
