@@ -7,6 +7,7 @@ class User {
     public $email;
     public $password;
     public $role;
+    public $is_moderator;
     public $status;
 
     public function __construct($db) {
@@ -15,11 +16,11 @@ class User {
 
     // 1. REGISTER NEW USER
    public function create() {
+        $driver = strtolower((string)$this->conn->getAttribute(PDO::ATTR_DRIVER_NAME));
         $query = "INSERT INTO " . $this->table_name . "
                   (email, password_hash, role, status)
                   VALUES
-                  (:email, :password_hash, :role, :status)
-                  RETURNING user_id";
+                  (:email, :password_hash, :role, :status)";
 
         $stmt = $this->conn->prepare($query);
 
@@ -36,8 +37,12 @@ class User {
         $stmt->bindParam(":status", $status);
 
         if($stmt->execute()) {
-            $row = $stmt->fetch(PDO::FETCH_ASSOC);
-            $this->user_id = $row['user_id'];
+            $this->user_id = (int)$this->conn->lastInsertId();
+            if ($driver === 'pgsql' && $this->user_id <= 0) {
+                $lookup = $this->conn->prepare("SELECT user_id FROM " . $this->table_name . " WHERE email = :email ORDER BY user_id DESC LIMIT 1");
+                $lookup->execute([':email' => $this->email]);
+                $this->user_id = (int)$lookup->fetchColumn();
+            }
             return true;
         }
         return false;
@@ -45,7 +50,7 @@ class User {
 
     // 2. CHECK IF EMAIL EXISTS
     public function emailExists() {
-        $query = "SELECT user_id, password_hash, role, status
+        $query = "SELECT user_id, password_hash, role, status, COALESCE(is_moderator, FALSE) AS is_moderator
                   FROM " . $this->table_name . "
                   WHERE email = :email
                   LIMIT 1";
@@ -81,6 +86,7 @@ class User {
                 $this->user_id = $row['user_id'];
                 $this->role = $row['role'];
                 $this->status = $row['status'];
+                $this->is_moderator = !empty($row['is_moderator']);
                 return true;
             }
         }

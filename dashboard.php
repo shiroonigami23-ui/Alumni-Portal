@@ -192,6 +192,15 @@ include 'includes/sidebar.php';
                                         <i data-lucide="paperclip" class="h-5 w-5"></i>
                                         <input type="file" id="postFile" name="file" class="hidden">
                                     </label>
+                                    <select id="dashboardVisibilityScope" class="text-sm border border-gray-300 rounded-md px-2 py-1 bg-white text-gray-700">
+                                        <option value="all">Everyone</option>
+                                        <option value="alumni">Alumni only</option>
+                                        <option value="faculty">Faculty only</option>
+                                        <option value="students">Students only</option>
+                                        <option value="faculty_alumni">Faculty + Alumni</option>
+                                        <option value="students_alumni">Students + Alumni</option>
+                                        <option value="faculty_students">Faculty + Students</option>
+                                    </select>
                                     <div class="flex items-center">
                                         <input type="checkbox" id="allowComments" name="allow_comments" checked class="h-4 w-4 text-blue-600 rounded">
                                         <label for="allowComments" class="ml-2 text-sm text-gray-600">Allow comments</label>
@@ -203,6 +212,15 @@ include 'includes/sidebar.php';
                                 </button>
                             </div>
                         </form>
+                    </div>
+
+                    <div id="moderationShortcutSection" class="mt-6 bg-white rounded-xl shadow-sm p-6 hidden">
+                        <h3 class="text-lg font-semibold text-gray-900 mb-2">Moderation Queue</h3>
+                        <p class="text-sm text-gray-600 mb-4">Review alumni posts waiting for verification.</p>
+                        <a href="moderation.php" class="inline-flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700">
+                            <i data-lucide="shield-check" class="h-4 w-4"></i>
+                            Open Queue
+                        </a>
                     </div>
                 </div>
 
@@ -365,12 +383,19 @@ include 'includes/sidebar.php';
 
                     // Show quick post section only for roles allowed to create top-level posts
                     const quickPostSection = document.getElementById('quickPostSection');
+                    const moderationShortcutSection = document.getElementById('moderationShortcutSection');
                     const role = String(user.role || '').toLowerCase();
-                    const canCreateTopLevelPost = ['admin', 'faculty', 'alumni'].includes(role) && !!user.can_post;
+                    const isModerator = !!user.is_moderator;
+                    const canCreateTopLevelPost = ((['admin', 'faculty', 'alumni'].includes(role) || (role === 'student' && isModerator)) && !!user.can_post);
                     if (canCreateTopLevelPost && quickPostSection) {
                         quickPostSection.classList.remove('hidden');
                     } else if (quickPostSection) {
                         quickPostSection.classList.add('hidden');
+                    }
+                    if ((role === 'admin' || isModerator) && moderationShortcutSection) {
+                        moderationShortcutSection.classList.remove('hidden');
+                    } else if (moderationShortcutSection) {
+                        moderationShortcutSection.classList.add('hidden');
                     }
                 }
             } catch (error) {
@@ -585,6 +610,7 @@ include 'includes/sidebar.php';
 
                     const content = document.getElementById('quickPostContent').value.trim();
                     const allowComments = document.getElementById('allowComments').checked;
+                    const visibilityScope = document.getElementById('dashboardVisibilityScope').value || 'all';
 
                     if (!content) {
                         await window.appAlert('Please enter some content', {
@@ -598,6 +624,7 @@ include 'includes/sidebar.php';
                     const formData = new FormData();
                     formData.append('content', content);
                     formData.append('allow_comments', allowComments ? '1' : '0');
+                    formData.append('visibility_scope', visibilityScope);
 
                     // Add image if selected
                     if (postImage.files[0]) {
@@ -619,6 +646,7 @@ include 'includes/sidebar.php';
                                 iconTone: 'success'
                             });
                             quickPostForm.reset();
+                            document.getElementById('dashboardVisibilityScope').value = 'all';
                             loadRecentActivity(); // Refresh activity feed
                         } else {
                             await window.appAlert(response.message || 'Failed to create post', {

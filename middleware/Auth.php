@@ -1,5 +1,6 @@
 <?php
 require_once __DIR__ . '/../models/Session.php';
+require_once __DIR__ . '/../config/DbCompat.php';
 
 class Auth {
     private $db;
@@ -136,13 +137,23 @@ class Auth {
     {
         $fp = self::getClientFingerprint();
         $ip = self::getClientIp();
-        $stmt = $this->db->prepare("
+        $query = "
             SELECT 1
             FROM device_bans
             WHERE device_fingerprint = :fp
-               OR ip_address = CAST(:ip AS inet)
+               OR ip_address = :ip
             LIMIT 1
-        ");
+        ";
+        if (db_is_pgsql($this->db)) {
+            $query = "
+                SELECT 1
+                FROM device_bans
+                WHERE device_fingerprint = :fp
+                   OR ip_address = CAST(:ip AS inet)
+                LIMIT 1
+            ";
+        }
+        $stmt = $this->db->prepare($query);
         $stmt->execute(['fp' => $fp, 'ip' => $ip]);
         return (bool)$stmt->fetchColumn();
     }

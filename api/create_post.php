@@ -11,9 +11,17 @@ include_once '../helpers/Logger.php'; // Added Logger
 include_once __DIR__ . '/_asset_store.php';
 include_once __DIR__ . '/_content_store.php';
 include_once __DIR__ . '/_moderation_schema.php';
+include_once __DIR__ . '/_community_schema.php';
+include_once '../config/DbCompat.php';
 
 $database = new Database();
 $db = $database->getConnection();
+if (!$db) {
+    http_response_code(503);
+    echo json_encode(["status" => "error", "message" => "Database unavailable."]);
+    exit;
+}
+ensure_community_schema($db);
 $auth = new Auth($db);
 
 // 1. Validate Token
@@ -24,15 +32,14 @@ Security::checkCSRF();
 
 // 2. Blueprint Permission Check (Section 4)
 // Check if user has explicit permission to post
-$permQuery = "SELECT role, can_post FROM users WHERE user_id = :uid";
+$permQuery = "SELECT role, can_post, COALESCE(is_moderator, FALSE) AS is_moderator FROM users WHERE user_id = :uid";
 $permStmt = $db->prepare($permQuery);
 $permStmt->execute([':uid' => $user_id]);
-$userPerms = $permStmt->fetch(PDO::FETCH_ASSOC);
+$userPerms = $permStmt->fetch(PDO::FETCH_ASSOC) ?: [];
 
-// Students cannot create top-level posts. They can still comment/reply elsewhere.
-if (($userPerms['role'] ?? '') === 'student') {
+if (!user_can_create_top_level_posts($userPerms)) {
     http_response_code(403);
-    echo json_encode(["status" => "error", "message" => "Students cannot create posts."]);
+    echo json_encode(["status" => "error", "message" => "This account cannot create top-level posts."]);
     exit;
 }
 
@@ -50,6 +57,7 @@ $comments_enabled = true;
 $pin_post = false; // Pinning is handled only on existing posts via pin_post.php
 $gif_url = '';
 $attachments = [];
+$visibility_scope = 'all';
 
 if (is_array($_POST) && !empty($_POST)) {
     $content = trim((string)($_POST['content'] ?? ''));
@@ -60,6 +68,7 @@ if (is_array($_POST) && !empty($_POST)) {
         $comments_enabled = ($_POST['allow_comments'] === '1' || $_POST['allow_comments'] === 'true');
     }
     $gif_url = trim((string)($_POST['gif_url'] ?? ''));
+    $visibility_scope = trim((string)($_POST['visibility_scope'] ?? 'all'));
 } else {
     $content = trim((string)($data->content ?? ''));
     $title = trim((string)($data->title ?? ''));
@@ -69,6 +78,20 @@ if (is_array($_POST) && !empty($_POST)) {
         $comments_enabled = (bool)$data->comments_enabled;
     }
     $gif_url = trim((string)($data->gif_url ?? ''));
+    $visibility_scope = trim((string)($data->visibility_scope ?? 'all'));
+}
+
+$allowedVisibilityScopes = [
+    'all',
+    'alumni',
+    'faculty',
+    'students',
+    'faculty_alumni',
+    'students_alumni',
+    'faculty_students'
+];
+if (!in_array($visibility_scope, $allowedVisibilityScopes, true)) {
+    $visibility_scope = 'all';
 }
 
 // Collect uploaded media/files using durable DB-backed storage.
@@ -137,11 +160,12 @@ if (!empty($content) || !empty($attachments)) {
     ];
     $relative_path = store_content_payload($db, (int)$user_id, $payload, 'post');
 
+    $moderationStatus = post_needs_moderation($userPerms) ? 'pending' : 'approved';
+
     // 4. Database Insertion
     $query = "INSERT INTO posts 
-              (user_id, title, content_file_path, post_type, status, thumbnail_url, comments_enabled, is_pinned) 
-              VALUES (:uid, :title, :path, :type, :status, :thumb, :comments, :pinned) 
-              RETURNING post_id";
+              (user_id, title, content_file_path, post_type, status, moderation_status, visibility_scope, thumbnail_url, comments_enabled, is_pinned) 
+              VALUES (:uid, :title, :path, :type, :status, :moderation_status, :visibility_scope, :thumb, :comments, :pinned)";
 
     $stmt = $db->prepare($query);
     $stmt->bindValue(':uid', (int)$user_id, PDO::PARAM_INT);
@@ -149,6 +173,8 @@ if (!empty($content) || !empty($attachments)) {
     $stmt->bindValue(':path', (string)$relative_path, PDO::PARAM_STR);
     $stmt->bindValue(':type', (string)($post_type ?: 'text'), PDO::PARAM_STR);
     $stmt->bindValue(':status', 'published', PDO::PARAM_STR);
+    $stmt->bindValue(':moderation_status', $moderationStatus, PDO::PARAM_STR);
+    $stmt->bindValue(':visibility_scope', $visibility_scope, PDO::PARAM_STR);
     if ($thumbnail_url === null || $thumbnail_url === '') {
         $stmt->bindValue(':thumb', null, PDO::PARAM_NULL);
     } else {
@@ -159,8 +185,18 @@ if (!empty($content) || !empty($attachments)) {
 
     try {
         $stmt->execute();
-        $createdRow = $stmt->fetch(PDO::FETCH_ASSOC);
-        $post_id = (int)($createdRow['post_id'] ?? 0);
+        $post_id = (int)$db->lastInsertId();
+        if (db_is_pgsql($db) && $post_id <= 0) {
+            $lookup = $db->prepare("
+                SELECT post_id
+                FROM posts
+                WHERE user_id = :uid
+                ORDER BY post_id DESC
+                LIMIT 1
+            ");
+            $lookup->execute(['uid' => $user_id]);
+            $post_id = (int)$lookup->fetchColumn();
+        }
         if ($post_id <= 0) {
             throw new RuntimeException('Post creation returned an invalid post id.');
         }
@@ -191,7 +227,7 @@ if (!empty($content) || !empty($attachments)) {
         $notifContent = $posterName . " posted a new update.";
         $notifSqlNewPost = "
             INSERT INTO notifications (user_id, notification_type, related_post_id, related_user_id, content)
-            SELECT c.requester_user_id, 'new_post'::notification_type, :post_id, :poster_id, :content
+            SELECT c.requester_user_id, 'new_post', :post_id, :poster_id, :content
             FROM connections c
             WHERE c.status = 'accepted'
               AND c.addressee_user_id = :poster_id
@@ -208,7 +244,7 @@ if (!empty($content) || !empty($attachments)) {
             // Fallback to a broadly supported notification type in case enum lacks new_post.
             $fallbackSql = "
                 INSERT INTO notifications (user_id, notification_type, related_post_id, related_user_id, content)
-                SELECT c.requester_user_id, 'new_comment'::notification_type, :post_id, :poster_id, :content
+                SELECT c.requester_user_id, 'new_comment', :post_id, :poster_id, :content
                 FROM connections c
                 WHERE c.status = 'accepted'
                   AND c.addressee_user_id = :poster_id
@@ -228,8 +264,11 @@ if (!empty($content) || !empty($attachments)) {
     echo json_encode([
         "success" => true,
         "status" => "success",
-        "message" => "Post architected successfully.",
-        "post_id" => $post_id
+        "message" => $moderationStatus === 'pending'
+            ? "Post submitted for moderator review."
+            : "Post published successfully.",
+        "post_id" => $post_id,
+        "moderation_status" => $moderationStatus
     ]);
     exit;
 }

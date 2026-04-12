@@ -4,17 +4,34 @@ header("Content-Type: application/json; charset=UTF-8");
 
 include_once '../config/Database.php';
 include_once '../middleware/Auth.php';
+include_once '../config/DbCompat.php';
 include_once __DIR__ . '/_feed_schema.php';
 include_once __DIR__ . '/_content_store.php';
 include_once __DIR__ . '/_profile_media.php';
+include_once __DIR__ . '/_community_schema.php';
 
 $database = new Database();
 $db = $database->getConnection();
+if (!$db) {
+    http_response_code(503);
+    echo json_encode([
+        'success' => false,
+        'status' => 'error',
+        'message' => 'Database unavailable.'
+    ]);
+    exit;
+}
 ensure_feed_metrics_schema($db);
+ensure_community_schema($db);
 $auth = new Auth($db);
 
 try {
     $user_id = $auth->validateRequest();
+    $viewerStmt = $db->prepare("SELECT role, COALESCE(is_moderator, FALSE) AS is_moderator FROM users WHERE user_id = :uid LIMIT 1");
+    $viewerStmt->execute(['uid' => $user_id]);
+    $viewer = $viewerStmt->fetch(PDO::FETCH_ASSOC) ?: ['role' => '', 'is_moderator' => false];
+    $viewerRole = strtolower((string)($viewer['role'] ?? ''));
+    $viewerIsAdmin = $viewerRole === 'admin';
 } catch (Throwable $e) {
     http_response_code(401);
     echo json_encode([
@@ -36,18 +53,20 @@ try {
     $activityUserId = $authorUserId > 0 ? $authorUserId : $user_id;
 
     $where = "WHERE p.status = 'published'";
-    $params = [];
+    $params = [
+        'viewer_role' => $viewerRole,
+        'viewer_uid' => $user_id,
+    ];
 
     if ($authorUserId > 0 && $filter !== 'reposts') {
         $where .= " AND p.user_id = :author_uid";
         $params['author_uid'] = $authorUserId;
     }
 
-    $connectionsTableExists = (bool)$db->query("SELECT to_regclass('public.connections')")->fetchColumn();
+    $connectionsTableExists = db_table_exists($db, 'connections');
 
     if ($filter === 'announcements') {
-        // Cast enum to text so unknown enum literals do not throw SQL errors on older schemas.
-        $where .= " AND p.post_type::text = 'announcement'";
+        $where .= " AND p.post_type = 'announcement'";
     } elseif ($filter === 'reposts') {
         if ($authorUserId > 0) {
             $where .= " AND EXISTS (SELECT 1 FROM reposts rp WHERE rp.post_id = p.post_id AND rp.user_id = :author_uid)";
@@ -74,11 +93,27 @@ try {
         }
     }
 
+    if (!$viewerIsAdmin) {
+        $where .= " AND (COALESCE(p.moderation_status, 'approved') = 'approved' OR p.user_id = :viewer_uid)";
+    }
+
+    $where .= " AND (
+        p.user_id = :viewer_uid
+        OR :viewer_role = 'admin'
+        OR COALESCE(p.visibility_scope, 'all') = 'all'
+        OR (COALESCE(p.visibility_scope, 'all') = 'alumni' AND :viewer_role = 'alumni')
+        OR (COALESCE(p.visibility_scope, 'all') = 'faculty' AND :viewer_role = 'faculty')
+        OR (COALESCE(p.visibility_scope, 'all') = 'students' AND :viewer_role = 'student')
+        OR (COALESCE(p.visibility_scope, 'all') = 'faculty_alumni' AND :viewer_role IN ('faculty', 'alumni'))
+        OR (COALESCE(p.visibility_scope, 'all') = 'students_alumni' AND :viewer_role IN ('student', 'alumni'))
+        OR (COALESCE(p.visibility_scope, 'all') = 'faculty_students' AND :viewer_role IN ('faculty', 'student'))
+    )";
+
     $orderBy = "ORDER BY p.created_at DESC";
     if ($filter === 'reposts') {
-        $orderBy = "ORDER BY activity_rp.created_at DESC NULLS LAST, p.created_at DESC";
+        $orderBy = "ORDER BY (activity_rp.created_at IS NULL), activity_rp.created_at DESC, p.created_at DESC";
     } elseif ($profileMode) {
-        $orderBy = "ORDER BY CASE WHEN pp.post_id IS NULL THEN 1 ELSE 0 END, pp.pin_order ASC NULLS LAST, p.created_at DESC";
+        $orderBy = "ORDER BY CASE WHEN pp.post_id IS NULL THEN 1 ELSE 0 END, pp.pin_order ASC, p.created_at DESC";
     } elseif ($sort === 'popular') {
         $orderBy = "ORDER BY p.reaction_count DESC, p.comment_count DESC, p.created_at DESC";
     } elseif ($sort === 'oldest') {
@@ -111,6 +146,8 @@ try {
                 COALESCE(p.share_count, 0) AS shares_count,
                 COALESCE(p.view_count, 0) AS view_count,
                 COALESCE(p.repost_count, 0) AS reposts_count,
+                COALESCE(p.visibility_scope, 'all') AS visibility_scope,
+                COALESCE(p.moderation_status, 'approved') AS moderation_status,
                 activity_rp.created_at AS activity_reposted_at,
                 (activity_rp.post_id IS NOT NULL) AS activity_user_has_reposted,
                 p.created_at,
@@ -190,7 +227,6 @@ try {
         $payload = load_content_payload($db, (string)$row['content_file_path']);
         $row['attachments'] = $payload['attachments'];
         $row['content'] = $payload['content'];
-        // Fallback: keep post visible even if storage file is missing after container/image deploys.
         if (trim((string)$row['content']) === '' && !empty($row['title'])) {
             $row['content'] = (string)$row['title'];
         }
@@ -200,12 +236,10 @@ try {
         return $row;
     }, $rows);
 
-    $posts = array_values($posts);
-
     echo json_encode([
         'success' => true,
         'status' => 'success',
-        'data' => $posts,
+        'data' => array_values($posts),
         'total' => $total,
         'page' => $page
     ]);

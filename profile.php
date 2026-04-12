@@ -161,6 +161,15 @@ include 'includes/sidebar.php';
                                                 <i data-lucide="paperclip" class="h-5 w-5"></i>
                                                 <input type="file" id="timelineFile" class="hidden">
                                             </label>
+                                            <select id="timelineVisibilityScope" class="text-sm border border-gray-300 rounded-md px-2 py-1 bg-white text-gray-700">
+                                                <option value="all">Everyone</option>
+                                                <option value="alumni">Alumni only</option>
+                                                <option value="faculty">Faculty only</option>
+                                                <option value="students">Students only</option>
+                                                <option value="faculty_alumni">Faculty + Alumni</option>
+                                                <option value="students_alumni">Students + Alumni</option>
+                                                <option value="faculty_students">Faculty + Students</option>
+                                            </select>
                                             <div class="flex items-center">
                                                 <input type="checkbox" id="timelineAllowComments" checked class="h-4 w-4 text-blue-600 rounded">
                                                 <label for="timelineAllowComments" class="ml-2 text-sm text-gray-600">Allow comments</label>
@@ -386,6 +395,7 @@ include 'includes/sidebar.php';
         // Global variables
         let currentUserId = null;
         let currentUserRole = '';
+        let currentUserIsModerator = false;
         let profileUserId = <?php echo $userId ? "'$userId'" : 'null'; ?>;
         let isOwnProfile = false;
         let profileData = null;
@@ -422,6 +432,7 @@ include 'includes/sidebar.php';
                 if (user) {
                     currentUserId = parseInt(user.user_id || user.id || 0, 10) || null;
                     currentUserRole = String(user.role || '').toLowerCase();
+                    currentUserIsModerator = !!user.is_moderator;
                 }
 
                 if (!profileUserId && currentUserId) {
@@ -794,7 +805,7 @@ include 'includes/sidebar.php';
                     }
                     
                     // Show create post section for own profile
-                    if (isOwnProfile && String(currentUserRole) !== 'student') {
+                    if (isOwnProfile && (String(currentUserRole) !== 'student' || currentUserIsModerator)) {
                         document.getElementById('createPostSection').classList.remove('hidden');
                     } else {
                         document.getElementById('createPostSection').classList.add('hidden');
@@ -1417,7 +1428,7 @@ include 'includes/sidebar.php';
         
         let isCreatingTimelinePost = false;
         async function createTimelinePost() {
-            if (String(currentUserRole) === 'student') {
+            if (String(currentUserRole) === 'student' && !currentUserIsModerator) {
                 await window.appAlert('Students cannot create posts.', {
                     title: 'Posting unavailable',
                     icon: 'ban',
@@ -1428,6 +1439,7 @@ include 'includes/sidebar.php';
             if (isCreatingTimelinePost) return;
             const content = document.getElementById('timelinePostContent').value.trim();
             const allowComments = document.getElementById('timelineAllowComments').checked;
+            const visibilityScope = document.getElementById('timelineVisibilityScope').value || 'all';
             
             const imageInput = document.getElementById('timelineImage');
             const fileInput = document.getElementById('timelineFile');
@@ -1446,6 +1458,7 @@ include 'includes/sidebar.php';
             const formData = new FormData();
             formData.append('content', content);
             formData.append('allow_comments', allowComments ? '1' : '0');
+            formData.append('visibility_scope', visibilityScope);
             
             // Add image if selected
             if (imageInput.files[0]) {
@@ -1469,6 +1482,7 @@ include 'includes/sidebar.php';
                     document.getElementById('timelinePostContent').value = '';
                     document.getElementById('timelineImage').value = '';
                     document.getElementById('timelineFile').value = '';
+                    document.getElementById('timelineVisibilityScope').value = 'all';
                     
                     // Reload posts
                     await loadProfilePosts();

@@ -6,6 +6,8 @@ header("Access-Control-Allow-Methods: GET");
 include_once '../config/Database.php';
 include_once '../middleware/Auth.php';
 include_once __DIR__ . '/_moderation_schema.php';
+include_once __DIR__ . '/_community_schema.php';
+include_once '../config/DbCompat.php';
 
 function respond(array $payload, int $status = 200): void
 {
@@ -16,8 +18,12 @@ function respond(array $payload, int $status = 200): void
 
 $database = new Database();
 $db = $database->getConnection();
+if (!$db) {
+    respond(["success" => false, "message" => "Database unavailable."], 503);
+}
 $auth = new Auth($db);
 ensure_user_moderation_schema($db);
+ensure_community_schema($db);
 
 try {
     $user_id = $auth->validateRequest();
@@ -59,15 +65,17 @@ try {
     $countStmt->execute($params);
     $total = (int)$countStmt->fetchColumn();
 
+    $emailNameExpr = db_email_local_part_expr($db, 'u.email');
     $query = "
         SELECT
             u.user_id,
             u.email,
             u.role,
+            u.is_moderator,
             u.status,
             u.created_at,
             u.last_login,
-            COALESCE(p.full_name, split_part(u.email, '@', 1)) AS full_name,
+            COALESCE(p.full_name, {$emailNameExpr}) AS full_name,
             p.branch,
             p.graduation_year,
             p.profile_picture_url,
@@ -106,6 +114,7 @@ try {
             'name' => (string)$row['full_name'],
             'email' => (string)$row['email'],
             'role' => (string)$row['role'],
+            'is_moderator' => !empty($row['is_moderator']),
             'status' => (string)$row['status'],
             'created_at' => $row['created_at'],
             'last_login' => $row['last_login'],

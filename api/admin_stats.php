@@ -4,6 +4,8 @@ header("Content-Type: application/json; charset=UTF-8");
 
 include_once '../config/Database.php';
 include_once '../middleware/Auth.php';
+include_once '../config/DbCompat.php';
+include_once __DIR__ . '/_community_schema.php';
 
 function respond(array $payload, int $status = 200): void
 {
@@ -14,7 +16,11 @@ function respond(array $payload, int $status = 200): void
 
 $database = new Database();
 $db = $database->getConnection();
+if (!$db) {
+    respond(["success" => false, "message" => "Database unavailable."], 503);
+}
 $auth = new Auth($db);
+ensure_community_schema($db);
 
 try {
     $user_id = $auth->validateRequest();
@@ -28,6 +34,7 @@ try {
     $type = strtolower((string)($_GET['type'] ?? 'summary'));
 
     if ($type === 'pending') {
+        $emailNameExpr = db_email_local_part_expr($db, 'u.email');
         $query = "
             SELECT
                 u.user_id,
@@ -35,7 +42,7 @@ try {
                 u.role,
                 u.status,
                 u.created_at,
-                COALESCE(p.full_name, split_part(u.email, '@', 1)) AS full_name,
+                COALESCE(p.full_name, {$emailNameExpr}) AS full_name,
                 p.branch,
                 p.graduation_year,
                 p.profile_picture_url
@@ -106,11 +113,29 @@ try {
     $pending_users = (int)$db->query("SELECT COUNT(*) FROM users WHERE status = 'pending'")->fetchColumn();
     $active_reports = (int)$db->query("SELECT COUNT(*) FROM reports WHERE reviewed_at IS NULL")->fetchColumn();
     $new_users_today = (int)$db->query("SELECT COUNT(*) FROM users WHERE created_at >= CURRENT_DATE")->fetchColumn();
-    $new_users_month = (int)$db->query("SELECT COUNT(*) FROM users WHERE created_at >= date_trunc('month', CURRENT_DATE)")->fetchColumn();
-    $prev_month_users = (int)$db->query("SELECT COUNT(*) FROM users WHERE created_at >= date_trunc('month', CURRENT_DATE - interval '1 month') AND created_at < date_trunc('month', CURRENT_DATE)")->fetchColumn();
+    if (db_is_mysql($db)) {
+        $new_users_month = (int)$db->query("SELECT COUNT(*) FROM users WHERE created_at >= DATE_FORMAT(CURRENT_DATE, '%Y-%m-01')")->fetchColumn();
+        $prev_month_users = (int)$db->query("
+            SELECT COUNT(*)
+            FROM users
+            WHERE created_at >= DATE_FORMAT(DATE_SUB(CURRENT_DATE, INTERVAL 1 MONTH), '%Y-%m-01')
+              AND created_at < DATE_FORMAT(CURRENT_DATE, '%Y-%m-01')
+        ")->fetchColumn();
+    } else {
+        $new_users_month = (int)$db->query("SELECT COUNT(*) FROM users WHERE created_at >= date_trunc('month', CURRENT_DATE)")->fetchColumn();
+        $prev_month_users = (int)$db->query("SELECT COUNT(*) FROM users WHERE created_at >= date_trunc('month', CURRENT_DATE - interval '1 month') AND created_at < date_trunc('month', CURRENT_DATE)")->fetchColumn();
+    }
     $user_growth = $prev_month_users > 0 ? round((($new_users_month - $prev_month_users) / $prev_month_users) * 100, 1) : ($new_users_month > 0 ? 100 : 0);
 
-    $db_size_mb = (float)$db->query("SELECT pg_database_size(current_database()) / 1024.0 / 1024.0")->fetchColumn();
+    if (db_is_mysql($db)) {
+        $db_size_mb = (float)$db->query("
+            SELECT COALESCE(SUM(data_length + index_length), 0) / 1024.0 / 1024.0
+            FROM information_schema.tables
+            WHERE table_schema = DATABASE()
+        ")->fetchColumn();
+    } else {
+        $db_size_mb = (float)$db->query("SELECT pg_database_size(current_database()) / 1024.0 / 1024.0")->fetchColumn();
+    }
     $storage_usage = (int)max(1, min(99, round(($db_size_mb / 1024) * 100)));
     $system_health = 100;
     if ($active_reports > 25) {
@@ -142,4 +167,3 @@ try {
 } catch (Throwable $e) {
     respond(["success" => false, "message" => "Failed to load admin stats.", "error" => $e->getMessage()], 500);
 }
-

@@ -10,6 +10,7 @@ include_once '../models/User.php';
 include_once '../models/Session.php';
 include_once '../middleware/Auth.php';
 include_once '../helpers/StudentLifecycleHelper.php';
+include_once __DIR__ . '/_community_schema.php';
 
 $database = new Database();
 $db = $database->getConnection();
@@ -18,10 +19,11 @@ if (!$db) {
     http_response_code(503);
     echo json_encode(array(
         "success" => false,
-        "message" => "Database unavailable. Please start PostgreSQL and try again."
+        "message" => "Database unavailable. Please start your database service and try again."
     ));
     exit();
 }
+ensure_community_schema($db);
 
 $user = new User($db);
 $session = new Session($db);
@@ -95,6 +97,7 @@ if (!empty($data->email) && !empty($data->password)) {
                 "user_id" => $user->user_id,
                 "email" => $user->email,  // Make sure this is included
                 "role" => $user->role,
+                "is_moderator" => (bool)$user->is_moderator,
                 "status" => $user->status, // Also include status
                 "expires_at" => $expires_at
             ));

@@ -127,7 +127,10 @@ if (session_status() === PHP_SESSION_NONE) {
                             <div class="font-medium">${escapeHtml(user.name)}</div>
                             <div class="text-xs text-gray-500">${escapeHtml(user.email)}</div>
                         </td>
-                        <td class="py-3 px-3 text-sm">${badge(user.role, roleClass(user.role))}</td>
+                        <td class="py-3 px-3 text-sm">
+                            ${badge(user.role, roleClass(user.role))}
+                            ${user.is_moderator ? '<span class="ml-2 px-2 py-1 rounded-full text-xs bg-indigo-100 text-indigo-800">MODERATOR</span>' : ''}
+                        </td>
                         <td class="py-3 px-3 text-sm">${badge(user.status, statusClass(user.status))}</td>
                         <td class="py-3 px-3 text-sm text-gray-700">${escapeHtml(user.branch || '-')}</td>
                         <td class="py-3 px-3 text-sm text-gray-700">${fmt(user.created_at)}</td>
@@ -142,6 +145,8 @@ if (session_status() === PHP_SESSION_NONE) {
                                 ${!user.is_banned && user.shadow_banned ? `<button class="px-2 py-1 border rounded hover:bg-gray-100" onclick="adminUserAction(${user.id}, 'lift_shadow_ban')">Lift Shadow</button>` : ''}
                                 ${!user.is_banned && !user.shadow_banned && !user.messaging_restricted ? `<button class="px-2 py-1 bg-slate-700 text-white rounded hover:bg-slate-800" onclick="adminUserAction(${user.id}, 'restrict_messaging')">Mute DM 7d</button>` : ''}
                                 ${!user.is_banned && !user.shadow_banned && user.messaging_restricted ? `<button class="px-2 py-1 border rounded hover:bg-gray-100" onclick="adminUserAction(${user.id}, 'lift_messaging_restriction')">Unmute DM</button>` : ''}
+                                ${user.role !== 'admin' && !user.is_moderator ? `<button class="px-2 py-1 bg-indigo-600 text-white rounded hover:bg-indigo-700" onclick="adminUserAction(${user.id}, 'promote_moderator')">Make Moderator</button>` : ''}
+                                ${user.role !== 'admin' && user.is_moderator ? `<button class="px-2 py-1 border rounded hover:bg-gray-100" onclick="adminUserAction(${user.id}, 'revoke_moderator')">Remove Moderator</button>` : ''}
                                 <button class="px-2 py-1 bg-blue-600 text-white rounded hover:bg-blue-700" onclick="resetUserPassword(${user.id}, '${escapeJs(user.email)}')">Reset Password</button>
                             </div>
                         </td>

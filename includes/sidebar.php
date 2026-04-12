@@ -168,6 +168,13 @@ $isAdminDashboardPage = $currentPage === 'dashboard.php' && strpos($_SERVER['REQ
                     <span class="sidebar-label">Messages</span>
                     <span id="unreadMessagesBadge" class="sidebar-meta ml-auto hidden bg-blue-100 text-blue-800 text-xs px-2 py-0.5 rounded-full">0</span>
                 </a>
+
+                <div id="moderationSection" class="hidden">
+                    <a href="<?php echo $basePrefix; ?>moderation.php" class="sidebar-link group flex items-center px-3 py-3 text-sm font-medium rounded-lg <?php echo $currentPage == 'moderation.php' ? 'bg-indigo-50 text-indigo-700 border-l-4 border-indigo-500' : 'text-gray-700 hover:bg-gray-50 hover:text-gray-900'; ?>">
+                        <i data-lucide="shield-check" class="h-5 w-5 mr-3"></i>
+                        <span class="sidebar-label">Moderation Queue</span>
+                    </a>
+                </div>
                 
                 <!-- Admin Dashboard (Only for admins) -->
                 <div id="adminSection" class="hidden">
@@ -273,6 +280,10 @@ $isAdminDashboardPage = $currentPage === 'dashboard.php' && strpos($_SERVER['REQ
             <a href="<?php echo $basePrefix; ?>profile.php" class="rounded-2xl border border-slate-800 bg-slate-900/70 px-4 py-4 text-sm font-medium text-slate-100">
                 <div class="mb-2 inline-flex rounded-xl bg-slate-800 p-2 text-violet-300"><i data-lucide="user-round" class="h-4 w-4"></i></div>
                 <div>Profile</div>
+            </a>
+            <a href="<?php echo $basePrefix; ?>moderation.php" id="mobileModerationLink" class="hidden rounded-2xl border border-indigo-800/60 bg-indigo-950/60 px-4 py-4 text-sm font-medium text-indigo-200">
+                <div class="mb-2 inline-flex rounded-xl bg-indigo-900/60 p-2 text-indigo-200"><i data-lucide="shield-check" class="h-4 w-4"></i></div>
+                <div>Moderation</div>
             </a>
             <a href="<?php echo $basePrefix; ?>admin/dashboard.php" id="mobileAdminLink" class="hidden rounded-2xl border border-amber-800/60 bg-amber-950/60 px-4 py-4 text-sm font-medium text-amber-200">
                 <div class="mb-2 inline-flex rounded-xl bg-amber-900/60 p-2 text-amber-200"><i data-lucide="shield" class="h-4 w-4"></i></div>
@@ -397,6 +408,15 @@ $isAdminDashboardPage = $currentPage === 'dashboard.php' && strpos($_SERVER['REQ
                 case 'student':
                     roleText = 'Student';
                     break;
+            }
+            if (user.role !== 'admin' && user.is_moderator) {
+                roleText = `${roleText} Moderator`.trim();
+            }
+            if (user.role === 'admin' || user.is_moderator) {
+                const moderationSection = document.getElementById('moderationSection');
+                if (moderationSection) moderationSection.classList.remove('hidden');
+                const mobileModerationLink = document.getElementById('mobileModerationLink');
+                if (mobileModerationLink) mobileModerationLink.classList.remove('hidden');
             }
             
             document.getElementById('sidebarUserRole').textContent = roleText;

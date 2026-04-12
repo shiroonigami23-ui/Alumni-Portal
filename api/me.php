@@ -13,6 +13,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
 include_once '../config/Database.php';
 include_once '../middleware/Auth.php';
 include_once __DIR__ . '/_profile_media.php';
+include_once __DIR__ . '/_community_schema.php';
 
 $database = new Database();
 $db = $database->getConnection();
@@ -22,10 +23,11 @@ if (!$db) {
     echo json_encode([
         "success" => false,
         "status" => "error",
-        "message" => "Database unavailable. Please start PostgreSQL and try again."
+        "message" => "Database unavailable. Please start your database service and try again."
     ]);
     exit;
 }
+ensure_community_schema($db);
 
 $auth = new Auth($db);
 
@@ -36,6 +38,7 @@ try {
                 u.user_id,
                 u.email,
                 u.role,
+                u.is_moderator,
                 u.status,
                 u.can_post,
                 u.created_at,

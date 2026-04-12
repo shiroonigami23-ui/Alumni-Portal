@@ -6,6 +6,8 @@ header("Access-Control-Allow-Methods: POST");
 include_once '../config/Database.php';
 include_once '../middleware/Auth.php';
 include_once __DIR__ . '/_moderation_schema.php';
+include_once __DIR__ . '/_community_schema.php';
+include_once '../config/DbCompat.php';
 
 function respond_action(array $payload, int $status = 200): void
 {
@@ -24,11 +26,11 @@ function require_admin_actor(PDO $db, int $userId): void
 function collect_user_device_sources(PDO $db, int $userId): array
 {
     $stmt = $db->prepare("
-        SELECT device_fingerprint, ip_address::text AS ip_address, user_agent
+        SELECT device_fingerprint, ip_address AS ip_address, user_agent
         FROM sessions
         WHERE user_id = :uid
         UNION
-        SELECT device_fingerprint, ip_address::text AS ip_address, user_agent
+        SELECT device_fingerprint, ip_address AS ip_address, user_agent
         FROM activity_logs
         WHERE user_id = :uid
     ");
@@ -38,8 +40,12 @@ function collect_user_device_sources(PDO $db, int $userId): array
 
 $database = new Database();
 $db = $database->getConnection();
+if (!$db) {
+    respond_action(['success' => false, 'message' => 'Database unavailable.'], 503);
+}
 $auth = new Auth($db);
 ensure_user_moderation_schema($db);
+ensure_community_schema($db);
 
 try {
     $adminId = (int)$auth->validateRequest();
@@ -73,11 +79,22 @@ try {
                ->execute(['uid' => $targetUserId]);
 
             $seen = [];
-            $insertBan = $db->prepare("
-                INSERT INTO device_bans (device_fingerprint, ip_address, banned_by_admin_id, banned_user_id, reason)
-                VALUES (:fp, CAST(:ip AS inet), :aid, :buid, :reason)
-                ON CONFLICT (device_fingerprint, ip_address) DO NOTHING
-            ");
+            if (db_is_mysql($db)) {
+                $insertBan = $db->prepare("
+                    INSERT INTO device_bans (device_fingerprint, ip_address, banned_by_admin_id, banned_user_id, reason)
+                    VALUES (:fp, :ip, :aid, :buid, :reason)
+                    ON DUPLICATE KEY UPDATE
+                        banned_by_admin_id = VALUES(banned_by_admin_id),
+                        banned_user_id = VALUES(banned_user_id),
+                        reason = VALUES(reason)
+                ");
+            } else {
+                $insertBan = $db->prepare("
+                    INSERT INTO device_bans (device_fingerprint, ip_address, banned_by_admin_id, banned_user_id, reason)
+                    VALUES (:fp, CAST(:ip AS inet), :aid, :buid, :reason)
+                    ON CONFLICT (device_fingerprint, ip_address) DO NOTHING
+                ");
+            }
             foreach (collect_user_device_sources($db, $targetUserId) as $row) {
                 $ip = trim((string)($row['ip_address'] ?? ''));
                 if ($ip === '') {
@@ -131,11 +148,19 @@ try {
             $until = (new DateTimeImmutable("+{$durationHours} hours"))->format('Y-m-d H:i:s');
             moderation_set_restriction($db, $targetUserId, 'posting', $until, $reason, $adminId);
             moderation_set_restriction($db, $targetUserId, 'messaging', $until, $reason, $adminId);
-            $db->prepare("
-                INSERT INTO moderation_strikes (user_id, warning_count, strike_count, shadow_ban_until)
-                VALUES (:uid, 0, 1, :until)
-                ON CONFLICT (user_id) DO UPDATE SET shadow_ban_until = EXCLUDED.shadow_ban_until
-            ")->execute(['uid' => $targetUserId, 'until' => $until]);
+            if (db_is_mysql($db)) {
+                $db->prepare("
+                    INSERT INTO moderation_strikes (user_id, warning_count, strike_count, shadow_ban_until)
+                    VALUES (:uid, 0, 1, :until)
+                    ON DUPLICATE KEY UPDATE shadow_ban_until = VALUES(shadow_ban_until)
+                ")->execute(['uid' => $targetUserId, 'until' => $until]);
+            } else {
+                $db->prepare("
+                    INSERT INTO moderation_strikes (user_id, warning_count, strike_count, shadow_ban_until)
+                    VALUES (:uid, 0, 1, :until)
+                    ON CONFLICT (user_id) DO UPDATE SET shadow_ban_until = EXCLUDED.shadow_ban_until
+                ")->execute(['uid' => $targetUserId, 'until' => $until]);
+            }
             $auth->logAction($adminId, 'SHADOW_BAN', "Shadow banned user {$targetUserId} until {$until}");
             respond_action(['success' => true, 'message' => 'User shadow-banned from posting and messaging.', 'ban_until' => $until]);
 
@@ -152,13 +177,34 @@ try {
         case 'lift_shadow_ban':
             moderation_clear_restriction($db, $targetUserId, 'posting', $adminId);
             moderation_clear_restriction($db, $targetUserId, 'messaging', $adminId);
-            $db->prepare("
-                INSERT INTO moderation_strikes (user_id, warning_count, strike_count, shadow_ban_until)
-                VALUES (:uid, 0, 0, NULL)
-                ON CONFLICT (user_id) DO UPDATE SET shadow_ban_until = NULL
-            ")->execute(['uid' => $targetUserId]);
+            if (db_is_mysql($db)) {
+                $db->prepare("
+                    INSERT INTO moderation_strikes (user_id, warning_count, strike_count, shadow_ban_until)
+                    VALUES (:uid, 0, 0, NULL)
+                    ON DUPLICATE KEY UPDATE shadow_ban_until = NULL
+                ")->execute(['uid' => $targetUserId]);
+            } else {
+                $db->prepare("
+                    INSERT INTO moderation_strikes (user_id, warning_count, strike_count, shadow_ban_until)
+                    VALUES (:uid, 0, 0, NULL)
+                    ON CONFLICT (user_id) DO UPDATE SET shadow_ban_until = NULL
+                ")->execute(['uid' => $targetUserId]);
+            }
             $auth->logAction($adminId, 'LIFT_SHADOW_BAN', "Shadow ban lifted for {$targetUserId}");
             respond_action(['success' => true, 'message' => 'Shadow ban lifted.']);
+
+        case 'promote_moderator':
+            if (!in_array((string)$target['role'], ['student', 'faculty', 'alumni'], true)) {
+                respond_action(['success' => false, 'message' => 'Only student, faculty, or alumni accounts can be moderators.'], 409);
+            }
+            $db->prepare("UPDATE users SET is_moderator = TRUE WHERE user_id = :uid")->execute(['uid' => $targetUserId]);
+            $auth->logAction($adminId, 'PROMOTE_MODERATOR', "Promoted user {$targetUserId} as moderator");
+            respond_action(['success' => true, 'message' => 'User promoted to moderator.']);
+
+        case 'revoke_moderator':
+            $db->prepare("UPDATE users SET is_moderator = FALSE WHERE user_id = :uid")->execute(['uid' => $targetUserId]);
+            $auth->logAction($adminId, 'REVOKE_MODERATOR', "Revoked moderator role from user {$targetUserId}");
+            respond_action(['success' => true, 'message' => 'Moderator access revoked.']);
 
         case 'reset_password':
             if ($newPassword === '') {

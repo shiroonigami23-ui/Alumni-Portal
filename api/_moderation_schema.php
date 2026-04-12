@@ -1,5 +1,7 @@
 <?php
 
+require_once __DIR__ . '/../config/DbCompat.php';
+
 function ensure_user_moderation_schema(PDO $db): void
 {
     static $done = false;
@@ -7,21 +9,45 @@ function ensure_user_moderation_schema(PDO $db): void
         return;
     }
 
-    $db->exec("
-        CREATE TABLE IF NOT EXISTS user_moderation_restrictions (
-            user_id BIGINT PRIMARY KEY REFERENCES users(user_id) ON DELETE CASCADE,
-            posting_ban_until TIMESTAMP NULL,
-            posting_ban_reason TEXT NULL,
-            messaging_ban_until TIMESTAMP NULL,
-            messaging_ban_reason TEXT NULL,
-            updated_by_admin_id BIGINT NULL REFERENCES users(user_id) ON DELETE SET NULL,
-            created_at TIMESTAMP NOT NULL DEFAULT NOW(),
-            updated_at TIMESTAMP NOT NULL DEFAULT NOW()
-        )
-    ");
+    if (db_is_mysql($db)) {
+        $db->exec("
+            CREATE TABLE IF NOT EXISTS user_moderation_restrictions (
+                user_id BIGINT PRIMARY KEY,
+                posting_ban_until TIMESTAMP NULL,
+                posting_ban_reason TEXT NULL,
+                messaging_ban_until TIMESTAMP NULL,
+                messaging_ban_reason TEXT NULL,
+                updated_by_admin_id BIGINT NULL,
+                created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+            )
+        ");
+    } else {
+        $db->exec("
+            CREATE TABLE IF NOT EXISTS user_moderation_restrictions (
+                user_id BIGINT PRIMARY KEY REFERENCES users(user_id) ON DELETE CASCADE,
+                posting_ban_until TIMESTAMP NULL,
+                posting_ban_reason TEXT NULL,
+                messaging_ban_until TIMESTAMP NULL,
+                messaging_ban_reason TEXT NULL,
+                updated_by_admin_id BIGINT NULL REFERENCES users(user_id) ON DELETE SET NULL,
+                created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+                updated_at TIMESTAMP NOT NULL DEFAULT NOW()
+            )
+        ");
+    }
 
-    $db->exec("ALTER TABLE device_bans ADD COLUMN IF NOT EXISTS banned_user_id BIGINT NULL REFERENCES users(user_id) ON DELETE SET NULL");
-    $db->exec("CREATE INDEX IF NOT EXISTS idx_device_bans_banned_user_id ON device_bans(banned_user_id)");
+    if (db_table_exists($db, 'device_bans') && !db_column_exists($db, 'device_bans', 'banned_user_id')) {
+        $db->exec("ALTER TABLE device_bans ADD COLUMN banned_user_id BIGINT NULL");
+    }
+    try {
+        if (db_is_mysql($db)) {
+            $db->exec("CREATE INDEX idx_device_bans_banned_user_id ON device_bans(banned_user_id)");
+        } else {
+            $db->exec("CREATE INDEX IF NOT EXISTS idx_device_bans_banned_user_id ON device_bans(banned_user_id)");
+        }
+    } catch (Throwable $ignored) {
+    }
 
     $done = true;
 }
@@ -141,16 +167,25 @@ function moderation_set_restriction(PDO $db, int $targetUserId, string $kind, ?s
     $columnUntil = $kind . '_ban_until';
     $columnReason = $kind . '_ban_reason';
 
-    $sql = "
-        INSERT INTO user_moderation_restrictions (user_id, {$columnUntil}, {$columnReason}, updated_by_admin_id, updated_at)
-        VALUES (:uid, :until, :reason, :aid, NOW())
-        ON CONFLICT (user_id) DO UPDATE SET
-            {$columnUntil} = EXCLUDED.{$columnUntil},
-            {$columnReason} = EXCLUDED.{$columnReason},
-            updated_by_admin_id = EXCLUDED.updated_by_admin_id,
-            updated_at = NOW()
-    ";
+    $existsStmt = $db->prepare("SELECT 1 FROM user_moderation_restrictions WHERE user_id = :uid LIMIT 1");
+    $existsStmt->execute(['uid' => $targetUserId]);
+    $exists = (bool)$existsStmt->fetchColumn();
 
+    if ($exists) {
+        $sql = "
+            UPDATE user_moderation_restrictions
+            SET {$columnUntil} = :until,
+                {$columnReason} = :reason,
+                updated_by_admin_id = :aid,
+                updated_at = CURRENT_TIMESTAMP
+            WHERE user_id = :uid
+        ";
+    } else {
+        $sql = "
+            INSERT INTO user_moderation_restrictions (user_id, {$columnUntil}, {$columnReason}, updated_by_admin_id, updated_at)
+            VALUES (:uid, :until, :reason, :aid, CURRENT_TIMESTAMP)
+        ";
+    }
     $stmt = $db->prepare($sql);
     $stmt->bindValue(':uid', $targetUserId, PDO::PARAM_INT);
     if ($until === null || $until === '') {
@@ -173,14 +208,29 @@ function moderation_clear_restriction(PDO $db, int $targetUserId, string $kind, 
 
     $columnUntil = $kind . '_ban_until';
     $columnReason = $kind . '_ban_reason';
+    $existsStmt = $db->prepare("SELECT 1 FROM user_moderation_restrictions WHERE user_id = :uid LIMIT 1");
+    $existsStmt->execute(['uid' => $targetUserId]);
+    $exists = (bool)$existsStmt->fetchColumn();
+
+    if ($exists) {
+        $stmt = $db->prepare("
+            UPDATE user_moderation_restrictions
+            SET {$columnUntil} = NULL,
+                {$columnReason} = NULL,
+                updated_by_admin_id = :aid,
+                updated_at = CURRENT_TIMESTAMP
+            WHERE user_id = :uid
+        ");
+        $stmt->execute([
+            'uid' => $targetUserId,
+            'aid' => $adminUserId,
+        ]);
+        return;
+    }
+
     $stmt = $db->prepare("
         INSERT INTO user_moderation_restrictions (user_id, updated_by_admin_id, updated_at)
-        VALUES (:uid, :aid, NOW())
-        ON CONFLICT (user_id) DO UPDATE SET
-            {$columnUntil} = NULL,
-            {$columnReason} = NULL,
-            updated_by_admin_id = EXCLUDED.updated_by_admin_id,
-            updated_at = NOW()
+        VALUES (:uid, :aid, CURRENT_TIMESTAMP)
     ");
     $stmt->execute([
         'uid' => $targetUserId,

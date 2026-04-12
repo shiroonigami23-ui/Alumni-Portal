@@ -14,7 +14,7 @@ The repo already includes:
 - Deployment scripts in `deployment/`
 - Full local verification script: `verify_feature_matrix.ps1`
 
-## 1. Local Setup (Windows + XAMPP + PostgreSQL)
+## 1. Local Setup (Windows + XAMPP + PostgreSQL/MySQL)
 
 ### Step 1: Start services
 
@@ -24,14 +24,23 @@ The repo already includes:
 ### Step 2: Set DB environment variables (PowerShell)
 
 ```powershell
+$env:DB_DRIVER="pgsql"   # use "mysql" for MySQL
 $env:DB_HOST="127.0.0.1"
-$env:DB_PORT="5432"
+$env:DB_PORT="5432"      # use 3306 for MySQL
 $env:DB_NAME="alumni_portal"
-$env:DB_USER="postgres"
+$env:DB_USER="postgres"  # use MySQL user when DB_DRIVER=mysql
 $env:DB_PASSWORD="postgres"
 ```
 
-If your postgres password is different, set that value.
+If your DB password is different, set that value.
+
+For MySQL deployments, run:
+
+- `deployment/sql/2026_04_12_moderator_post_workflow_mysql.sql`
+
+For PostgreSQL deployments, run:
+
+- `deployment/sql/2026_04_12_moderator_post_workflow_pg.sql`
 
 ### Step 3: Verify DB connection
 

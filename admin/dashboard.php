@@ -285,6 +285,12 @@ if (session_status() === PHP_SESSION_NONE) {
                                 <span>Content Moderation</span>
                                 <span id="reportsBadge" class="ml-auto bg-red-100 text-red-800 text-xs px-2 py-1 rounded-full">0</span>
                             </button>
+
+                            <button onclick="openAlumniModerationQueue()"
+                                    class="w-full flex items-center p-3 rounded-lg border border-gray-200 hover:bg-gray-50 text-gray-700">
+                                <i data-lucide="shield-check" class="h-5 w-5 text-indigo-600 mr-3"></i>
+                                <span>Alumni Post Queue</span>
+                            </button>
                             
                             <button onclick="openSystemSettings()"
                                     class="w-full flex items-center p-3 rounded-lg border border-gray-200 hover:bg-gray-50 text-gray-700">
@@ -869,6 +875,10 @@ if (session_status() === PHP_SESSION_NONE) {
 
         function openContentModeration() {
             window.location.href = './reports.php';
+        }
+
+        function openAlumniModerationQueue() {
+            window.location.href = '../moderation.php';
         }
 
         function openSystemSettings() {

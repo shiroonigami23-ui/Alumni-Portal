@@ -111,6 +111,15 @@ include 'includes/sidebar.php';
                                     <button id="openGifPickerBtn" type="button" class="p-2 rounded-full hover:bg-pink-50 text-pink-600" title="Add GIF">
                                         <i data-lucide="sticker" class="h-4 w-4"></i>
                                     </button>
+                                    <select id="postVisibilityScope" class="text-xs border border-gray-300 rounded-md px-2 py-1 bg-white text-gray-700">
+                                        <option value="all">Everyone</option>
+                                        <option value="alumni">Alumni only</option>
+                                        <option value="faculty">Faculty only</option>
+                                        <option value="students">Students only</option>
+                                        <option value="faculty_alumni">Faculty + Alumni</option>
+                                        <option value="students_alumni">Students + Alumni</option>
+                                        <option value="faculty_students">Faculty + Students</option>
+                                    </select>
                                     <input type="checkbox" id="allowComments" name="allow_comments" checked class="h-4 w-4 text-blue-600 rounded">
                                     <label for="allowComments" class="text-xs text-gray-700">Allow comments</label>
                                 </div>
@@ -257,6 +266,7 @@ include 'includes/sidebar.php';
         let currentSort = 'newest';
         let currentUserId = 0;
         let currentUserRole = '';
+        let currentUserIsModerator = false;
         let feedRefreshTimer = null;
         const openCommentPosts = new Set();
         const commentRefreshTimers = new Map();
@@ -310,6 +320,7 @@ include 'includes/sidebar.php';
                     const user = JSON.parse(userData);
                     currentUserId = parseInt(user.user_id || user.id || 0, 10) || 0;
                     currentUserRole = String(user.role || '').toLowerCase();
+                    currentUserIsModerator = !!user.is_moderator;
                     
                     // Update user info in create post section
                     document.getElementById('userFeedName').textContent = user.full_name || user.name || user.email || 'Share your thoughts';
@@ -324,7 +335,7 @@ include 'includes/sidebar.php';
                     }
                     
                     // Show create post section if user can post
-                    const canPost = (currentUserRole === 'admin' || currentUserRole === 'faculty' || currentUserRole === 'alumni');
+                    const canPost = (currentUserRole === 'admin' || currentUserRole === 'faculty' || currentUserRole === 'alumni' || (currentUserRole === 'student' && currentUserIsModerator));
                     if (canPost) {
                         document.getElementById('createPostSection').classList.remove('hidden');
                     } else if (createPostSection) {
@@ -339,6 +350,7 @@ include 'includes/sidebar.php';
                     const user = me.data;
                     currentUserId = parseInt(user.user_id || user.id || 0, 10) || 0;
                     currentUserRole = String(user.role || '').toLowerCase();
+                    currentUserIsModerator = !!user.is_moderator;
                     document.getElementById('userFeedName').textContent = user.full_name || user.name || user.email || 'Share your thoughts';
                     if (user.profile_picture || user.profile_picture_url || user.profile_pic) {
                         const avatarEl = document.getElementById('userFeedAvatar');
@@ -348,7 +360,7 @@ include 'includes/sidebar.php';
                             this.src = getDefaultAvatarDataUri(user.full_name || user.name || user.email || 'U');
                         };
                     }
-                    const canPost = (currentUserRole === 'admin' || currentUserRole === 'faculty' || currentUserRole === 'alumni');
+                    const canPost = (currentUserRole === 'admin' || currentUserRole === 'faculty' || currentUserRole === 'alumni' || (currentUserRole === 'student' && currentUserIsModerator));
                     if (canPost) {
                         document.getElementById('createPostSection').classList.remove('hidden');
                     } else if (createPostSection) {
@@ -1836,6 +1848,7 @@ include 'includes/sidebar.php';
             if (isCreatingFeedPost) return;
             const content = document.getElementById('postContent').value.trim();
             const allowComments = document.getElementById('allowComments').checked;
+            const visibilityScope = document.getElementById('postVisibilityScope').value || 'all';
             const gifUrl = document.getElementById('postGifUrl').value.trim();
             
             if (!content && !gifUrl && document.getElementById('postImages').files.length === 0 && document.getElementById('postFiles').files.length === 0) {
@@ -1850,6 +1863,7 @@ include 'includes/sidebar.php';
             const formData = new FormData();
             formData.append('content', content);
             formData.append('allow_comments', allowComments ? '1' : '0');
+            formData.append('visibility_scope', visibilityScope);
             if (gifUrl) {
                 formData.append('gif_url', gifUrl);
             }
@@ -1902,6 +1916,7 @@ include 'includes/sidebar.php';
             document.getElementById('postContent').value = '';
             document.getElementById('postGifUrl').value = '';
             document.getElementById('allowComments').checked = true;
+            document.getElementById('postVisibilityScope').value = 'all';
             document.getElementById('imagePreviews').innerHTML = '';
             document.getElementById('filePreviews').innerHTML = '';
             clearGifPreview(document.getElementById('postGifPreview'));
