@@ -148,6 +148,13 @@ try {
                 COALESCE(p.repost_count, 0) AS reposts_count,
                 COALESCE(p.visibility_scope, 'all') AS visibility_scope,
                 COALESCE(p.moderation_status, 'approved') AS moderation_status,
+                COALESCE(p.pending_edit_status, 'none') AS pending_edit_status,
+                p.pending_edit_submitted_at,
+                COALESCE(p.revision_no, 1) AS revision_no,
+                p.pending_revision_no,
+                p.previous_content_file_path,
+                p.previous_revision_no,
+                p.pending_edit_content_file_path,
                 activity_rp.created_at AS activity_reposted_at,
                 (activity_rp.post_id IS NOT NULL) AS activity_user_has_reposted,
                 p.created_at,
@@ -231,8 +238,33 @@ try {
             $row['content'] = (string)$row['title'];
         }
 
+        $pendingEditStatus = (string)($row['pending_edit_status'] ?? 'none');
+        $row['has_pending_edit_review'] = ($pendingEditStatus === 'pending');
+        $row['pending_edit_preview'] = null;
+        if ($row['has_pending_edit_review'] && ((int)$row['user_id'] === (int)$user_id) && !empty($row['pending_edit_content_file_path'])) {
+            $pendingPayload = load_content_payload($db, (string)$row['pending_edit_content_file_path']);
+            $row['pending_edit_preview'] = [
+                'content' => (string)($pendingPayload['content'] ?? ''),
+                'attachments' => $pendingPayload['attachments'] ?? [],
+                'pending_revision_no' => isset($row['pending_revision_no']) ? (int)$row['pending_revision_no'] : null,
+                'submitted_at' => $row['pending_edit_submitted_at'] ?? null,
+            ];
+        }
+
+        $row['previous_version_preview'] = null;
+        if (!empty($row['previous_content_file_path']) && isset($row['previous_revision_no']) && (int)$row['previous_revision_no'] > 0) {
+            $prevPayload = load_content_payload($db, (string)$row['previous_content_file_path']);
+            $row['previous_version_preview'] = [
+                'content' => (string)($prevPayload['content'] ?? ''),
+                'attachments' => $prevPayload['attachments'] ?? [],
+                'revision_no' => (int)$row['previous_revision_no'],
+                'newer_revision_no' => isset($row['revision_no']) ? (int)$row['revision_no'] : null,
+            ];
+        }
+
         $row['is_owner'] = ((int)$row['user_id'] === (int)$user_id);
         unset($row['author_email']);
+        unset($row['pending_edit_content_file_path'], $row['previous_content_file_path']);
         return $row;
     }, $rows);
 

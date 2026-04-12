@@ -658,6 +658,16 @@ include 'includes/sidebar.php';
             
             // Check if comments are allowed
             const commentsAllowed = post.allow_comments !== false;
+            const hasPendingEditReview = !!post.has_pending_edit_review;
+            const ownerPendingBadge = (post.is_owner && hasPendingEditReview)
+                ? `<span class="ml-2 px-2 py-0.5 bg-amber-100 text-amber-800 text-xs rounded-full">Edited (awaiting review)</span>`
+                : '';
+            const pendingPreview = (post.is_owner && hasPendingEditReview && post.pending_edit_preview && post.pending_edit_preview.content)
+                ? `<div class="mt-2 text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-md p-2">
+                        Pending revision #${post.pending_edit_preview.pending_revision_no || ''}: ${escapeHtml(post.pending_edit_preview.content).slice(0, 180)}${(post.pending_edit_preview.content || '').length > 180 ? '…' : ''}
+                   </div>`
+                : '';
+            const hasPreviousVersion = !!(post.previous_version_preview && post.previous_version_preview.content);
             
             postElement.innerHTML = `
                 <div class="p-6">
@@ -684,7 +694,9 @@ include 'includes/sidebar.php';
                                 <p class="text-sm text-gray-500">
                                     ${post.branch ? `${post.branch} • ` : ''}${postDate}
                                     ${isPinned ? '<span class="ml-2 text-amber-600 font-medium">📌 Pinned</span>' : ''}
+                                    ${ownerPendingBadge}
                                 </p>
+                                ${pendingPreview}
                             </div>
                         </div>
                         
@@ -711,8 +723,25 @@ include 'includes/sidebar.php';
                     </div>
                     
                     <!-- Post Content -->
-                    <div class="mb-4">
+                    <div class="mb-4" data-post-content-block="1">
+                        ${hasPreviousVersion ? `
+                            <div class="mb-2 rounded-md border border-blue-200 bg-blue-50 px-3 py-2 text-xs text-blue-800">
+                                Newer version available.
+                                <button class="ml-2 underline font-medium view-previous-version-btn" data-post-id="${post.id}" type="button">
+                                    View previous version
+                                </button>
+                            </div>
+                        ` : ''}
                         <p class="text-gray-700 whitespace-pre-line">${content}</p>
+                        ${hasPreviousVersion ? `
+                            <div id="previous-version-${post.id}" class="hidden mt-3 rounded-lg border border-gray-200 bg-gray-50 p-3">
+                                <div class="flex items-center justify-between gap-2 mb-2">
+                                    <span class="text-xs font-semibold text-gray-600">Previous version (r${post.previous_version_preview.revision_no || ''})</span>
+                                    <button class="text-xs text-blue-700 underline jump-newer-version-btn" data-post-id="${post.id}" type="button">Jump to newer version</button>
+                                </div>
+                                <p class="text-gray-700 whitespace-pre-line blur-[1px]">${escapeHtml(post.previous_version_preview.content || '')}</p>
+                            </div>
+                        ` : ''}
                     </div>
                     
                     <!-- Post Attachments -->
@@ -841,6 +870,23 @@ include 'includes/sidebar.php';
                 reportPostBtn.addEventListener('click', async () => {
                     menu.classList.add('hidden');
                     await handleReportPost(post.id);
+                });
+            }
+
+            const viewPreviousBtn = postElement.querySelector('.view-previous-version-btn');
+            if (viewPreviousBtn) {
+                viewPreviousBtn.addEventListener('click', () => {
+                    const panel = postElement.querySelector(`#previous-version-${post.id}`);
+                    if (panel) panel.classList.toggle('hidden');
+                });
+            }
+
+            const jumpNewerBtn = postElement.querySelector('.jump-newer-version-btn');
+            if (jumpNewerBtn) {
+                jumpNewerBtn.addEventListener('click', () => {
+                    const panel = postElement.querySelector(`#previous-version-${post.id}`);
+                    if (panel) panel.classList.add('hidden');
+                    postElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
                 });
             }
 
@@ -1069,7 +1115,8 @@ include 'includes/sidebar.php';
         }
 
         async function handleEditPost(postElement, postId) {
-            const contentEl = postElement.querySelector('.mb-4 p');
+            const contentBlock = postElement.querySelector('[data-post-content-block="1"]');
+            const contentEl = contentBlock ? contentBlock.querySelector('p') : null;
             if (!contentEl) return;
             const currentContent = contentEl.textContent || '';
             const edited = await window.appPrompt('Edit your post:', {
@@ -1093,7 +1140,25 @@ include 'includes/sidebar.php';
                 content: edited.trim()
             });
             if (response && (response.success || response.status === 'success')) {
+                const mode = response?.data?.edit_mode || '';
+                if (mode === 'pending_review') {
+                    await window.appAlert(response?.message || 'Edit submitted for review.', {
+                        title: 'Edit queued',
+                        icon: 'clock-3',
+                        iconTone: 'warning'
+                    });
+                    currentPage = 1;
+                    await loadFeed();
+                    return;
+                }
                 contentEl.textContent = edited.trim();
+                if (mode === 'applied_typo_window') {
+                    await window.appAlert('Typo-only edit applied instantly (5-minute window).', {
+                        title: 'Edit applied',
+                        icon: 'check',
+                        iconTone: 'success'
+                    });
+                }
             } else {
                 await window.appAlert(response?.message || 'Failed to edit post.', {
                     title: 'Edit failed',

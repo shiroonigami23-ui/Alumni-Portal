@@ -32,14 +32,44 @@ function ensure_community_schema(PDO $db): void
         $db->exec("ALTER TABLE posts ADD COLUMN review_note TEXT NULL");
     }
 
+    if (!db_column_exists($db, 'posts', 'revision_no')) {
+        $db->exec("ALTER TABLE posts ADD COLUMN revision_no INTEGER NOT NULL DEFAULT 1");
+    }
+
+    if (!db_column_exists($db, 'posts', 'pending_revision_no')) {
+        $db->exec("ALTER TABLE posts ADD COLUMN pending_revision_no INTEGER NULL");
+    }
+
+    if (!db_column_exists($db, 'posts', 'pending_edit_status')) {
+        $db->exec("ALTER TABLE posts ADD COLUMN pending_edit_status VARCHAR(32) NOT NULL DEFAULT 'none'");
+    }
+
+    if (!db_column_exists($db, 'posts', 'pending_edit_content_file_path')) {
+        $db->exec("ALTER TABLE posts ADD COLUMN pending_edit_content_file_path TEXT NULL");
+    }
+
+    if (!db_column_exists($db, 'posts', 'pending_edit_submitted_at')) {
+        $db->exec("ALTER TABLE posts ADD COLUMN pending_edit_submitted_at TIMESTAMP NULL");
+    }
+
+    if (!db_column_exists($db, 'posts', 'previous_content_file_path')) {
+        $db->exec("ALTER TABLE posts ADD COLUMN previous_content_file_path TEXT NULL");
+    }
+
+    if (!db_column_exists($db, 'posts', 'previous_revision_no')) {
+        $db->exec("ALTER TABLE posts ADD COLUMN previous_revision_no INTEGER NULL");
+    }
+
     try {
         if (db_is_mysql($db)) {
             $db->exec("CREATE INDEX idx_posts_moderation_status ON posts(moderation_status)");
             $db->exec("CREATE INDEX idx_posts_visibility_scope ON posts(visibility_scope)");
+            $db->exec("CREATE INDEX idx_posts_pending_edit_status ON posts(pending_edit_status)");
             $db->exec("CREATE INDEX idx_users_is_moderator ON users(is_moderator)");
         } else {
             $db->exec("CREATE INDEX IF NOT EXISTS idx_posts_moderation_status ON posts(moderation_status)");
             $db->exec("CREATE INDEX IF NOT EXISTS idx_posts_visibility_scope ON posts(visibility_scope)");
+            $db->exec("CREATE INDEX IF NOT EXISTS idx_posts_pending_edit_status ON posts(pending_edit_status)");
             $db->exec("CREATE INDEX IF NOT EXISTS idx_users_is_moderator ON users(is_moderator)");
         }
     } catch (Throwable $ignored) {
@@ -51,6 +81,18 @@ function ensure_community_schema(PDO $db): void
         UPDATE posts
         SET moderation_status = 'approved'
         WHERE moderation_status IS NULL OR moderation_status = ''
+    ");
+
+    $db->exec("
+        UPDATE posts
+        SET pending_edit_status = 'none'
+        WHERE pending_edit_status IS NULL OR pending_edit_status = ''
+    ");
+
+    $db->exec("
+        UPDATE posts
+        SET revision_no = 1
+        WHERE revision_no IS NULL OR revision_no < 1
     ");
 
     $done = true;

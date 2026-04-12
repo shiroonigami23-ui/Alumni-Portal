@@ -13,7 +13,8 @@ $query = "SELECT p.*, u.email as author_email, prof.full_name, prof.profile_pict
           FROM posts p 
           JOIN users u ON p.user_id = u.user_id 
           LEFT JOIN profiles prof ON u.user_id = prof.user_id 
-          WHERE p.status = 'published' 
+          WHERE p.status = 'published'
+            AND COALESCE(p.moderation_status, 'approved') = 'approved'
           ORDER BY p.created_at DESC";
 
 $stmt = $db->prepare($query);

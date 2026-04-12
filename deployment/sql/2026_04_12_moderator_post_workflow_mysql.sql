@@ -18,10 +18,40 @@ ALTER TABLE posts
 ALTER TABLE posts
     ADD COLUMN IF NOT EXISTS review_note TEXT NULL;
 
+ALTER TABLE posts
+    ADD COLUMN IF NOT EXISTS revision_no INT NOT NULL DEFAULT 1;
+
+ALTER TABLE posts
+    ADD COLUMN IF NOT EXISTS pending_revision_no INT NULL;
+
+ALTER TABLE posts
+    ADD COLUMN IF NOT EXISTS pending_edit_status VARCHAR(32) NOT NULL DEFAULT 'none';
+
+ALTER TABLE posts
+    ADD COLUMN IF NOT EXISTS pending_edit_content_file_path LONGTEXT NULL;
+
+ALTER TABLE posts
+    ADD COLUMN IF NOT EXISTS pending_edit_submitted_at TIMESTAMP NULL;
+
+ALTER TABLE posts
+    ADD COLUMN IF NOT EXISTS previous_content_file_path LONGTEXT NULL;
+
+ALTER TABLE posts
+    ADD COLUMN IF NOT EXISTS previous_revision_no INT NULL;
+
 UPDATE posts
 SET moderation_status = 'approved'
 WHERE moderation_status IS NULL OR moderation_status = '';
 
+UPDATE posts
+SET pending_edit_status = 'none'
+WHERE pending_edit_status IS NULL OR pending_edit_status = '';
+
+UPDATE posts
+SET revision_no = 1
+WHERE revision_no IS NULL OR revision_no < 1;
+
 CREATE INDEX idx_users_is_moderator ON users(is_moderator);
 CREATE INDEX idx_posts_visibility_scope ON posts(visibility_scope);
 CREATE INDEX idx_posts_moderation_status ON posts(moderation_status);
+CREATE INDEX idx_posts_pending_edit_status ON posts(pending_edit_status);

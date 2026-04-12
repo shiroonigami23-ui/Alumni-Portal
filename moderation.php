@@ -88,13 +88,24 @@ if (session_status() === PHP_SESSION_NONE) {
                         <div>
                             <h3 class="text-lg font-semibold text-gray-900">${escapeHtml(item.title || 'Untitled post')}</h3>
                             <p class="text-sm text-gray-600 mt-1">
-                                ${escapeHtml(item.author_name)} (${escapeHtml(item.author_email)}) · ${fmt(item.created_at)}
+                                ${escapeHtml(item.author_name)} (${escapeHtml(item.author_email)}) · ${fmt(item.queued_at || item.created_at)}
                             </p>
                             <p class="text-xs text-blue-700 mt-2">Audience: ${escapeHtml(visibilityLabel(item.visibility_scope))}</p>
                         </div>
-                        <div class="px-2 py-1 rounded-full text-xs bg-amber-100 text-amber-800">Pending</div>
+                        <div class="px-2 py-1 rounded-full text-xs bg-amber-100 text-amber-800">
+                            ${item.queue_item_type === 'edit_revision' ? 'Pending Edit' : 'Pending New Post'}
+                        </div>
                     </div>
-                    <p class="text-gray-800 mt-3 whitespace-pre-wrap">${escapeHtml(item.content || '')}</p>
+                    ${item.queue_item_type === 'edit_revision' ? `
+                        <div class="mt-3 rounded-lg border border-gray-200 bg-gray-50 p-3">
+                            <p class="text-xs font-semibold text-gray-600 mb-1">Current live version</p>
+                            <p class="text-gray-700 whitespace-pre-wrap text-sm">${escapeHtml(item.current_live_content || '')}</p>
+                        </div>
+                        <div class="mt-3 rounded-lg border border-blue-200 bg-blue-50 p-3">
+                            <p class="text-xs font-semibold text-blue-700 mb-1">Proposed revision #${item.pending_revision_no || ''}</p>
+                            <p class="text-gray-800 whitespace-pre-wrap">${escapeHtml(item.content || '')}</p>
+                        </div>
+                    ` : `<p class="text-gray-800 mt-3 whitespace-pre-wrap">${escapeHtml(item.content || '')}</p>`}
                     ${renderAttachments(item.attachments)}
                     <div class="mt-4 flex flex-wrap gap-2">
                         <button class="px-3 py-1.5 bg-green-600 text-white rounded-lg hover:bg-green-700" onclick="reviewPost(${item.post_id}, 'approve')">Approve</button>
