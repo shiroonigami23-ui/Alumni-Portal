@@ -263,8 +263,16 @@ $basePrefix = $isAdminPath ? '../' : '';
             const value = String(url || '').trim();
             if (!value) return '';
             if (value.startsWith('data:image/')) return value;
-            if (/\.php(\?|$)/i.test(value)) return value;
             const normalized = value.replace(/\\/g, '/').toLowerCase();
+            const assetPathMatch = normalized.match(/(?:^|\/)(api\/asset\.php.*)$/i);
+            if (assetPathMatch && assetPathMatch[1]) {
+                const cleanAssetPath = String(assetPathMatch[1] || '').replace(/^\/+/, '');
+                if (typeof window.resolvePortalPath === 'function') {
+                    return window.resolvePortalPath(cleanAssetPath);
+                }
+                return `${window.PORTAL_BASE_PREFIX || ''}${cleanAssetPath}`;
+            }
+            if (/\.php(\?|$)/i.test(value)) return value;
             if (normalized.includes('storage/profiles/') || normalized.includes('storage/covers/')) return '';
             if (!/^https?:\/\//i.test(value) && !value.startsWith('/') && !normalized.startsWith('api/asset.php')) {
                 return '';
