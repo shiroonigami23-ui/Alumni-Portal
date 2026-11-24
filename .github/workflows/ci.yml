@@ -127,7 +127,7 @@ jobs:
           php-version: '8.2'
           extensions: pdo, pdo_pgsql, fileinfo, zip, gd, exif
           coverage: none
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v7
         with:
           python-version: '3.12'
       - name: Install Playwright (drives the runner's Google Chrome)
