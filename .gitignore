@@ -26,6 +26,7 @@ deployment/db-backups/
 *.backup
 !deployment/sql/*.sql
 !deployment/db.sql
+!deployment/schema_pg.sql
 !scripts/ensure_perf_indexes.sql
 
 # Logs

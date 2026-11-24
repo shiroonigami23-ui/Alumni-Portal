@@ -42,7 +42,12 @@ $db->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 echo "\nRJIT Alumni Portal — database install\n\n";
 
 // 1) Base schema
-$db->exec(file_get_contents($root . '/deployment/schema_pg.sql'));
+$schema = @file_get_contents($root . '/deployment/schema_pg.sql');
+if (!$schema) {
+    fwrite(STDERR, "deployment/schema_pg.sql is missing — re-clone the repository.\n");
+    exit(1);
+}
+$db->exec($schema);
 $say('Base schema (deployment/schema_pg.sql)');
 
 // 2) Feature tables owned by runtime helpers
