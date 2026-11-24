@@ -151,6 +151,8 @@ include 'includes/sidebar.php';
                     
                     <div class="flex items-center space-x-4">
                         <select id="sortBy" class="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm">
+                            <option value="for_you">✨ For you</option>
+                            <option value="trending">🔥 Trending</option>
                             <option value="newest">Newest First</option>
                             <option value="popular">Most Popular</option>
                             <option value="oldest">Oldest First</option>
@@ -263,7 +265,7 @@ include 'includes/sidebar.php';
         let isLoading = false;
         let hasMorePosts = true;
         let currentFilter = 'all';
-        let currentSort = 'newest';
+        let currentSort = 'for_you';
         let currentUserId = 0;
         let currentUserRole = '';
         let currentUserIsModerator = false;
@@ -796,6 +798,7 @@ include 'includes/sidebar.php';
                 setupPostEventListeners(postElement, post);
             }, 100);
             
+            if (window.feedExtras) window.feedExtras.decoratePost(postElement, post);
             return postElement;
         }
         
@@ -1911,6 +1914,7 @@ include 'includes/sidebar.php';
         let isCreatingFeedPost = false;
         async function createPost() {
             if (isCreatingFeedPost) return;
+            if (window.feedExtras && await window.feedExtras.beforeCreate()) return; // scheduled / invalid poll
             const content = document.getElementById('postContent').value.trim();
             const allowComments = document.getElementById('allowComments').checked;
             const visibilityScope = document.getElementById('postVisibilityScope').value || 'all';
@@ -1955,6 +1959,7 @@ include 'includes/sidebar.php';
                 });
                 
                 if (response && (response.success || response.status === 'success')) {
+                    if (window.feedExtras) await window.feedExtras.afterPostCreated(response.post_id);
                     clearPostForm('Post published. Draft cleared.');
                     await prependNewlyCreatedPost(response.post_id);
                 } else {
@@ -2201,3 +2206,5 @@ include 'includes/sidebar.php';
             lucide.createIcons();
         }
     </script>
+
+<script src="assets/js/feed-extras.js?v=2" defer></script>

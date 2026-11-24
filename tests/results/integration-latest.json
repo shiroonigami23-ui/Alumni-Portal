@@ -1,13 +1,13 @@
 {
     "meta": {
-        "run": "34db50",
-        "date": "2026-11-24T02:41:11+00:00",
+        "run": "12e770",
+        "date": "2026-11-24T03:34:11+00:00",
         "base": "http://127.0.0.1:8099",
         "php": "8.3.6",
-        "passed": 120,
-        "total": 120,
-        "median_ms": 2.3,
-        "p95_ms": 252.4
+        "passed": 185,
+        "total": 185,
+        "median_ms": 2.7,
+        "p95_ms": 251.1
     },
     "results": [
         {
@@ -15,7 +15,7 @@
             "name": "Health check /healthz",
             "pass": true,
             "code": 200,
-            "ms": 1.6,
+            "ms": 1.7,
             "note": ""
         },
         {
@@ -23,7 +23,7 @@
             "name": "Admin can sign in",
             "pass": true,
             "code": 200,
-            "ms": 76.4,
+            "ms": 74.5,
             "note": ""
         },
         {
@@ -31,7 +31,7 @@
             "name": "Wrong password is rejected (401)",
             "pass": true,
             "code": 401,
-            "ms": 66.2,
+            "ms": 71,
             "note": ""
         },
         {
@@ -39,7 +39,7 @@
             "name": "API without token is rejected (401)",
             "pass": true,
             "code": 401,
-            "ms": 5.5,
+            "ms": 6,
             "note": ""
         },
         {
@@ -47,7 +47,7 @@
             "name": "Invalid token is rejected (401)",
             "pass": true,
             "code": 401,
-            "ms": 5.6,
+            "ms": 5.5,
             "note": ""
         },
         {
@@ -55,7 +55,7 @@
             "name": "me.php returns the signed-in user",
             "pass": true,
             "code": 200,
-            "ms": 3,
+            "ms": 3.3,
             "note": ""
         },
         {
@@ -63,7 +63,7 @@
             "name": "CSRF token issued",
             "pass": true,
             "code": 200,
-            "ms": 1.2,
+            "ms": 1.8,
             "note": ""
         },
         {
@@ -71,7 +71,7 @@
             "name": "Student can register",
             "pass": true,
             "code": 201,
-            "ms": 252.4,
+            "ms": 275.9,
             "note": ""
         },
         {
@@ -79,7 +79,7 @@
             "name": "Alumnus can register",
             "pass": true,
             "code": 201,
-            "ms": 260.3,
+            "ms": 269.9,
             "note": ""
         },
         {
@@ -87,7 +87,7 @@
             "name": "Duplicate email is rejected",
             "pass": true,
             "code": 400,
-            "ms": 1,
+            "ms": 1.4,
             "note": ""
         },
         {
@@ -95,7 +95,7 @@
             "name": "Admin generates an alumni invite code",
             "pass": true,
             "code": 200,
-            "ms": 2.2,
+            "ms": 2.9,
             "note": ""
         },
         {
@@ -103,7 +103,7 @@
             "name": "Invite code verifies the alumnus instantly",
             "pass": true,
             "code": 201,
-            "ms": 243.7,
+            "ms": 267.7,
             "note": ""
         },
         {
@@ -111,7 +111,7 @@
             "name": "Invited alumnus can sign in without approval",
             "pass": true,
             "code": 200,
-            "ms": 241.1,
+            "ms": 263.6,
             "note": ""
         },
         {
@@ -119,7 +119,7 @@
             "name": "A used invite code cannot be reused",
             "pass": true,
             "code": 400,
-            "ms": 245,
+            "ms": 261.8,
             "note": ""
         },
         {
@@ -127,15 +127,15 @@
             "name": "Invite list shows the code as used",
             "pass": true,
             "code": 200,
-            "ms": 2.2,
+            "ms": 1.9,
             "note": ""
         },
         {
             "area": "admin",
-            "name": "Admin approves new account (it.alumni.34db50@example.com)",
+            "name": "Admin approves new account (it.alumni.12e770@example.com)",
             "pass": true,
             "code": 200,
-            "ms": 9.3,
+            "ms": 5.5,
             "note": ""
         },
         {
@@ -143,7 +143,7 @@
             "name": "Admin user search finds new accounts",
             "pass": true,
             "code": 200,
-            "ms": 4.1,
+            "ms": 4,
             "note": ""
         },
         {
@@ -151,7 +151,7 @@
             "name": "New student can sign in",
             "pass": true,
             "code": 200,
-            "ms": 252.5,
+            "ms": 251.1,
             "note": ""
         },
         {
@@ -159,7 +159,7 @@
             "name": "New alumnus can sign in",
             "pass": true,
             "code": 200,
-            "ms": 270.8,
+            "ms": 251.1,
             "note": ""
         },
         {
@@ -167,7 +167,7 @@
             "name": "Alumnus updates profile",
             "pass": true,
             "code": 200,
-            "ms": 2.9,
+            "ms": 3.2,
             "note": ""
         },
         {
@@ -175,7 +175,7 @@
             "name": "Profile changes are visible to others",
             "pass": true,
             "code": 200,
-            "ms": 8.5,
+            "ms": 13.4,
             "note": ""
         },
         {
@@ -183,7 +183,7 @@
             "name": "Avatar upload (PNG)",
             "pass": true,
             "code": 200,
-            "ms": 5.6,
+            "ms": 4.5,
             "note": ""
         },
         {
@@ -191,7 +191,7 @@
             "name": "Cover photo upload",
             "pass": true,
             "code": 200,
-            "ms": 4.7,
+            "ms": 2.6,
             "note": ""
         },
         {
@@ -199,7 +199,7 @@
             "name": "Make profile private",
             "pass": true,
             "code": 200,
-            "ms": 2.1,
+            "ms": 2,
             "note": ""
         },
         {
@@ -207,7 +207,7 @@
             "name": "Make profile public again",
             "pass": true,
             "code": 200,
-            "ms": 1.4,
+            "ms": 2.4,
             "note": ""
         },
         {
@@ -215,7 +215,7 @@
             "name": "Change password",
             "pass": true,
             "code": 200,
-            "ms": 769.2,
+            "ms": 797.4,
             "note": ""
         },
         {
@@ -223,7 +223,7 @@
             "name": "Change password with wrong current password fails",
             "pass": true,
             "code": 400,
-            "ms": 250.8,
+            "ms": 263.3,
             "note": ""
         },
         {
@@ -231,7 +231,7 @@
             "name": "Sign in with the new password",
             "pass": true,
             "code": 200,
-            "ms": 253.7,
+            "ms": 266.4,
             "note": ""
         },
         {
@@ -239,7 +239,7 @@
             "name": "Alumnus creates a post",
             "pass": true,
             "code": 200,
-            "ms": 5.3,
+            "ms": 5.7,
             "note": "(queued for moderator review)"
         },
         {
@@ -247,7 +247,7 @@
             "name": "Admin approves the queued post",
             "pass": true,
             "code": 200,
-            "ms": 3.2,
+            "ms": 3.6,
             "note": ""
         },
         {
@@ -255,7 +255,7 @@
             "name": "Students cannot create top-level posts (rule)",
             "pass": true,
             "code": 403,
-            "ms": 1.3,
+            "ms": 1.4,
             "note": ""
         },
         {
@@ -263,7 +263,7 @@
             "name": "Feed loads and shows the new post",
             "pass": true,
             "code": 200,
-            "ms": 7.2,
+            "ms": 17.3,
             "note": ""
         },
         {
@@ -271,7 +271,7 @@
             "name": "Author edits the post",
             "pass": true,
             "code": 200,
-            "ms": 3.9,
+            "ms": 3.8,
             "note": ""
         },
         {
@@ -279,7 +279,7 @@
             "name": "Others cannot edit someone else's post",
             "pass": true,
             "code": 403,
-            "ms": 1.2,
+            "ms": 1.4,
             "note": ""
         },
         {
@@ -287,7 +287,7 @@
             "name": "Like / react to a post",
             "pass": true,
             "code": 200,
-            "ms": 2.8,
+            "ms": 3,
             "note": ""
         },
         {
@@ -295,7 +295,7 @@
             "name": "Comment on a post",
             "pass": true,
             "code": 200,
-            "ms": 2.9,
+            "ms": 3.2,
             "note": ""
         },
         {
@@ -311,7 +311,7 @@
             "name": "Comments load",
             "pass": true,
             "code": 200,
-            "ms": 3,
+            "ms": 2.9,
             "note": ""
         },
         {
@@ -319,7 +319,7 @@
             "name": "Edit own comment",
             "pass": true,
             "code": 200,
-            "ms": 2.2,
+            "ms": 2.5,
             "note": ""
         },
         {
@@ -327,7 +327,7 @@
             "name": "Repost",
             "pass": true,
             "code": 200,
-            "ms": 2.3,
+            "ms": 2.5,
             "note": ""
         },
         {
@@ -335,7 +335,7 @@
             "name": "Share",
             "pass": true,
             "code": 200,
-            "ms": 1.5,
+            "ms": 1.4,
             "note": ""
         },
         {
@@ -343,7 +343,7 @@
             "name": "View is tracked",
             "pass": true,
             "code": 200,
-            "ms": 2.3,
+            "ms": 2.5,
             "note": ""
         },
         {
@@ -351,7 +351,7 @@
             "name": "Author pins the post to their profile",
             "pass": true,
             "code": 200,
-            "ms": 2.9,
+            "ms": 3.1,
             "note": ""
         },
         {
@@ -359,7 +359,7 @@
             "name": "Cannot pin someone else's post",
             "pass": true,
             "code": 403,
-            "ms": 1.3,
+            "ms": 1.2,
             "note": ""
         },
         {
@@ -383,7 +383,7 @@
             "name": "Delete own comment",
             "pass": true,
             "code": 200,
-            "ms": 3.5,
+            "ms": 3.3,
             "note": ""
         },
         {
@@ -391,7 +391,7 @@
             "name": "Start a conversation",
             "pass": true,
             "code": 200,
-            "ms": 1.6,
+            "ms": 1.7,
             "note": ""
         },
         {
@@ -399,7 +399,7 @@
             "name": "Send a message",
             "pass": true,
             "code": 200,
-            "ms": 5.3,
+            "ms": 5.7,
             "note": ""
         },
         {
@@ -407,7 +407,7 @@
             "name": "Recipient sees unread count",
             "pass": true,
             "code": 200,
-            "ms": 1.5,
+            "ms": 1.4,
             "note": ""
         },
         {
@@ -415,7 +415,7 @@
             "name": "Recipient reads the conversation",
             "pass": true,
             "code": 200,
-            "ms": 3.2,
+            "ms": 3.3,
             "note": ""
         },
         {
@@ -423,7 +423,7 @@
             "name": "Reply",
             "pass": true,
             "code": 200,
-            "ms": 3,
+            "ms": 3.1,
             "note": ""
         },
         {
@@ -431,7 +431,7 @@
             "name": "Conversation list",
             "pass": true,
             "code": 200,
-            "ms": 4,
+            "ms": 4.3,
             "note": ""
         },
         {
@@ -439,7 +439,7 @@
             "name": "Edit own message",
             "pass": true,
             "code": 200,
-            "ms": 2.5,
+            "ms": 2.7,
             "note": ""
         },
         {
@@ -447,7 +447,7 @@
             "name": "Cannot edit someone else's message",
             "pass": true,
             "code": 403,
-            "ms": 1.3,
+            "ms": 1,
             "note": ""
         },
         {
@@ -455,7 +455,7 @@
             "name": "Delete own message",
             "pass": true,
             "code": 200,
-            "ms": 1.9,
+            "ms": 1.6,
             "note": ""
         },
         {
@@ -463,7 +463,7 @@
             "name": "Follow / connect with an alumnus",
             "pass": true,
             "code": 200,
-            "ms": 2.1,
+            "ms": 2.2,
             "note": ""
         },
         {
@@ -471,7 +471,7 @@
             "name": "Directory search finds the alumnus",
             "pass": true,
             "code": 200,
-            "ms": 9.9,
+            "ms": 9.8,
             "note": ""
         },
         {
@@ -487,7 +487,7 @@
             "name": "Featured alumni",
             "pass": true,
             "code": 200,
-            "ms": 0.9,
+            "ms": 0.7,
             "note": ""
         },
         {
@@ -495,7 +495,7 @@
             "name": "Connections count",
             "pass": true,
             "code": 200,
-            "ms": 1.3,
+            "ms": 1.5,
             "note": ""
         },
         {
@@ -503,7 +503,7 @@
             "name": "Alumnus posts a job",
             "pass": true,
             "code": 201,
-            "ms": 3.3,
+            "ms": 4.2,
             "note": ""
         },
         {
@@ -511,7 +511,7 @@
             "name": "Jobs list shows it",
             "pass": true,
             "code": 200,
-            "ms": 2.3,
+            "ms": 2.8,
             "note": ""
         },
         {
@@ -519,7 +519,7 @@
             "name": "Student applies with résumé",
             "pass": true,
             "code": 200,
-            "ms": 4.5,
+            "ms": 4.7,
             "note": ""
         },
         {
@@ -527,7 +527,7 @@
             "name": "Poster sees applicants",
             "pass": true,
             "code": 200,
-            "ms": 1.6,
+            "ms": 2,
             "note": ""
         },
         {
@@ -535,7 +535,7 @@
             "name": "Others cannot see applicants",
             "pass": true,
             "code": 403,
-            "ms": 0.9,
+            "ms": 1.2,
             "note": ""
         },
         {
@@ -543,7 +543,7 @@
             "name": "Applying twice is blocked",
             "pass": true,
             "code": 409,
-            "ms": 1.6,
+            "ms": 1.5,
             "note": ""
         },
         {
@@ -551,7 +551,7 @@
             "name": "Job shows “applied” for the student and hides poster email",
             "pass": true,
             "code": 200,
-            "ms": 2.2,
+            "ms": 2,
             "note": ""
         },
         {
@@ -559,7 +559,7 @@
             "name": "Poster edits the job",
             "pass": true,
             "code": 200,
-            "ms": 2.5,
+            "ms": 2.8,
             "note": ""
         },
         {
@@ -567,7 +567,7 @@
             "name": "Others cannot delete the job",
             "pass": true,
             "code": 403,
-            "ms": 1,
+            "ms": 1.3,
             "note": ""
         },
         {
@@ -575,7 +575,7 @@
             "name": "Poster closes the job",
             "pass": true,
             "code": 200,
-            "ms": 1.3,
+            "ms": 1.7,
             "note": ""
         },
         {
@@ -583,7 +583,7 @@
             "name": "Invalid job is rejected with a clear message",
             "pass": true,
             "code": 400,
-            "ms": 1,
+            "ms": 1.1,
             "note": ""
         },
         {
@@ -591,7 +591,7 @@
             "name": "Poster deletes the job",
             "pass": true,
             "code": 200,
-            "ms": 2.1,
+            "ms": 2.8,
             "note": ""
         },
         {
@@ -599,7 +599,7 @@
             "name": "Create an event",
             "pass": true,
             "code": 201,
-            "ms": 4.1,
+            "ms": 3.5,
             "note": ""
         },
         {
@@ -607,7 +607,7 @@
             "name": "Events list shows it",
             "pass": true,
             "code": 200,
-            "ms": 3,
+            "ms": 3.2,
             "note": ""
         },
         {
@@ -615,7 +615,7 @@
             "name": "RSVP",
             "pass": true,
             "code": 200,
-            "ms": 2.1,
+            "ms": 2.2,
             "note": ""
         },
         {
@@ -623,7 +623,7 @@
             "name": "Attendee list",
             "pass": true,
             "code": 200,
-            "ms": 1,
+            "ms": 0.9,
             "note": ""
         },
         {
@@ -631,7 +631,7 @@
             "name": "Cancel RSVP",
             "pass": true,
             "code": 200,
-            "ms": 1.9,
+            "ms": 2.1,
             "note": ""
         },
         {
@@ -639,7 +639,7 @@
             "name": "Upcoming events count",
             "pass": true,
             "code": 200,
-            "ms": 1.2,
+            "ms": 1.3,
             "note": ""
         },
         {
@@ -655,7 +655,7 @@
             "name": "List mentors",
             "pass": true,
             "code": 200,
-            "ms": 2.6,
+            "ms": 3.1,
             "note": ""
         },
         {
@@ -663,7 +663,7 @@
             "name": "Alumnus applies to be a mentor",
             "pass": true,
             "code": 200,
-            "ms": 2.8,
+            "ms": 3.5,
             "note": ""
         },
         {
@@ -671,7 +671,7 @@
             "name": "Notifications load",
             "pass": true,
             "code": 200,
-            "ms": 3.1,
+            "ms": 2.9,
             "note": ""
         },
         {
@@ -687,7 +687,7 @@
             "name": "Unread notifications count",
             "pass": true,
             "code": 200,
-            "ms": 1.1,
+            "ms": 1.3,
             "note": ""
         },
         {
@@ -703,7 +703,7 @@
             "name": "Students cannot publish offers",
             "pass": true,
             "code": 403,
-            "ms": 1.1,
+            "ms": 1.6,
             "note": ""
         },
         {
@@ -719,7 +719,7 @@
             "name": "Too-short pitch is rejected with guidance",
             "pass": true,
             "code": 400,
-            "ms": 1.2,
+            "ms": 1.3,
             "note": ""
         },
         {
@@ -735,7 +735,7 @@
             "name": "Duplicate request is blocked",
             "pass": true,
             "code": 409,
-            "ms": 1.6,
+            "ms": 1.7,
             "note": ""
         },
         {
@@ -751,7 +751,7 @@
             "name": "Others cannot see the requests",
             "pass": true,
             "code": 403,
-            "ms": 1.1,
+            "ms": 1.3,
             "note": ""
         },
         {
@@ -759,7 +759,7 @@
             "name": "Owner marks as referred",
             "pass": true,
             "code": 200,
-            "ms": 3,
+            "ms": 2.3,
             "note": ""
         },
         {
@@ -767,7 +767,7 @@
             "name": "Student sees status “referred”",
             "pass": true,
             "code": 200,
-            "ms": 1.5,
+            "ms": 1.6,
             "note": ""
         },
         {
@@ -783,7 +783,7 @@
             "name": "Admin can remove an offer",
             "pass": true,
             "code": 200,
-            "ms": 2.6,
+            "ms": 2.9,
             "note": ""
         },
         {
@@ -791,7 +791,7 @@
             "name": "Atlas aggregates load",
             "pass": true,
             "code": 200,
-            "ms": 3.1,
+            "ms": 2.5,
             "note": ""
         },
         {
@@ -799,7 +799,7 @@
             "name": "Atlas lists alumni in Bengaluru",
             "pass": true,
             "code": 200,
-            "ms": 1.7,
+            "ms": 1.9,
             "note": ""
         },
         {
@@ -815,7 +815,7 @@
             "name": "Non-admins cannot see admin stats",
             "pass": true,
             "code": 403,
-            "ms": 1,
+            "ms": 1.1,
             "note": ""
         },
         {
@@ -823,7 +823,7 @@
             "name": "Insights dashboard data",
             "pass": true,
             "code": 200,
-            "ms": 4.8,
+            "ms": 5.9,
             "note": ""
         },
         {
@@ -831,7 +831,7 @@
             "name": "Non-admins blocked from insights",
             "pass": true,
             "code": 403,
-            "ms": 1,
+            "ms": 1.1,
             "note": ""
         },
         {
@@ -839,7 +839,7 @@
             "name": "Publish site banner",
             "pass": true,
             "code": 200,
-            "ms": 2.1,
+            "ms": 2.7,
             "note": ""
         },
         {
@@ -847,7 +847,7 @@
             "name": "Banner is public on every page",
             "pass": true,
             "code": 200,
-            "ms": 0.7,
+            "ms": 1,
             "note": ""
         },
         {
@@ -855,7 +855,7 @@
             "name": "Clear site banner",
             "pass": true,
             "code": 200,
-            "ms": 1.6,
+            "ms": 2.5,
             "note": ""
         },
         {
@@ -863,7 +863,7 @@
             "name": "Broadcast to students",
             "pass": true,
             "code": 200,
-            "ms": 2.1,
+            "ms": 2.4,
             "note": ""
         },
         {
@@ -879,7 +879,7 @@
             "name": "Export alumni CSV",
             "pass": true,
             "code": 200,
-            "ms": 2.5,
+            "ms": 2.7,
             "note": ""
         },
         {
@@ -887,7 +887,7 @@
             "name": "Audit log",
             "pass": true,
             "code": 200,
-            "ms": 1.6,
+            "ms": 1.4,
             "note": ""
         },
         {
@@ -895,7 +895,7 @@
             "name": "Upload an image attachment",
             "pass": true,
             "code": 200,
-            "ms": 2.7,
+            "ms": 2.1,
             "note": ""
         },
         {
@@ -911,7 +911,7 @@
             "name": "Double extension is blocked (415)",
             "pass": true,
             "code": 415,
-            "ms": 0.6,
+            "ms": 0.5,
             "note": ""
         },
         {
@@ -919,7 +919,7 @@
             "name": "Fake PDF is blocked (415)",
             "pass": true,
             "code": 415,
-            "ms": 8.7,
+            "ms": 2.3,
             "note": ""
         },
         {
@@ -927,7 +927,7 @@
             "name": "Hostile origin gets no CORS header",
             "pass": true,
             "code": 200,
-            "ms": 1.6,
+            "ms": 1.3,
             "note": ""
         },
         {
@@ -935,7 +935,7 @@
             "name": "Pages send a Content-Security-Policy",
             "pass": true,
             "code": 200,
-            "ms": 1.7,
+            "ms": 1.4,
             "note": ""
         },
         {
@@ -951,7 +951,527 @@
             "name": "Cannot delete someone else's post",
             "pass": true,
             "code": 403,
+            "ms": 1.5,
+            "note": ""
+        },
+        {
+            "area": "social",
+            "name": "Admin publishes a post instantly",
+            "pass": true,
+            "code": 200,
+            "ms": 4.5,
+            "note": ""
+        },
+        {
+            "area": "social",
+            "name": "Like increments the like count",
+            "pass": true,
+            "code": 200,
+            "ms": 9,
+            "note": ""
+        },
+        {
+            "area": "social",
+            "name": "Liking again removes the like (toggle)",
+            "pass": true,
+            "code": 200,
+            "ms": 8.6,
+            "note": ""
+        },
+        {
+            "area": "social",
+            "name": "React to a comment",
+            "pass": true,
+            "code": 200,
+            "ms": 3.1,
+            "note": ""
+        },
+        {
+            "area": "social",
+            "name": "For-you (personalised hype) feed loads",
+            "pass": true,
+            "code": 200,
+            "ms": 8,
+            "note": ""
+        },
+        {
+            "area": "social",
+            "name": "Trending (time-decayed hype) feed loads",
+            "pass": true,
+            "code": 200,
+            "ms": 7.3,
+            "note": ""
+        },
+        {
+            "area": "social",
+            "name": "Most-popular feed loads",
+            "pass": true,
+            "code": 200,
+            "ms": 8.7,
+            "note": ""
+        },
+        {
+            "area": "social",
+            "name": "Trending ranks an engaged post above a newer silent one",
+            "pass": true,
+            "code": 200,
+            "ms": 5.6,
+            "note": ""
+        },
+        {
+            "area": "social",
+            "name": "Following feed shows posts from people you follow",
+            "pass": true,
+            "code": 200,
+            "ms": 4.9,
+            "note": ""
+        },
+        {
+            "area": "social",
+            "name": "Following feed excludes people you don't follow",
+            "pass": true,
+            "code": 200,
+            "ms": 4.2,
+            "note": ""
+        },
+        {
+            "area": "reports",
+            "name": "Report a post",
+            "pass": true,
+            "code": 200,
+            "ms": 5.5,
+            "note": ""
+        },
+        {
+            "area": "reports",
+            "name": "One report per person per post",
+            "pass": true,
+            "code": 200,
+            "ms": 2.4,
+            "note": ""
+        },
+        {
+            "area": "reports",
+            "name": "Admin sees the report",
+            "pass": true,
+            "code": 200,
+            "ms": 2,
+            "note": ""
+        },
+        {
+            "area": "reports",
+            "name": "Admin dismisses the report",
+            "pass": true,
+            "code": 200,
+            "ms": 2.3,
+            "note": ""
+        },
+        {
+            "area": "calls",
+            "name": "1:1 video call creates a Jitsi room",
+            "pass": true,
+            "code": 200,
+            "ms": 3.6,
+            "note": ""
+        },
+        {
+            "area": "calls",
+            "name": "Callee gets a call notification",
+            "pass": true,
+            "code": 200,
             "ms": 1.6,
+            "note": ""
+        },
+        {
+            "area": "mentor",
+            "name": "Alumnus applies to mentor",
+            "pass": true,
+            "code": 200,
+            "ms": 2.5,
+            "note": ""
+        },
+        {
+            "area": "mentor",
+            "name": "Admin approves the mentor",
+            "pass": true,
+            "code": 200,
+            "ms": 3.1,
+            "note": ""
+        },
+        {
+            "area": "mentor",
+            "name": "Student requests mentorship",
+            "pass": true,
+            "code": 200,
+            "ms": 6.7,
+            "note": ""
+        },
+        {
+            "area": "mentor",
+            "name": "Mentor sees the request",
+            "pass": true,
+            "code": 200,
+            "ms": 2.1,
+            "note": ""
+        },
+        {
+            "area": "mentor",
+            "name": "Mentor accepts → mentor group created",
+            "pass": true,
+            "code": 200,
+            "ms": 9.2,
+            "note": ""
+        },
+        {
+            "area": "mentor",
+            "name": "Mentor group appears in Messages",
+            "pass": true,
+            "code": 200,
+            "ms": 3.6,
+            "note": ""
+        },
+        {
+            "area": "mentor",
+            "name": "Send a group message",
+            "pass": true,
+            "code": 200,
+            "ms": 4.7,
+            "note": ""
+        },
+        {
+            "area": "mentor",
+            "name": "Mentor reads the group message",
+            "pass": true,
+            "code": 200,
+            "ms": 4.4,
+            "note": ""
+        },
+        {
+            "area": "mentor",
+            "name": "Start a group voice space",
+            "pass": true,
+            "code": 200,
+            "ms": 3.1,
+            "note": ""
+        },
+        {
+            "area": "mentor",
+            "name": "End the group voice space",
+            "pass": true,
+            "code": 200,
+            "ms": 2.9,
+            "note": ""
+        },
+        {
+            "area": "mentor",
+            "name": "Mentee leaves the group",
+            "pass": true,
+            "code": 200,
+            "ms": 2.8,
+            "note": ""
+        },
+        {
+            "area": "polls",
+            "name": "Can't add a poll to someone else's post",
+            "pass": true,
+            "code": 403,
+            "ms": 1.7,
+            "note": ""
+        },
+        {
+            "area": "polls",
+            "name": "Create a poll (no expiry)",
+            "pass": true,
+            "code": 200,
+            "ms": 3.8,
+            "note": ""
+        },
+        {
+            "area": "polls",
+            "name": "Feed carries the poll with options",
+            "pass": true,
+            "code": 200,
+            "ms": 8.2,
+            "note": ""
+        },
+        {
+            "area": "polls",
+            "name": "Vote (no-expiry polls are open)",
+            "pass": true,
+            "code": 200,
+            "ms": 3.7,
+            "note": ""
+        },
+        {
+            "area": "polls",
+            "name": "Second vote is blocked",
+            "pass": true,
+            "code": 409,
+            "ms": 2.4,
+            "note": ""
+        },
+        {
+            "area": "polls",
+            "name": "Option from another poll is rejected",
+            "pass": true,
+            "code": 400,
+            "ms": 1.6,
+            "note": ""
+        },
+        {
+            "area": "polls",
+            "name": "Author closes the poll",
+            "pass": true,
+            "code": 200,
+            "ms": 3.5,
+            "note": ""
+        },
+        {
+            "area": "polls",
+            "name": "Closed poll refuses votes",
+            "pass": true,
+            "code": 409,
+            "ms": 1.4,
+            "note": ""
+        },
+        {
+            "area": "schedule",
+            "name": "Students cannot schedule top-level posts",
+            "pass": true,
+            "code": 403,
+            "ms": 1.8,
+            "note": ""
+        },
+        {
+            "area": "schedule",
+            "name": "Times in the past / too soon are rejected",
+            "pass": true,
+            "code": 400,
+            "ms": 1.6,
+            "note": ""
+        },
+        {
+            "area": "schedule",
+            "name": "Schedule a post with a poll",
+            "pass": true,
+            "code": 201,
+            "ms": 4,
+            "note": ""
+        },
+        {
+            "area": "schedule",
+            "name": "It is listed as pending",
+            "pass": true,
+            "code": 200,
+            "ms": 2.5,
+            "note": ""
+        },
+        {
+            "area": "schedule",
+            "name": "Reschedule",
+            "pass": true,
+            "code": 200,
+            "ms": 2.2,
+            "note": ""
+        },
+        {
+            "area": "schedule",
+            "name": "Cancel a scheduled post",
+            "pass": true,
+            "code": 200,
+            "ms": 2.5,
+            "note": ""
+        },
+        {
+            "area": "schedule",
+            "name": "Can't touch someone else's schedule",
+            "pass": true,
+            "code": 404,
+            "ms": 1.5,
+            "note": ""
+        },
+        {
+            "area": "schedule",
+            "name": "Cron publishes due posts",
+            "pass": true,
+            "code": null,
+            "ms": null,
+            "note": "[2026-11-24T09:04:11+05:30] publish: published=1 (7 ms)"
+        },
+        {
+            "area": "schedule",
+            "name": "Published post is on the feed with its poll",
+            "pass": true,
+            "code": 200,
+            "ms": 7.2,
+            "note": ""
+        },
+        {
+            "area": "schedule",
+            "name": "Schedule shows it as published",
+            "pass": true,
+            "code": 200,
+            "ms": 1.6,
+            "note": ""
+        },
+        {
+            "area": "cron",
+            "name": "cron/run.php --job=promote runs cleanly",
+            "pass": true,
+            "code": null,
+            "ms": null,
+            "note": "[2026-11-24T09:04:11+05:30] promote: promoted=0 (2 ms)"
+        },
+        {
+            "area": "cron",
+            "name": "cron/run.php --job=purge runs cleanly",
+            "pass": true,
+            "code": null,
+            "ms": null,
+            "note": "[2026-11-24T09:04:11+05:30] purge: purged=0 (1 ms)"
+        },
+        {
+            "area": "cron",
+            "name": "cron/run.php --job=archive runs cleanly",
+            "pass": true,
+            "code": null,
+            "ms": null,
+            "note": "[2026-11-24T09:04:11+05:30] archive: skipped (ARCHIVE_ENABLED is not true) (0 ms)"
+        },
+        {
+            "area": "cron",
+            "name": "Archive is a dry run unless --apply",
+            "pass": true,
+            "code": null,
+            "ms": null,
+            "note": "DRY RUN: 0 post(s) older than 365 days would be archived. Re-run with --apply."
+        },
+        {
+            "area": "live",
+            "name": "Students cannot host live sessions",
+            "pass": true,
+            "code": 403,
+            "ms": 5.6,
+            "note": ""
+        },
+        {
+            "area": "live",
+            "name": "Bad YouTube link / short title rejected",
+            "pass": true,
+            "code": 400,
+            "ms": 2.1,
+            "note": ""
+        },
+        {
+            "area": "live",
+            "name": "Alumnus goes live (Jitsi room)",
+            "pass": true,
+            "code": 200,
+            "ms": 4.9,
+            "note": ""
+        },
+        {
+            "area": "live",
+            "name": "Viewers see the live session",
+            "pass": true,
+            "code": 200,
+            "ms": 2.6,
+            "note": ""
+        },
+        {
+            "area": "live",
+            "name": "Stream keys are never exposed",
+            "pass": true,
+            "code": 200,
+            "ms": 2.6,
+            "note": ""
+        },
+        {
+            "area": "live",
+            "name": "Switch to a YouTube Live embed",
+            "pass": true,
+            "code": 200,
+            "ms": 4.6,
+            "note": ""
+        },
+        {
+            "area": "live",
+            "name": "End the session",
+            "pass": true,
+            "code": 200,
+            "ms": 2.9,
+            "note": ""
+        },
+        {
+            "area": "library",
+            "name": "Alumnus shares a success story",
+            "pass": true,
+            "code": 201,
+            "ms": 4,
+            "note": ""
+        },
+        {
+            "area": "library",
+            "name": "Unapproved story is not public",
+            "pass": true,
+            "code": 200,
+            "ms": 2.2,
+            "note": ""
+        },
+        {
+            "area": "library",
+            "name": "Only admins approve stories",
+            "pass": true,
+            "code": 403,
+            "ms": 1.1,
+            "note": ""
+        },
+        {
+            "area": "library",
+            "name": "Approved story is public",
+            "pass": true,
+            "code": 200,
+            "ms": 1.8,
+            "note": ""
+        },
+        {
+            "area": "library",
+            "name": "Non-https resource links are rejected",
+            "pass": true,
+            "code": 400,
+            "ms": 1.5,
+            "note": ""
+        },
+        {
+            "area": "library",
+            "name": "Share a resource",
+            "pass": true,
+            "code": 201,
+            "ms": 2.1,
+            "note": ""
+        },
+        {
+            "area": "library",
+            "name": "Open a resource (counted)",
+            "pass": true,
+            "code": 200,
+            "ms": 1.4,
+            "note": ""
+        },
+        {
+            "area": "library",
+            "name": "Can't delete someone else's resource",
+            "pass": true,
+            "code": 403,
+            "ms": 1.2,
+            "note": ""
+        },
+        {
+            "area": "library",
+            "name": "Owner deletes the resource",
+            "pass": true,
+            "code": 200,
+            "ms": 1.4,
             "note": ""
         },
         {
@@ -959,7 +1479,7 @@
             "name": "Author deletes the post",
             "pass": true,
             "code": 200,
-            "ms": 3.7,
+            "ms": 3,
             "note": ""
         },
         {
@@ -967,7 +1487,7 @@
             "name": "Deleted post is gone from the feed",
             "pass": true,
             "code": 200,
-            "ms": 6,
+            "ms": 5.8,
             "note": ""
         }
     ]

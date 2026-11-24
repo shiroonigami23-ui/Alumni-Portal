@@ -461,6 +461,200 @@ check('security', 'Internal files are hidden (404)', $r['code'] === 404, $r);
 $r = http('POST', 'api/delete_post.php', $S, ['post_id' => $postId]);
 check('security', "Cannot delete someone else's post", !ok($r), $r);
 
+/* ------------------------------------------------- social: likes, follow, hype */
+$r = http('POST', 'api/create_post.php', $AD, ['content' => "Social post $RUN", 'post_type' => 'text']);
+$sp = find_id($r['json'], ['post_id']);
+check('social', 'Admin publishes a post instantly', ok($r) && $sp, $r);
+$r = http('POST', 'api/react_to_post.php', $S, ['post_id' => $sp, 'reaction_type' => 'like']);
+$r2 = http('GET', 'api/get_feed.php?page=1&sort=newest', $S);
+$row = array_values(array_filter($r2['json']['data'] ?? [], fn ($x) => (int)$x['id'] === (int)$sp))[0] ?? [];
+$likesAfter = (int)($row['likes_count'] ?? $row['reaction_count'] ?? 0);
+check('social', 'Like increments the like count', ok($r) && ($r['json']['liked'] ?? false) === true && $likesAfter === 1, $r2);
+$r = http('POST', 'api/react_to_post.php', $S, ['post_id' => $sp]);
+$r2 = http('GET', 'api/get_feed.php?page=1&sort=newest', $S);
+$row = array_values(array_filter($r2['json']['data'] ?? [], fn ($x) => (int)$x['id'] === (int)$sp))[0] ?? [];
+check('social', 'Liking again removes the like (toggle)', ok($r) && ($r['json']['liked'] ?? true) === false && (int)($row['likes_count'] ?? $row['reaction_count'] ?? 1) === 0, $r2);
+$r = http('POST', 'api/create_comment.php', $S, ['post_id' => $sp, 'content' => "Nice $RUN"]);
+$cid = find_id($r['json'], ['comment_id', 'id']);
+$r = http('POST', 'api/react_to_comment.php', $A, ['comment_id' => $cid, 'reaction' => 'like']);
+check('social', 'React to a comment', ok($r), $r);
+foreach (['for_you' => 'For-you (personalised hype) feed', 'trending' => 'Trending (time-decayed hype) feed', 'popular' => 'Most-popular feed'] as $sort => $label) {
+    $r = http('GET', "api/get_feed.php?page=1&sort=$sort", $S);
+    check('social', $label . ' loads', ok($r) && count($r['json']['data'] ?? []) > 0, $r);
+}
+$r = http('POST', 'api/create_post.php', $AD, ['content' => "Hot post $RUN", 'post_type' => 'text']);
+$hot = find_id($r['json'], ['post_id']);
+foreach ([$S, $A] as $tk) {
+    http('POST', 'api/react_to_post.php', $tk, ['post_id' => $hot]);
+    http('POST', 'api/create_comment.php', $tk, ['post_id' => $hot, 'content' => 'wow']);
+}
+$r = http('POST', 'api/create_post.php', $AD, ['content' => "Cold post $RUN", 'post_type' => 'text']);
+$cold = find_id($r['json'], ['post_id']);
+$pos = function (array $resp, $id) { foreach ($resp['json']['data'] ?? [] as $i => $x) { if ((int)$x['id'] === (int)$id) { return $i; } } return 999; };
+$rn = http('GET', 'api/get_feed.php?page=1&sort=newest', $S);
+$rt = http('GET', 'api/get_feed.php?page=1&sort=trending', $S);
+check('social', 'Trending ranks an engaged post above a newer silent one', $pos($rn, $cold) < $pos($rn, $hot) && $pos($rt, $hot) < $pos($rt, $cold), $rt);
+$r = http('POST', 'api/create_post.php', $A, ['content' => "From someone you follow $RUN", 'post_type' => 'text']);
+$fp = find_id($r['json'], ['post_id']);
+http('POST', 'api/moderation_queue.php', $AD, ['post_id' => $fp, 'action' => 'approve']);
+$r = http('GET', 'api/get_feed.php?page=1&filter=following', $S);
+check('social', 'Following feed shows posts from people you follow', ok($r) && str_contains($r['text'], "From someone you follow $RUN"), $r);
+$r = http('GET', 'api/get_feed.php?page=1&filter=following', $AD);
+check('social', "Following feed excludes people you don't follow", ok($r) && !str_contains($r['text'], "From someone you follow $RUN"), $r);
+
+/* ------------------------------------------------------------ reports */
+$r = http('POST', 'api/report_content.php', $S, ['post_id' => $fp, 'reason' => 'spam', 'custom_reason' => 'Test report']);
+check('reports', 'Report a post', ok($r), $r);
+$r = http('POST', 'api/report_content.php', $S, ['post_id' => $fp, 'reason' => 'spam']);
+check('reports', 'One report per person per post', !ok($r) || stripos(msg($r), 'already') !== false, $r);
+$r = http('GET', 'api/get_reports.php', $AD);
+$repId = null;
+foreach ((array)($r['json']['data'] ?? $r['json']) as $rep) {
+    if (is_array($rep) && (int)($rep['reported_post_id'] ?? $rep['post_id'] ?? 0) === (int)$fp) { $repId = $rep['report_id'] ?? null; }
+}
+check('reports', 'Admin sees the report', $r['code'] === 200 && $repId, $r);
+$r = http('POST', 'api/admin_report_action.php', $AD, ['report_id' => $repId, 'action' => 'dismiss']);
+check('reports', 'Admin dismisses the report', ok($r), $r);
+
+/* -------------------------------------------------------------- calls */
+$r = http('POST', 'api/start_call.php', $S, ['receiver_id' => $aid, 'call_type' => 'video']);
+check('calls', '1:1 video call creates a Jitsi room', ok($r) && str_contains($r['text'], 'jit.si'), $r);
+$r = http('GET', 'api/get_notifications.php', $A);
+check('calls', 'Callee gets a call notification', str_contains(strtolower($r['text']), 'call'), $r);
+
+/* -------------------------------------------- mentorship + group chat */
+$r = http('POST', 'api/mentorship.php?action=become_mentor', $A, ['headline' => 'Backend mentor', 'expertise' => 'PHP']);
+check('mentor', 'Alumnus applies to mentor', ok($r), $r);
+$r = http('POST', 'api/mentorship.php?action=review_application', $AD, ['mentor_user_id' => $aid, 'status' => 'approved']);
+check('mentor', 'Admin approves the mentor', ok($r), $r);
+$r = http('POST', 'api/mentorship.php?action=request', $S, ['mentor_id' => $aid, 'message' => 'Please mentor me']);
+check('mentor', 'Student requests mentorship', ok($r), $r);
+$r = http('GET', 'api/mentorship.php?action=list_requests', $A);
+$mreq = null;
+foreach ($r['json']['data'] ?? [] as $q) { if ((int)($q['mentee_id'] ?? 0) === $sid) { $mreq = $q['request_id']; } }
+check('mentor', 'Mentor sees the request', (bool)$mreq, $r);
+$r = http('POST', 'api/mentorship.php?action=respond', $A, ['request_id' => $mreq, 'status' => 'accepted']);
+check('mentor', 'Mentor accepts → mentor group created', ok($r), $r);
+$r = http('GET', 'api/get_conversations.php', $S);
+$gid = null;
+foreach ($r['json']['data'] ?? $r['json']['conversations'] ?? [] as $c) {
+    $cidv = (string)($c['conversation_id'] ?? $c['id'] ?? '');
+    if (str_starts_with($cidv, 'group:')) { $gid = substr($cidv, 6); }
+}
+check('mentor', 'Mentor group appears in Messages', (bool)$gid, $r);
+$r = http('POST', 'api/send_message.php', $S, ['conversation_id' => "group:$gid", 'message' => "Group hello $RUN"]);
+check('mentor', 'Send a group message', ok($r), $r);
+$r = http('GET', "api/get_messages.php?conversation_id=group:$gid", $A);
+check('mentor', 'Mentor reads the group message', ok($r) && str_contains($r['text'], "Group hello $RUN"), $r);
+$r = http('POST', 'api/start_call.php', $A, ['group_id' => (int)$gid, 'call_type' => 'audio']);
+check('mentor', 'Start a group voice space', ok($r), $r);
+$r = http('POST', 'api/end_group_call.php', $A, ['group_id' => (int)$gid]);
+check('mentor', 'End the group voice space', ok($r), $r);
+$r = http('POST', 'api/mentorship.php?action=leave_group', $S, ['group_id' => (int)$gid]);
+check('mentor', 'Mentee leaves the group', ok($r), $r);
+
+/* -------------------------------------------------------------- polls */
+$r = http('POST', 'api/create_post.php', $AD, ['content' => "Poll post $RUN"]);
+$pp = find_id($r['json'], ['post_id']);
+$r = http('POST', 'api/create_poll.php', $S, ['post_id' => $pp, 'question' => 'Hijack?', 'options' => ['a', 'b']]);
+check('polls', "Can't add a poll to someone else's post", $r['code'] === 403, $r);
+$r = http('POST', 'api/create_poll.php', $AD, ['post_id' => $pp, 'question' => 'Best city to work in?', 'options' => ['Pune', 'Bengaluru', 'Hyderabad']]);
+$pollId = $r['json']['poll_id'] ?? null;
+check('polls', 'Create a poll (no expiry)', ok($r) && $pollId, $r);
+$r = http('GET', 'api/get_feed.php?page=1&sort=newest', $S);
+$row = array_values(array_filter($r['json']['data'] ?? [], fn ($x) => (int)$x['id'] === (int)$pp))[0] ?? [];
+$opt = $row['poll']['options'][1]['option_id'] ?? null;
+check('polls', 'Feed carries the poll with options', $opt !== null && count($row['poll']['options']) === 3, $r);
+$r = http('POST', 'api/vote_poll.php', $S, ['poll_id' => $pollId, 'option_id' => $opt]);
+check('polls', 'Vote (no-expiry polls are open)', ok($r) && ($r['json']['poll']['my_vote'] ?? 0) === $opt, $r);
+$r = http('POST', 'api/vote_poll.php', $S, ['poll_id' => $pollId, 'option_id' => $opt]);
+check('polls', 'Second vote is blocked', $r['code'] === 409, $r);
+$r = http('POST', 'api/vote_poll.php', $A, ['poll_id' => $pollId, 'option_id' => 999999]);
+check('polls', "Option from another poll is rejected", $r['code'] === 400, $r);
+$r = http('POST', 'api/end_poll.php', $AD, ['poll_id' => $pollId]);
+check('polls', 'Author closes the poll', $r['code'] === 200, $r);
+$r = http('POST', 'api/vote_poll.php', $A, ['poll_id' => $pollId, 'option_id' => $opt]);
+check('polls', 'Closed poll refuses votes', $r['code'] === 409, $r);
+
+/* -------------------------------------------------- scheduled posts */
+$in = fn ($sec) => gmdate('c', time() + $sec);
+$r = http('POST', 'api/schedule_post.php', $S, ['content' => 'student schedule', 'publish_at' => $in(3600)]);
+check('schedule', 'Students cannot schedule top-level posts', $r['code'] === 403, $r);
+$r = http('POST', 'api/schedule_post.php', $AD, ['content' => 'too soon', 'publish_at' => $in(10)]);
+check('schedule', 'Times in the past / too soon are rejected', $r['code'] === 400, $r);
+$r = http('POST', 'api/schedule_post.php', $AD, ['content' => "Scheduled hello $RUN", 'publish_at' => $in(7200),
+    'poll' => ['question' => 'Coming to the meet?', 'options' => ['Yes', 'No']]]);
+$schId = $r['json']['scheduled_id'] ?? null;
+check('schedule', 'Schedule a post with a poll', ok($r) && $schId, $r);
+$r = http('GET', 'api/scheduled_posts.php', $AD);
+check('schedule', 'It is listed as pending', ok($r) && str_contains($r['text'], "Scheduled hello $RUN"), $r);
+$r = http('POST', 'api/scheduled_posts.php', $AD, ['action' => 'reschedule', 'scheduled_id' => $schId, 'publish_at' => $in(10800)]);
+check('schedule', 'Reschedule', ok($r), $r);
+$r = http('POST', 'api/schedule_post.php', $AD, ['content' => "Cancel me $RUN", 'publish_at' => $in(7200)]);
+$cancelId = $r['json']['scheduled_id'] ?? 0;
+$r = http('POST', 'api/scheduled_posts.php', $AD, ['action' => 'cancel', 'scheduled_id' => $cancelId]);
+check('schedule', 'Cancel a scheduled post', ok($r), $r);
+$r = http('POST', 'api/scheduled_posts.php', $S, ['action' => 'cancel', 'scheduled_id' => $schId]);
+check('schedule', "Can't touch someone else's schedule", $r['code'] === 404, $r);
+if (getenv('DB_NAME')) {
+    // Make it due, then run the real cron entry point
+    $pdo = new PDO('pgsql:host=' . (getenv('DB_HOST') ?: '127.0.0.1') . ';port=' . (getenv('DB_PORT') ?: 5432) . ';dbname=' . getenv('DB_NAME'), getenv('DB_USER') ?: 'postgres', getenv('DB_PASSWORD') ?: '');
+    $pdo->exec("SET TIME ZONE 'UTC'");
+    $pdo->prepare("UPDATE scheduled_posts SET publish_at = NOW() - INTERVAL '1 minute' WHERE scheduled_id = :id")->execute(['id' => $schId]);
+    $cron = shell_exec('php ' . escapeshellarg(dirname(__DIR__, 2) . '/cron/run.php') . ' --job=publish 2>&1');
+    check('schedule', 'Cron publishes due posts', str_contains((string)$cron, 'published=1'), [], trim((string)$cron));
+    $r = http('GET', 'api/get_feed.php?page=1&sort=newest', $S);
+    $row = array_values(array_filter($r['json']['data'] ?? [], fn ($x) => str_contains((string)($x['content'] ?? ''), "Scheduled hello $RUN")))[0] ?? null;
+    check('schedule', 'Published post is on the feed with its poll', $row && !empty($row['poll']), $r);
+    $r = http('GET', 'api/scheduled_posts.php', $AD);
+    check('schedule', 'Schedule shows it as published', str_contains($r['text'], '"status":"published"'), $r);
+    foreach (['promote', 'purge', 'archive'] as $job) {
+        $out = shell_exec('php ' . escapeshellarg(dirname(__DIR__, 2) . '/cron/run.php') . " --job=$job 2>&1");
+        check('cron', "cron/run.php --job=$job runs cleanly", !str_contains(strtolower((string)$out), 'failed') && str_contains((string)$out, $job), [], trim((string)$out));
+    }
+    $dry = shell_exec('php ' . escapeshellarg(dirname(__DIR__, 2) . '/cron/archive_old_posts.php') . ' 2>&1');
+    check('cron', 'Archive is a dry run unless --apply', str_contains((string)$dry, 'DRY RUN'), [], trim((string)$dry));
+}
+
+/* ---------------------------------------------------------------- live */
+$r = http('POST', 'api/toggle_stream.php', $S, ['action' => 'start', 'title' => 'student live']);
+check('live', 'Students cannot host live sessions', $r['code'] === 403, $r);
+$r = http('POST', 'api/toggle_stream.php', $A, ['action' => 'start', 'title' => 'x', 'provider' => 'youtube', 'url' => 'https://evil.example/x']);
+check('live', 'Bad YouTube link / short title rejected', $r['code'] === 400, $r);
+$r = http('POST', 'api/toggle_stream.php', $A, ['action' => 'start', 'title' => "AMA $RUN", 'provider' => 'jitsi']);
+check('live', 'Alumnus goes live (Jitsi room)', ok($r) && str_contains((string)($r['json']['data']['embed_url'] ?? ''), 'meet.jit.si'), $r);
+$r = http('GET', 'api/get_active_streams.php', $S);
+check('live', 'Viewers see the live session', ok($r) && str_contains($r['text'], "AMA $RUN"), $r);
+check('live', 'Stream keys are never exposed', !str_contains($r['text'], 'stream_key') && !str_contains($r['text'], 'live_' . $aid . '_'), $r);
+$r = http('POST', 'api/toggle_stream.php', $A, ['action' => 'start', 'title' => "YT $RUN", 'provider' => 'youtube', 'url' => 'https://www.youtube.com/watch?v=dQw4w9WgXcQ']);
+check('live', 'Switch to a YouTube Live embed', ok($r) && str_contains((string)($r['json']['data']['embed_url'] ?? ''), 'youtube-nocookie.com/embed/dQw4w9WgXcQ'), $r);
+$r = http('POST', 'api/toggle_stream.php', $A, ['action' => 'stop']);
+$r2 = http('GET', 'api/get_active_streams.php', $S);
+check('live', 'End the session', ok($r) && !str_contains($r2['text'], "YT $RUN"), $r2);
+
+/* ------------------------------------------------------------- library */
+$r = http('POST', 'api/success_stories.php?action=create', $A, ['title' => "My journey $RUN", 'content' => str_repeat('From RJIT to a product company. ', 3)]);
+$story = $r['json']['story_id'] ?? null;
+check('library', 'Alumnus shares a success story', ok($r) && $story, $r);
+$r = http('GET', 'api/success_stories.php?action=list', $S);
+check('library', 'Unapproved story is not public', ok($r) && !str_contains($r['text'], "My journey $RUN"), $r);
+$r = http('POST', 'api/success_stories.php?action=approve', $S, ['story_id' => $story]);
+check('library', 'Only admins approve stories', $r['code'] === 403, $r);
+$r = http('POST', 'api/success_stories.php?action=approve', $AD, ['story_id' => $story]);
+$r2 = http('GET', 'api/success_stories.php?action=list', $S);
+check('library', 'Approved story is public', ok($r) && str_contains($r2['text'], "My journey $RUN"), $r2);
+$r = http('POST', 'api/resources.php?action=create', $S, ['title' => 'Bad link', 'file_url' => 'javascript:alert(1)', 'category' => 'notes']);
+check('library', 'Non-https resource links are rejected', $r['code'] === 400, $r);
+$r = http('POST', 'api/resources.php?action=create', $A, ['title' => "DSA sheet $RUN", 'file_url' => 'https://example.com/dsa', 'category' => 'placements']);
+$res = $r['json']['resource_id'] ?? null;
+check('library', 'Share a resource', ok($r) && $res, $r);
+$r = http('POST', 'api/resources.php?action=download', $S, ['resource_id' => $res]);
+check('library', 'Open a resource (counted)', ok($r) && $r['json']['url'] === 'https://example.com/dsa', $r);
+$r = http('POST', 'api/resources.php?action=delete', $S, ['resource_id' => $res]);
+check('library', "Can't delete someone else's resource", $r['code'] === 403, $r);
+$r = http('POST', 'api/resources.php?action=delete', $A, ['resource_id' => $res]);
+check('library', 'Owner deletes the resource', ok($r), $r);
+
 /* --------------------------------------------------------------- clean-up */
 $r = http('POST', 'api/delete_post.php', $A, ['post_id' => $postId]);
 check('feed', 'Author deletes the post', ok($r), $r);

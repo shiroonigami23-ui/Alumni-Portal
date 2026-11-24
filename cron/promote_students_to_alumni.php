@@ -4,6 +4,7 @@ require_once __DIR__ . '/../helpers/StudentLifecycleHelper.php';
 
 $database = new Database();
 $db = $database->getConnection();
+if (PHP_SAPI !== "cli") { http_response_code(404); exit; }
 if (!$db) {
     fwrite(STDERR, "DB unavailable\n");
     exit(1);

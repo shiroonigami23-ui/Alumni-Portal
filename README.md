@@ -5,7 +5,7 @@
 <h3>The campus hub where RJIT students, alumni and faculty meet, mentor, hire and grow together.</h3>
 
 [![CI](https://github.com/shiroonigami23-ui/Alumni-Portal/actions/workflows/ci.yml/badge.svg)](https://github.com/shiroonigami23-ui/Alumni-Portal/actions/workflows/ci.yml)
-![Tests](https://img.shields.io/badge/tests-120%20API%20%7C%2054%20UI%20%7C%2063%20routes-22c55e)
+![Tests](https://img.shields.io/badge/tests-185%20API%20%7C%2068%20UI%20%7C%2063%20routes-22c55e)
 [![License: MIT](https://img.shields.io/badge/License-MIT-22c55e.svg)](LICENSE)
 ![PHP](https://img.shields.io/badge/PHP-8.2+-777BB4?logo=php&logoColor=white)
 ![PostgreSQL](https://img.shields.io/badge/PostgreSQL-13%2B-4169E1?logo=postgresql&logoColor=white)
@@ -35,7 +35,7 @@
 <br><sub>A quick tour — landing page, sign-in, registration, help centre, the friendly 404 and legal pages.</sub>
 </div>
 
-## 🆕 What's new in 2.1
+## 🆕 What's new in 2.1 & 2.2
 
 | | |
 |:---:|:---:|
@@ -48,6 +48,8 @@
 - 🗄️ **One-command PostgreSQL install.** `php scripts/install_db.php` builds all 59 tables. A complete `schema_pg.sql` now exists, so fresh installs work.
 - 🧪 **Real test suites with committed results:** 120 end-to-end API checks, 54 real-browser page checks and 63 route checks ([results](tests/results/)).
 - 🛠️ **Fixed broken features:** new students wrongly promoted to alumni, a jobs XSS, poster emails leaking, dead job filters and links, invite codes that never worked, a landing-page crash, and more ([CHANGELOG](CHANGELOG.md)).
+- 📡 **Live sessions** (Jitsi rooms or YouTube Live), **📚 Library** (success stories + resources), **📊 polls**, **🗓️ scheduled posts**, **🔥 Trending / ✨ For-you feeds** — all new or rebuilt in 2.2.
+- ⏱️ **Real scheduler**: `cron/run.php` + a Docker `scheduler` service; scheduled posts also publish without cron.
 - ✨ **Motion:** count-ups, staggered cards, growing charts, ripples, animated gradients and confetti — all off for "reduce motion" users.
 
 ## 📚 Table of contents
@@ -118,7 +120,10 @@ It runs on plain **PHP 8 + PostgreSQL** (with an optional Redis cache), works on
 - GDPR-style **data export** (streamed privately to the owner)
 
 ### 📰 Feed
-- Posts with images, files, **GIF search** (Wikimedia Commons), polls
+- **✨ For you** (personalised: people you follow, your branch, company and batch) and **🔥 Trending** (time-decayed engagement) sorts, plus Newest / Popular / Following
+- **📊 Polls** in the composer — 2–6 options, optional end date, one vote each, live results
+- **🗓️ Schedule posts** (text, GIF, poll) up to 90 days ahead; reschedule or cancel from the feed
+- Posts with images, files, **GIF search** (Wikimedia Commons)
 - Reactions, threaded comments & replies, reposts, shares
 - Pinned posts, scheduled posts, drafts, editing
 - Infinite scroll, upload progress, view counts
@@ -137,6 +142,10 @@ It runs on plain **PHP 8 + PostgreSQL** (with an optional Redis cache), works on
 - Direct messages and mentor-group conversations
 - Edit / delete messages and unread counts
 - 1:1 **audio/video calls** with in-app call notifications
+
+### 📡 Live & 📚 Library *(new)*
+- Alumni/faculty go live in one click — a fresh **Jitsi** video room or a **YouTube Live** embed; a site-wide “LIVE” banner appears for everyone
+- **Success stories** (admin-approved) and shared **resources** (notes, sheets, links) with categories and search
 
 ### 💼 Careers & events
 - Job board with search and filters, “Applied ✓” state, poster tools (applicants, edit, close/reopen, delete) *(rebuilt)*
@@ -173,11 +182,16 @@ It runs on plain **PHP 8 + PostgreSQL** (with an optional Redis cache), works on
 | <img src="assets/readme/login.jpg" alt="Login page" width="100%"> | <img src="assets/readme/register.jpg" alt="Registration page" width="100%"> |
 | **Referral board** | **Alumni Atlas** |
 | <img src="assets/readme/referrals.jpg" alt="Referral board" width="100%"> | <img src="assets/readme/atlas.jpg" alt="Alumni Atlas" width="100%"> |
+| **Live sessions** | **Library — stories & resources** |
+| <img src="assets/readme/live.jpg" alt="Live sessions page with an alumni AMA in progress" width="100%"> | <img src="assets/readme/library.jpg" alt="Library page with success stories" width="100%"> |
 | **Jobs (poster view)** | **Admin Insights** |
 | <img src="assets/readme/jobs.jpg" alt="Jobs page with poster tools" width="100%"> | <img src="assets/readme/insights.jpg" alt="Admin Insights and Control Centre" width="100%"> |
 | **Help centre** | **Friendly 404 with quick links** |
 | <img src="assets/readme/help.jpg" alt="Help centre" width="100%"> | <img src="assets/readme/notfound.jpg" alt="Friendly 404 page" width="100%"> |
 
+<img src="assets/readme/poll.png" alt="A poll inside a feed post showing results after voting" width="62%">
+<br><sub>Polls live inside posts — vote once, see results instantly.</sub>
+<br><br>
 <img src="assets/readme/theme-switch.gif" alt="Switching between dark and light themes on the sign-in page" width="70%">
 <br><sub>Theme switching — every page follows the active theme (dark is the default).</sub>
 <br><br>
@@ -218,7 +232,7 @@ Alumni-Portal/
 │   ├── dashboard.php  feed.php  profile.php  settings.php  messages.php
 │   ├── discovery.php  mentorship.php  jobs.php  events.php  moderation.php
 │   ├── help.php  live.php
-│   ├── atlas.php  referrals.php          # new
+│   ├── atlas.php  referrals.php  live.php  library.php   # 2.1–2.2
 │   ├── auth/               # login, register, forgot-password, reset
 │   ├── legal/              # terms, policy (privacy), conduct
 │   └── errors/error.php    # Friendly 404 / 429 / 415 … page
@@ -234,7 +248,7 @@ Alumni-Portal/
 ├── models/  helpers/       # Domain models and services (Cache, email, S3, logging…)
 ├── includes/               # Shared header, sidebar, footer, auth-check.js
 ├── assets/                 # CSS (tailwind.css, variety-ui.css), JS (variety-ui, motion), data, media
-├── cron/                   # Scheduled jobs (publish posts, archive, promote students)
+├── cron/                   # run.php = scheduler (publish posts, promote, purge, opt-in archive)
 ├── storage/                # Runtime uploads (never committed, never executable)
 ├── fallback_content/       # Demo content shown when the DB is empty/offline
 ├── deployment/             # schema_pg.sql, migrations, Apache vhost, deploy scripts
@@ -338,6 +352,27 @@ Copy `.env.example` → `.env` (Docker) or set the same keys as Apache `SetEnv` 
 
 ---
 
+## ⏱️ Scheduled jobs
+
+One entry point, `cron/run.php`, runs every due job. Run it **every minute**:
+
+| Where | How |
+|---|---|
+| Docker | already done — the `scheduler` service in `docker-compose.yml` loops `cron/run.php` |
+| Linux server | `* * * * * php /var/www/html/cron/run.php >> /var/log/rjit-cron.log 2>&1` |
+| Windows / XAMPP | `schtasks /Create /SC MINUTE /MO 1 /TN "RJIT Portal Scheduler" /TR "C:\path\to\scripts\run_scheduler.bat"` |
+| AWS ECS | an EventBridge schedule running the image with `php cron/run.php` |
+
+| Job | When | What |
+|---|---|---|
+| `publish` | every run | publishes scheduled posts whose time has come (re-checking posting rules) |
+| `promote` | daily 02:00 IST | students → alumni after their graduation date |
+| `purge` | daily 03:00 IST | deletes stored content of posts archived 30+ days ago |
+| `archive` | weekly, **only if `ARCHIVE_ENABLED=true`** | moves posts older than `ARCHIVE_AFTER_DAYS` (default 365) with no recent activity out of the feed; pinned posts and announcements are never archived |
+
+Run one job by hand: `php cron/run.php --job=promote`. Archive and purge scripts are **dry runs** unless you add `--apply`.
+Even without any cron, scheduled posts still go live: the feed runs the publisher at most once a minute (`SCHEDULER_LAZY=true`).
+
 ## 🧭 Routing & URLs
 
 <div align="center">
@@ -368,6 +403,7 @@ flowchart LR
 | `/signup`, `/join`, `/sign-up` | 301 → `/register.php` |
 | `/privacy`, `/directory`, `/careers`, `/inbox`, `/admin` … | 301 → the right page |
 | `/map`, `/batches`, `/refer`, `/insights` | 301 → Atlas, Referral board, admin Insights |
+| `/stream`, `/resources`, `/stories` | 301 → Live, Library |
 | `/pages/feed.php` *(internal path)* | 301 → `/feed.php` |
 | `/feed/` *(trailing slash)* | 301 → `/feed` |
 | `/config/Database.php`, `/api/_feed_schema.php`, `/storage/verification/…` | 404 — never served |
@@ -429,8 +465,8 @@ Three automated suites; the latest results are committed in [`tests/results/`](t
 | Suite | What it checks | Run |
 |---|---|---|
 | **Routes & security** | 63 checks: every old and clean URL, redirects, hidden internals, assets, CORS, CSP | `bash tests/smoke/routes.sh` (no DB needed) |
-| **End-to-end API** — [results](tests/results/integration-latest.md) | 120 checks as admin, alumnus and student: sign-up and invite codes, profile, settings, password change, uploads, feed create/edit/delete, comments, reactions, reposts, pins, messages send/edit/delete, connections, jobs, events, mentorship, notifications, referrals, atlas, admin tools, upload/permission security | `php tests/integration/run.php http://127.0.0.1:8099` |
-| **Real browser** — [results](tests/results/ui-latest.md) | 54 checks: signs in as each role in Chrome and opens every page; fails on any JS error, failed request or blank page | `python3 tests/ui/browser_smoke.py --base http://127.0.0.1:8099` |
+| **End-to-end API** — [results](tests/results/integration-latest.md) | 185 checks as admin, alumnus and student: sign-up and invite codes, profile, settings, password change, uploads, feed create/edit/delete, comments, reactions, reposts, pins, messages send/edit/delete, connections, jobs, events, mentorship, notifications, referrals, atlas, admin tools, upload/permission security, likes/comment reactions, For-you/Trending/Following feeds, reports, 1:1 calls, mentor approval → mentor group → group chat → group voice space → leave, polls, scheduled posts (incl. a real cron publish), live sessions, success stories, resources, every cron job | `php tests/integration/run.php http://127.0.0.1:8099` |
+| **Real browser** — [results](tests/results/ui-latest.md) | 68 checks: every page for every role in Chrome (fails on any JS error, failed request or blank page) **plus click-through flows** — drafts survive reload, create a poll from the composer, vote, schedule a post, Ctrl+K navigation | `python3 tests/ui/browser_smoke.py --base http://127.0.0.1:8099` |
 | **Brute-force lockout** | Wrong passwords lock the account with a friendly message | `php tests/integration/security_limits.php` |
 
 CI runs lint, routes, the full PostgreSQL end-to-end suite and the lockout test on every push. For a local run against a test database:
@@ -476,6 +512,8 @@ All endpoints live in `api/` and return JSON. Authenticate with `Authorization: 
 | Mentorship | `mentorship?action=…` (list mentors, request, accept, groups, moderation) |
 | Messages | `get_conversations`, `get_messages`, `send_message`, `edit_message`, `delete_message`, `start_call` |
 | Careers & events | `get_jobs`, `post_job`, `apply_job`, `get_applicants`, `get_events`, `create_event`, `rsvp_event`, `get_event_attendees` |
+| Polls & scheduling | `create_poll`, `vote_poll`, `end_poll`; `schedule_post`, `scheduled_posts` (list, `cancel`, `reschedule`) |
+| Live & Library | `toggle_stream` (`start` jitsi/youtube, `stop`), `get_active_streams`; `success_stories?action=list\|create\|approve\|reject\|view`; `resources?action=list\|create\|download\|delete` |
 | Referrals & Atlas | `referrals?action=list\|stats\|my_requests\|offer_requests`, POST `create_offer\|update_offer\|request\|respond\|withdraw`; `alumni_atlas` |
 | Jobs (poster) | `manage_job` (`update`, `close`, `reopen`, `delete`) |
 | Search | `master_search` (people, jobs, events, referral offers — used by Ctrl+K) |
@@ -494,6 +532,7 @@ Clean forms like `/api/get_feed` work too.
 - [ ] Two-factor sign-in for admins and faculty
 - [x] Alumni map by city and company, batches view *(2.1 — Alumni Atlas)*
 - [x] Referral board *(2.1)*
+- [x] Live sessions, polls, scheduled posts, Library, Trending/For-you *(2.2)*
 - [ ] Batch reunion pages with RSVP + photo wall
 - [ ] Give-back: scholarships and donation pledges
 - [ ] Real-time chat over WebSockets (currently polling)

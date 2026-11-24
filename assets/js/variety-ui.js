@@ -120,7 +120,7 @@
       ["Dashboard", "dashboard.php", "home overview"], ["Feed", "feed.php", "posts timeline"],
       ["Find alumni", "discovery.php", "directory search people"], ["Alumni Atlas", "atlas.php", "map cities companies batches"],
       ["Referral board", "referrals.php", "jobs refer referral"], ["My referral requests", "referrals.php#requests", "status"],
-      ["Jobs", "jobs.php", "careers openings"], ["Events", "events.php", "meetups rsvp"],
+      ["Jobs", "jobs.php", "careers openings"], ["Events", "events.php", "meetups rsvp"], ["Live sessions", "live.php", "stream ama talk video"], ["Library: resources & stories", "library.php", "notes resources success stories"],
       ["Mentorship", "mentorship.php", "mentor mentee"], ["Messages", "messages.php", "chat inbox dm"],
       ["My profile", "profile.php", "me account"], ["Settings", "settings.php", "privacy password account"],
       ["Edit profile", "settings.php#profile", "bio photo"], ["Help centre", "help.php", "faq support"],

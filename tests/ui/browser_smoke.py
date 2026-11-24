@@ -34,7 +34,7 @@ ACCOUNTS = {
 }
 PAGES = {
     'common': ['dashboard.php', 'feed.php', 'profile.php', 'settings.php', 'messages.php', 'discovery.php', 'atlas.php',
-               'referrals.php', 'jobs.php', 'events.php', 'mentorship.php', 'help.php'],
+               'referrals.php', 'jobs.php', 'events.php', 'mentorship.php', 'live.php', 'library.php', 'help.php'],
     'admin': ['admin/insights.php', 'admin/dashboard.php', 'admin/users.php', 'admin/reports.php', 'admin/tokens.php',
               'admin/system-settings.php', 'moderation.php'],
     'public': ['', 'login.php', 'register.php', 'forgot-password.php', 'terms.php', 'policy.php', 'conduct.php', 'old-link-404'],
@@ -105,6 +105,65 @@ async def login(ctx, email, password):
     await page.close()
     return ok
 
+async def interactions(b, results):
+    """Click-through checks of interactive features in a real browser."""
+    def rec(name, ok, detail=''):
+        results.append({'role': 'flow', 'page': name, 'pass': bool(ok), 'ms': None, 'errors': [] if ok else [detail or 'failed'], 'failed_requests': [], 'blank': False})
+        print(f"  {'✓' if ok else '✗'} flow     {name} {'' if ok else detail}")
+    stamp = str(int(time.time()))
+    # ---- admin: draft, poll, schedule, palette
+    ctx = await b.new_context(viewport={'width': 1440, 'height': 900}); await ctx.route('**/*', route)
+    await login(ctx, *ACCOUNTS['admin'])
+    pg = await ctx.new_page()
+    errs = []
+    pg.on('pageerror', lambda e: errs.append(str(e)))
+    await pg.goto(BASE + 'feed.php', wait_until='networkidle'); await pg.wait_for_timeout(600)
+    await pg.fill('#postContent', f'Draft {stamp}')
+    await pg.click('#saveDraftBtn'); await pg.wait_for_timeout(300)
+    await pg.reload(wait_until='networkidle'); await pg.wait_for_timeout(600)
+    rec('Feed draft survives a reload', await pg.input_value('#postContent') == f'Draft {stamp}')
+    await pg.click('#discardDraftBtn'); await pg.wait_for_timeout(300)
+    rec('Discard draft clears the composer', await pg.input_value('#postContent') == '')
+    # poll post
+    await pg.fill('#postContent', f'UI poll {stamp}')
+    await pg.click('#fxPollBtn'); await pg.fill('#fxPollQ', 'Tea or coffee?')
+    opts = await pg.query_selector_all('.fx-opt'); await opts[0].fill('Tea'); await opts[1].fill('Coffee')
+    await pg.click('#submitPostBtn'); await pg.wait_for_timeout(2500)
+    card = await pg.query_selector(f'.post-card:has-text("UI poll {stamp}")')
+    rec('Create a post with a poll from the composer', card is not None and await card.query_selector('.fx-poll') is not None)
+    # schedule
+    await pg.fill('#postContent', f'UI scheduled {stamp}')
+    await pg.click('#fxScheduleBtn'); await pg.wait_for_timeout(200)
+    rec('Schedule mode switches the button to “Schedule”', (await pg.inner_text('#submitPostBtn')).strip() == 'Schedule')
+    await pg.click('#submitPostBtn'); await pg.wait_for_timeout(1500)
+    rec('Scheduled post appears in “Your scheduled posts”', f'UI scheduled {stamp}' in (await pg.inner_text('#fxScheduled')))
+    # palette
+    await pg.keyboard.press('Control+k'); await pg.wait_for_timeout(200)
+    await pg.keyboard.type('library'); await pg.wait_for_timeout(150); await pg.keyboard.press('Enter')
+    try:
+        await pg.wait_for_url('**/library.php', timeout=8000); nav = True
+    except Exception:
+        nav = False
+    rec('Ctrl+K palette navigates', nav, pg.url)
+    rec('No JavaScript errors during admin flows', not errs, '; '.join(errs[:2]))
+    await ctx.close()
+    # ---- student: vote on the poll
+    ctx = await b.new_context(viewport={'width': 1440, 'height': 900}); await ctx.route('**/*', route)
+    await login(ctx, *ACCOUNTS['student'])
+    pg = await ctx.new_page()
+    await pg.goto(BASE + 'feed.php', wait_until='networkidle'); await pg.wait_for_timeout(800)
+    await pg.select_option('#sortBy', 'newest')
+    await pg.wait_for_timeout(1200)
+    card = await pg.query_selector(f'.post-card:has-text("UI poll {stamp}")')
+    btn = await card.query_selector('.fx-vote') if card else None
+    if btn:
+        await btn.click(); await pg.wait_for_timeout(1200)
+        card = await pg.query_selector(f'.post-card:has-text("UI poll {stamp}")')
+        rec('Vote on a poll and see results', card is not None and '1 vote' in (await card.inner_text()))
+    else:
+        rec('Vote on a poll and see results', False, 'poll not found in feed')
+    await ctx.close()
+
 async def main():
     results = []
     async with async_playwright() as p:
@@ -124,6 +183,8 @@ async def main():
             for path in PAGES['common'] + (PAGES['admin'] if role == 'admin' else []):
                 await visit(ctx, role, path, results)
             await ctx.close()
+        print('interactions')
+        await interactions(b, results)
         await b.close()
     passed = sum(r['pass'] for r in results)
     print(f'\n{passed}/{len(results)} UI checks passed')

@@ -26,6 +26,26 @@ services:
     networks:
       - alumni-network
 
+  # Runs cron/run.php every minute: scheduled posts, student→alumni promotion, purge (and archive if enabled)
+  scheduler:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    command: ["sh", "-c", "while true; do php /var/www/html/cron/run.php; sleep 60; done"]
+    environment:
+      - DB_HOST=db
+      - DB_PORT=5432
+      - DB_NAME=alumni_portal
+      - DB_USER=postgres
+      - DB_PASSWORD=postgres
+      - REDIS_HOST=redis
+    depends_on:
+      - db
+      - redis
+    networks:
+      - alumni-network
+    restart: unless-stopped
+
   db:
     image: postgres:15-alpine
     environment:

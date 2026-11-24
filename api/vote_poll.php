@@ -1,63 +1,55 @@
 <?php
-header("Access-Control-Allow-Origin: *");
+/** POST {poll_id, option_id} — one vote per person; returns fresh results. */
 header("Content-Type: application/json; charset=UTF-8");
-header("Access-Control-Allow-Methods: POST");
-
 include_once '../config/Database.php';
 include_once '../middleware/Auth.php';
+include_once __DIR__ . '/_polls.php';
 
-$database = new Database();
-$db = $database->getConnection();
+$db = (new Database())->getConnection();
 $auth = new Auth($db);
-
-$user_id = $auth->validateRequest();
-$data = json_decode(file_get_contents("php://input"));
-
-// Required: poll_id and the chosen option_id
-if (!empty($data->poll_id) && !empty($data->option_id)) {
-    try {
-        $db->beginTransaction();
-
-        // 1. Check if poll is expired (Blueprint Section 5)
-        $check_expiry = $db->prepare("SELECT expires_at FROM polls WHERE poll_id = :pid");
-        $check_expiry->execute(['pid' => $data->poll_id]);
-        $poll = $check_expiry->fetch(PDO::FETCH_ASSOC);
-
-        if (!$poll || strtotime($poll['expires_at']) < time()) {
-            echo json_encode(["message" => "Poll has expired or does not exist."]);
-            exit();
-        }
-
-        // 2. Record the vote (UNIQUE constraint on user_id + poll_id enforces "vote once")
-        $vote_query = "INSERT INTO poll_votes (user_id, poll_id, option_id) VALUES (:uid, :pid, :oid)";
-        $vote_stmt = $db->prepare($vote_query);
-        $vote_stmt->execute([
-            'uid' => $user_id,
-            'pid' => $data->poll_id,
-            'oid' => $data->option_id
-        ]);
-
-        // 3. Increment the vote count in poll_options for real-time results
-        $update_query = "UPDATE poll_options SET vote_count = vote_count + 1 WHERE option_id = :oid";
-        $update_stmt = $db->prepare($update_query);
-        $update_stmt->execute(['oid' => $data->option_id]);
-
-        $db->commit();
-        echo json_encode(["message" => "Vote recorded successfully."]);
-
-    } catch (PDOException $e) {
-        $db->rollBack();
-        // Handle UNIQUE constraint violation (Blueprint Section 5)
-        if ($e->getCode() == '23505') {
-            http_response_code(400);
-            echo json_encode(["message" => "You have already voted in this poll."]);
-        } else {
-            http_response_code(500);
-            echo json_encode(["message" => "Database error: " . $e->getMessage()]);
-        }
-    }
-} else {
-    http_response_code(400);
-    echo json_encode(["message" => "Incomplete data. Poll ID and Option ID required."]);
+$userId = (int)$auth->validateRequest();
+$data = json_decode((string)file_get_contents('php://input'), true) ?: [];
+$pollId = (int)($data['poll_id'] ?? 0);
+$optionId = (int)($data['option_id'] ?? 0);
+$out = function (array $p, int $code = 200) {
+    http_response_code($code);
+    echo json_encode($p);
+    exit;
+};
+if ($pollId <= 0 || $optionId <= 0) {
+    $out(['success' => false, 'message' => 'Choose an option to vote.'], 400);
 }
-?>
+
+$poll = $db->prepare("SELECT p.post_id, o.option_id, (p.is_active AND (p.expires_at IS NULL OR p.expires_at > NOW())) AS is_open
+                      FROM polls p LEFT JOIN poll_options o ON o.poll_id = p.poll_id AND o.option_id = :o
+                      WHERE p.poll_id = :p");
+$poll->execute(['p' => $pollId, 'o' => $optionId]);
+$row = $poll->fetch(PDO::FETCH_ASSOC);
+if (!$row) {
+    $out(['success' => false, 'message' => 'Poll not found.'], 404);
+}
+if (!$row['option_id']) {
+    $out(['success' => false, 'message' => "That option doesn't belong to this poll."], 400);
+}
+if (!filter_var($row['is_open'], FILTER_VALIDATE_BOOLEAN)) {
+    $out(['success' => false, 'message' => 'This poll has closed.'], 409);
+}
+
+try {
+    $db->beginTransaction();
+    $db->prepare("INSERT INTO poll_votes (user_id, poll_id, option_id) VALUES (:u, :p, :o)")
+       ->execute(['u' => $userId, 'p' => $pollId, 'o' => $optionId]);
+    $db->prepare("UPDATE poll_options SET vote_count = vote_count + 1 WHERE option_id = :o")->execute(['o' => $optionId]);
+    $db->commit();
+} catch (PDOException $e) {
+    if ($db->inTransaction()) {
+        $db->rollBack();
+    }
+    if ($e->getCode() === '23505') {
+        $out(['success' => false, 'message' => 'You have already voted in this poll.'], 409);
+    }
+    error_log('vote_poll: ' . $e->getMessage());
+    $out(['success' => false, 'message' => 'Could not record your vote.'], 500);
+}
+$fresh = polls_for_posts($db, [(int)$row['post_id']], $userId);
+$out(['success' => true, 'message' => 'Vote recorded.', 'poll' => $fresh[(int)$row['post_id']] ?? null]);

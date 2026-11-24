@@ -216,7 +216,7 @@ CREATE TABLE IF NOT EXISTS likes (
 );
 
 CREATE TABLE IF NOT EXISTS comment_reactions (
-    reaction_id BIGSERIAL PRIMARY KEY,
+    comment_reaction_id BIGSERIAL PRIMARY KEY,
     comment_id BIGINT NOT NULL REFERENCES comments(comment_id) ON DELETE CASCADE,
     user_id BIGINT NOT NULL REFERENCES users(user_id) ON DELETE CASCADE,
     reaction_type VARCHAR(20) NOT NULL DEFAULT 'like',
@@ -259,14 +259,20 @@ CREATE TABLE IF NOT EXISTS poll_votes (
 );
 
 CREATE TABLE IF NOT EXISTS scheduled_posts (
-    schedule_id BIGSERIAL PRIMARY KEY,
+    scheduled_id BIGSERIAL PRIMARY KEY,
     user_id BIGINT NOT NULL REFERENCES users(user_id) ON DELETE CASCADE,
     content_path TEXT NOT NULL,
     type VARCHAR(50) NOT NULL DEFAULT 'text',
     publish_at TIMESTAMP NOT NULL,
+    visibility_scope VARCHAR(32) NOT NULL DEFAULT 'all',
+    comments_enabled BOOLEAN NOT NULL DEFAULT TRUE,
+    poll_json TEXT NULL,
     status VARCHAR(20) NOT NULL DEFAULT 'pending',
+    published_post_id BIGINT NULL,
+    last_error TEXT NULL,
     created_at TIMESTAMP NOT NULL DEFAULT NOW()
 );
+CREATE INDEX IF NOT EXISTS idx_scheduled_posts_due ON scheduled_posts (status, publish_at);
 
 CREATE TABLE IF NOT EXISTS archived_posts (
     archive_id BIGSERIAL PRIMARY KEY,
@@ -536,6 +542,16 @@ CREATE TABLE IF NOT EXISTS resources (
     download_count INT NOT NULL DEFAULT 0,
     created_at TIMESTAMP NOT NULL DEFAULT NOW()
 );
+
+-- ---------------------------------------------------------------- renames for databases built from an early 2.1 schema
+DO $$ BEGIN
+    IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'comment_reactions' AND column_name = 'reaction_id') THEN
+        ALTER TABLE comment_reactions RENAME COLUMN reaction_id TO comment_reaction_id;
+    END IF;
+    IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'scheduled_posts' AND column_name = 'schedule_id') THEN
+        ALTER TABLE scheduled_posts RENAME COLUMN schedule_id TO scheduled_id;
+    END IF;
+END $$;
 
 -- ---------------------------------------------------------------- gamification
 CREATE TABLE IF NOT EXISTS badges (

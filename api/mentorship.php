@@ -223,10 +223,10 @@ switch ($action) {
 
         $stmt = $db->prepare("
             UPDATE mentorship_profiles
-            SET approval_status = :status,
-                is_active = CASE WHEN :status = 'approved' THEN TRUE ELSE FALSE END,
-                approved_by = CASE WHEN :status = 'approved' THEN :reviewer ELSE NULL END,
-                approved_at = CASE WHEN :status = 'approved' THEN NOW() ELSE NULL END,
+            SET approval_status = CAST(:status AS VARCHAR(20)),
+                is_active = CASE WHEN CAST(:status AS VARCHAR(20)) = 'approved' THEN TRUE ELSE FALSE END,
+                approved_by = CASE WHEN CAST(:status AS VARCHAR(20)) = 'approved' THEN CAST(:reviewer AS BIGINT) ELSE NULL END,
+                approved_at = CASE WHEN CAST(:status AS VARCHAR(20)) = 'approved' THEN NOW() ELSE NULL END,
                 updated_at = NOW()
             WHERE mentor_user_id = :mentor_user_id
         ");

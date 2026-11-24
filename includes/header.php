@@ -147,8 +147,8 @@ $basePrefix = $isAdminPath ? '../' : '';
     <div id="liveStreamIndicator" class="hidden bg-red-600 text-white text-center py-2">
         <div class="flex items-center justify-center gap-2">
             <span class="live-indicator w-2 h-2 bg-white rounded-full"></span>
-            <span>LIVE Stream is active!</span>
-            <a href="#" class="underline ml-2">Join Now</a>
+            <span id="liveStreamText">A live session is on now!</span>
+            <a href="<?php echo $basePrefix; ?>live.php" class="underline ml-2 font-semibold">Join now →</a>
         </div>
     </div>
 
@@ -725,10 +725,17 @@ $basePrefix = $isAdminPath ? '../' : '';
         async function checkLiveStreams() {
             try {
                 const response = await makeApiCall('get_active_streams.php');
-                if (response && response.success && response.data && response.data.length > 0) {
-                    const indicator = document.getElementById('liveStreamIndicator');
-                    indicator.classList.remove('hidden');
+                const live = (response && response.success && Array.isArray(response.data)) ? response.data : [];
+                const indicator = document.getElementById('liveStreamIndicator');
+                const badge = document.getElementById('liveEventsBadge');
+                if (live.length && !/\/live\.php$/.test(location.pathname)) {
+                    const t = document.getElementById('liveStreamText');
+                    if (t) t.textContent = live.length === 1 ? `LIVE: ${live[0].host_name} — ${live[0].title}` : `${live.length} live sessions on now`;
+                    indicator?.classList.remove('hidden');
+                } else {
+                    indicator?.classList.add('hidden');
                 }
+                badge?.classList.toggle('hidden', !live.length);
             } catch (error) {
                 console.error('Error checking live streams:', error);
             }

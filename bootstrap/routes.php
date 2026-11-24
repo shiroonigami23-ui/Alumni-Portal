@@ -29,6 +29,7 @@ return [
         'live'            => 'pages/live.php',
         'atlas'           => 'pages/atlas.php',
         'referrals'       => 'pages/referrals.php',
+        'library'         => 'pages/library.php',
 
         // Auth
         'login'           => 'pages/auth/login.php',
@@ -75,6 +76,11 @@ return [
         'referral'           => 'referrals.php',
         'refer'              => 'referrals.php',
         'referral-board'     => 'referrals.php',
+        'resources'          => 'library.php#resources',
+        'stories'            => 'library.php',
+        'success-stories'    => 'library.php',
+        'stream'             => 'live.php',
+        'livestream'         => 'live.php',
         // Path that was hardcoded in an old offline page
         'alumni_portal/feed' => 'feed.php',
     ],

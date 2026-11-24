@@ -38,7 +38,7 @@ if (!empty($data->poll_id)) {
 
         if ($is_creator || $is_authority) {
             // 3. End Poll by setting expiry to NOW()
-            $update = "UPDATE polls SET expires_at = NOW() WHERE poll_id = :pid";
+            $update = "UPDATE polls SET expires_at = NOW(), is_active = FALSE WHERE poll_id = :pid";
             $u_stmt = $db->prepare($update);
             $u_stmt->execute(['pid' => $data->poll_id]);
 

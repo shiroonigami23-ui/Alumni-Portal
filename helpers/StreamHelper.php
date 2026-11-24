@@ -16,10 +16,8 @@ class StreamHelper {
     }
 
     public function getActiveStreams() {
-        $query = "SELECT s.*, p.full_name 
-                  FROM live_streams s 
-                  JOIN profiles p ON s.user_id = p.user_id 
-                  WHERE s.status = 'live'";
-        return $this->db->query($query)->fetchAll(PDO::FETCH_ASSOC);
+        // Delegates to the Stream model (never exposes stream keys)
+        require_once __DIR__ . '/../models/Stream.php';
+        return (new Stream($this->db))->active();
     }
 }

@@ -109,7 +109,34 @@ try {
         OR (COALESCE(p.visibility_scope, 'all') = 'faculty_students' AND :viewer_role IN ('faculty', 'student'))
     )";
 
+    // Hide content from people you blocked or who blocked you
+    $where .= " AND NOT EXISTS (SELECT 1 FROM blocks b WHERE (b.blocker_user_id = :viewer_uid AND b.blocked_user_id = p.user_id)
+                                                          OR (b.blocked_user_id = :viewer_uid AND b.blocker_user_id = p.user_id))";
+
+    // Server-side "hype": engagement with time decay (Hacker-News style). Fresh, active posts rise; old ones fade.
+    $hype = "((p.reaction_count + 2 * p.comment_count + 3 * COALESCE(p.repost_count, 0) + 2 * COALESCE(p.share_count, 0)
+               + 0.05 * COALESCE(p.view_count, 0) + 1)
+              / POWER(GREATEST(EXTRACT(EPOCH FROM (NOW() - p.created_at)) / 3600, 0) + 2, 1.5))";
+
     $orderBy = "ORDER BY p.created_at DESC";
+    if (!$profileMode && $filter !== 'reposts' && $sort === 'trending') {
+        $orderBy = "ORDER BY $hype DESC, p.created_at DESC";
+    } elseif (!$profileMode && $filter !== 'reposts' && $sort === 'for_you') {
+        // Personalised: hype × affinity (people you follow, your branch, company, batch)
+        $me = $db->prepare("SELECT branch, current_company, graduation_year FROM profiles WHERE user_id = :u");
+        $me->execute(['u' => $user_id]);
+        $mine = $me->fetch(PDO::FETCH_ASSOC) ?: [];
+        $params['fy_branch'] = (string)($mine['branch'] ?? '');
+        $params['fy_company'] = strtolower(trim((string)($mine['current_company'] ?? '')));
+        $params['fy_year'] = (int)($mine['graduation_year'] ?? 0);
+        $orderBy = "ORDER BY $hype * (1
+            + 1.5 * (CASE WHEN EXISTS (SELECT 1 FROM connections fc WHERE fc.status = 'accepted' AND fc.requester_user_id = :viewer_uid AND fc.addressee_user_id = p.user_id) THEN 1 ELSE 0 END)
+            + 0.5 * (CASE WHEN :fy_branch <> '' AND pr.branch = :fy_branch THEN 1 ELSE 0 END)
+            + 0.4 * (CASE WHEN :fy_company <> '' AND LOWER(TRIM(COALESCE(pr.current_company, ''))) = :fy_company THEN 1 ELSE 0 END)
+            + 0.3 * (CASE WHEN :fy_year > 0 AND pr.graduation_year BETWEEN :fy_year - 1 AND :fy_year + 1 THEN 1 ELSE 0 END)
+            + 0.8 * (CASE WHEN p.post_type = 'announcement' THEN 1 ELSE 0 END)
+        ) DESC, p.created_at DESC";
+    }
     if ($filter === 'reposts') {
         $orderBy = "ORDER BY (activity_rp.created_at IS NULL), activity_rp.created_at DESC, p.created_at DESC";
     } elseif ($profileMode) {
@@ -123,6 +150,7 @@ try {
     $countSql = "SELECT COUNT(*) FROM posts p $where";
     $countStmt = $db->prepare($countSql);
     foreach ($params as $key => $value) {
+        if (strpos($countSql, ':' . $key) === false) { continue; }
         $countStmt->bindValue(':' . $key, $value);
     }
     $countStmt->execute();
@@ -185,11 +213,16 @@ try {
             $orderBy
             LIMIT :limit OFFSET :offset";
 
+    // Publish any scheduled posts that are due (at most once a minute) — works without cron
+    require_once __DIR__ . '/_post_scheduler.php';
+    maybe_publish_due_posts($db);
+
     $stmt = $db->prepare($sql);
     $stmt->bindValue(':viewer_id', $user_id, PDO::PARAM_INT);
     $stmt->bindValue(':pin_owner', $profileMode ? $authorUserId : 0, PDO::PARAM_INT);
     $stmt->bindValue(':activity_uid', $activityUserId, PDO::PARAM_INT);
     foreach ($params as $key => $value) {
+        if (strpos($sql, ':' . $key) === false) { continue; }
         $stmt->bindValue(':' . $key, $value);
     }
     $stmt->bindValue(':limit', $limit, PDO::PARAM_INT);
@@ -267,6 +300,14 @@ try {
         unset($row['pending_edit_content_file_path'], $row['previous_content_file_path']);
         return $row;
     }, $rows);
+
+    // Polls for every post on this page in one query
+    require_once __DIR__ . '/_polls.php';
+    $pollMap = polls_for_posts($db, array_map(fn ($p) => (int)($p['id'] ?? $p['post_id'] ?? 0), $posts), (int)$user_id);
+    foreach ($posts as &$p) {
+        $p['poll'] = $pollMap[(int)($p['id'] ?? $p['post_id'] ?? 0)] ?? null;
+    }
+    unset($p);
 
     echo json_encode([
         'success' => true,

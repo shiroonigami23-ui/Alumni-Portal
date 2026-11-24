@@ -5,6 +5,32 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and 
 
 ## [Unreleased]
 
+## [2.2.0] — 2026-11-24 — "Everything works"
+
+Every feature was exercised end-to-end (185 API checks, 68 browser checks); everything that was broken or never wired up now works.
+
+### ✨ Added
+- **Live sessions** (`/live.php`) — alumni/faculty go live with a fresh Jitsi room or a YouTube Live embed; viewers watch in-page; site-wide LIVE banner; sessions auto-close after 8 h.
+- **Library** (`/library.php`) — success stories with an admin review queue, and shared resources with categories, search, open counts and delete.
+- **Polls in the feed** — create from the composer (2–6 options, optional end date), vote inline, live results; `api/_polls.php` batches polls into the feed in one query.
+- **Scheduled posts in the feed** — schedule text/GIF/poll up to 90 days ahead, list, reschedule, cancel (`api/schedule_post.php`, `api/scheduled_posts.php`).
+- **Feed ranking**: ✨ *For you* (hype × affinity — follows, branch, company, batch) and 🔥 *Trending* (time-decayed engagement); *For you* is the default.
+- **Scheduler**: `cron/run.php` (publish every minute, promote daily, purge daily, archive weekly opt-in), `scripts/run_scheduler.bat`, Docker `scheduler` service; scheduled posts also publish lazily from the feed when no cron is set up.
+
+### 🐛 Fixed
+- **Scheduled posts never published** (no cron configured, and the publisher used the wrong column); scheduling also let **students bypass the no-post rule** and skipped alumni moderation.
+- **Archive cron would have deleted every post older than 7 days** (with all comments/likes). Now opt-in, 365-day default, skips pinned/announcements/active threads, dry-run by default.
+- Purge cron ignored database-stored content.
+- **Live streaming never worked** — “start” updated a row that never existed, the player pointed at `localhost`, the LIVE badge checked a field the API never returned, and `get_active_streams` exposed **secret stream keys**.
+- **Polls**: no-expiry polls couldn't be voted on; anyone could attach a poll to any post; votes weren't tied to their poll; closed polls weren't enforced; no UI existed.
+- **Mentor applications could never be approved on PostgreSQL** (ambiguous parameter type) — so alumni mentors, mentor groups, group chat and group calls were unreachable.
+- Success stories were listed before approval; resources accepted `javascript:` links; story text was written to local disk.
+- Feed showed posts from blocked users; database sessions now always use UTC (servers in local time shifted every timestamp).
+- Poll placement, `comment_reactions` / `scheduled_posts` column names (auto-renamed on existing databases).
+
+### 🗑️ Removed
+- Unused models `Post`, `Profile`, `Mentorship`, `Resource`, `SuccessStory` (logic lives in the APIs).
+
 ## [2.1.0] — 2026-11-24 — "Supreme hub"
 
 ### ✨ Added
@@ -147,6 +173,7 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and 
 - Initial AWS-deployable alumni portal with Terraform, Docker and CI/CD.
 - Premium UI theme; PostgreSQL/AWS setup docs; local verification scripts.
 
-[Unreleased]: https://github.com/shiroonigami23-ui/Alumni-Portal/compare/v2.1.0...HEAD
+[Unreleased]: https://github.com/shiroonigami23-ui/Alumni-Portal/compare/v2.2.0...HEAD
+[2.2.0]: https://github.com/shiroonigami23-ui/Alumni-Portal/releases/tag/v2.2.0
 [2.1.0]: https://github.com/shiroonigami23-ui/Alumni-Portal/releases/tag/v2.1.0
 [2.0.0]: https://github.com/shiroonigami23-ui/Alumni-Portal/releases/tag/v2.0.0

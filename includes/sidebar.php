@@ -150,6 +150,12 @@ $isAdminDashboardPage = $currentPage === 'dashboard.php' && strpos($_SERVER['REQ
                     </span>
                 </a>
                 
+                <!-- Live -->
+                <a href="<?php echo $basePrefix; ?>live.php" class="sidebar-link group flex items-center px-3 py-3 text-sm font-medium rounded-lg <?php echo $currentPage == 'live.php' ? 'bg-blue-50 text-blue-700' : 'text-gray-700 hover:bg-gray-50 hover:text-gray-900'; ?>">
+                    <i data-lucide="radio" class="h-5 w-5 mr-3"></i>
+                    <span class="sidebar-label">Live</span>
+                </a>
+
                 <!-- Jobs -->
                 <a href="<?php echo $basePrefix; ?>jobs.php" class="sidebar-link group flex items-center px-3 py-3 text-sm font-medium rounded-lg <?php echo $currentPage == 'jobs.php' ? 'bg-blue-50 text-blue-700' : 'text-gray-700 hover:bg-gray-50 hover:text-gray-900'; ?>">
                     <i data-lucide="briefcase" class="h-5 w-5 mr-3"></i>
@@ -173,6 +179,12 @@ $isAdminDashboardPage = $currentPage === 'dashboard.php' && strpos($_SERVER['REQ
                     <i data-lucide="handshake" class="h-5 w-5 mr-3"></i>
                     <span class="sidebar-label">Referrals</span>
                     <span class="sidebar-meta ml-auto text-[10px] font-semibold uppercase tracking-wide text-emerald-600">New</span>
+                </a>
+
+                <!-- Library -->
+                <a href="<?php echo $basePrefix; ?>library.php" class="sidebar-link group flex items-center px-3 py-3 text-sm font-medium rounded-lg <?php echo $currentPage == 'library.php' ? 'bg-blue-50 text-blue-700' : 'text-gray-700 hover:bg-gray-50 hover:text-gray-900'; ?>">
+                    <i data-lucide="library" class="h-5 w-5 mr-3"></i>
+                    <span class="sidebar-label">Library</span>
                 </a>
 
                 <!-- Messages -->
@@ -297,6 +309,14 @@ $isAdminDashboardPage = $currentPage === 'dashboard.php' && strpos($_SERVER['REQ
             <a href="<?php echo $basePrefix; ?>referrals.php" class="rounded-2xl border border-slate-800 bg-slate-900/70 px-4 py-4 text-sm font-medium text-slate-100">
                 <div class="mb-2 inline-flex rounded-xl bg-slate-800 p-2 text-pink-300"><i data-lucide="handshake" class="h-4 w-4"></i></div>
                 <div>Referrals</div>
+            </a>
+            <a href="<?php echo $basePrefix; ?>live.php" class="rounded-2xl border border-slate-800 bg-slate-900/70 px-4 py-4 text-sm font-medium text-slate-100">
+                <div class="mb-2 inline-flex rounded-xl bg-slate-800 p-2 text-red-300"><i data-lucide="radio" class="h-4 w-4"></i></div>
+                <div>Live</div>
+            </a>
+            <a href="<?php echo $basePrefix; ?>library.php" class="rounded-2xl border border-slate-800 bg-slate-900/70 px-4 py-4 text-sm font-medium text-slate-100">
+                <div class="mb-2 inline-flex rounded-xl bg-slate-800 p-2 text-yellow-300"><i data-lucide="library" class="h-4 w-4"></i></div>
+                <div>Library</div>
             </a>
             <a href="<?php echo $basePrefix; ?>settings.php" class="rounded-2xl border border-slate-800 bg-slate-900/70 px-4 py-4 text-sm font-medium text-slate-100">
                 <div class="mb-2 inline-flex rounded-xl bg-slate-800 p-2 text-slate-300"><i data-lucide="settings" class="h-4 w-4"></i></div>

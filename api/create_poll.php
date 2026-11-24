@@ -1,51 +1,41 @@
 <?php
-header("Access-Control-Allow-Origin: *");
+/** POST {post_id, question, options[], duration_hours?} — attach a poll to your own post. */
 header("Content-Type: application/json; charset=UTF-8");
-header("Access-Control-Allow-Methods: POST");
-
 include_once '../config/Database.php';
 include_once '../middleware/Auth.php';
+include_once __DIR__ . '/_polls.php';
 
-$database = new Database();
-$db = $database->getConnection();
+$db = (new Database())->getConnection();
 $auth = new Auth($db);
+$userId = (int)$auth->validateRequest();
+$data = json_decode((string)file_get_contents('php://input'), true) ?: [];
+$postId = (int)($data['post_id'] ?? 0);
 
-$user_id = $auth->validateRequest();
-$data = json_decode(file_get_contents("php://input"));
-
-if (!empty($data->post_id) && !empty($data->question) && !empty($data->options)) {
-    try {
-        $db->beginTransaction();
-
-        $query = "INSERT INTO polls (post_id, question, expires_at) VALUES (:pid, :q, :exp) RETURNING poll_id";
-        $stmt = $db->prepare($query);
-        $stmt->execute([
-            'pid' => $data->post_id,
-            'q' => $data->question,
-            'exp' => $data->expires_at
-        ]);
-        $poll_id = $stmt->fetchColumn();
-
-        $opt_query = "INSERT INTO poll_options (poll_id, option_text, option_order) VALUES (:plid, :txt, :ord)";
-        $opt_stmt = $db->prepare($opt_query);
-
-        $index = 1;
-        foreach ($data->options as $opt) {
-            $opt_stmt->execute([
-                'plid' => $poll_id, 
-                'txt' => $opt, 
-                'ord' => $index
-            ]);
-            $index++;
-        }
-
-        $db->commit();
-        $auth->logAction($user_id, "CREATE_POLL", "Poll created for Post ID: " . $data->post_id);
-        echo json_encode(["message" => "Poll created successfully.", "poll_id" => $poll_id]);
-    } catch (Exception $e) {
-        $db->rollBack();
-        http_response_code(500);
-        echo json_encode(["message" => "Failed to create poll: " . $e->getMessage()]);
-    }
+$own = $db->prepare("SELECT user_id FROM posts WHERE post_id = :p");
+$own->execute(['p' => $postId]);
+$owner = $own->fetchColumn();
+if ($owner === false) {
+    http_response_code(404);
+    echo json_encode(['success' => false, 'message' => 'Post not found.']);
+    exit;
 }
-?>
+if ((int)$owner !== $userId) {
+    http_response_code(403);
+    echo json_encode(['success' => false, 'message' => 'You can only add a poll to your own post.']);
+    exit;
+}
+try {
+    [$pollId, $err] = poll_create($db, $postId, (string)($data['question'] ?? ''), (array)($data['options'] ?? []),
+        isset($data['duration_hours']) ? (int)$data['duration_hours'] : (isset($data['expires_at']) && $data['expires_at'] ? max(1, (int)ceil((strtotime($data['expires_at']) - time()) / 3600)) : null));
+    if ($err) {
+        http_response_code(400);
+        echo json_encode(['success' => false, 'message' => $err]);
+        exit;
+    }
+    $auth->logAction($userId, 'CREATE_POLL', "Poll #$pollId on post #$postId");
+    echo json_encode(['success' => true, 'message' => 'Poll created successfully.', 'poll_id' => $pollId]);
+} catch (Throwable $e) {
+    error_log('create_poll: ' . $e->getMessage());
+    http_response_code(500);
+    echo json_encode(['success' => false, 'message' => 'Could not create the poll.']);
+}
