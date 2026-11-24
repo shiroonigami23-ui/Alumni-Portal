@@ -130,6 +130,7 @@ include 'includes/sidebar.php';
                         <option value="part-time">Part Time</option>
                         <option value="internship">Internship</option>
                         <option value="contract">Contract</option>
+                        <option value="remote">Remote</option>
                     </select>
                 </div>
                 <div>
@@ -196,7 +197,7 @@ include 'includes/sidebar.php';
         }
         currentRole = String(currentUser?.role || '').toLowerCase();
         canPostJobs = ['faculty', 'alumni', 'admin'].includes(currentRole);
-        canApplyJobs = ['student'].includes(currentRole);
+        canApplyJobs = ['student', 'alumni'].includes(currentRole);
 
         const titleEl = document.getElementById('jobsActionTitle');
         const hintEl = document.getElementById('jobsActionHint');
@@ -218,61 +219,125 @@ include 'includes/sidebar.php';
         }
     }
 
+    let allJobs = [];
+    const jobEsc = (v) => String(v ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+    const jobUrl = (u) => /^https?:\/\//i.test(String(u || '')) ? jobEsc(u) : '';
+    const TYPE_LABEL = { 'full-time': 'Full time', 'part-time': 'Part time', internship: 'Internship', contract: 'Contract', remote: 'Remote', freelance: 'Freelance' };
+
+    function jobLevel(job) {
+        const t = `${job.title} ${job.description}`.toLowerCase();
+        if (/intern|fresher|graduate|trainee|entry|sde-?1|junior/.test(t)) return 'entry';
+        if (/senior|lead|principal|staff|manager|sde-?3/.test(t)) return 'senior';
+        return 'mid';
+    }
+
+    function jobCard(job) {
+        const when = window.formatDate ? window.formatDate(job.posted_at) : '';
+        const closed = job.status !== 'open';
+        let actions = '';
+        if (job.is_mine || currentRole === 'admin') {
+            actions += `<button class="job-applicants-btn px-3 py-2 rounded-lg border border-gray-300 text-sm" data-job-id="${job.job_id}" data-title="${jobEsc(job.title)}">Applicants${job.applicant_count !== null ? ` (${job.applicant_count})` : ''}</button>
+                <button class="job-manage-btn px-3 py-2 rounded-lg border border-gray-300 text-sm" data-job-id="${job.job_id}" data-action="${closed ? 'reopen' : 'close'}">${closed ? 'Reopen' : 'Close'}</button>
+                <button class="job-manage-btn px-3 py-2 rounded-lg border border-red-200 text-red-600 text-sm" data-job-id="${job.job_id}" data-action="delete">Delete</button>`;
+        } else if (job.applied) {
+            actions += `<span class="inline-flex items-center gap-1 px-3 py-2 rounded-lg bg-green-100 text-green-700 text-sm font-medium">✓ Applied</span>`;
+        } else if (canApplyJobs && !closed) {
+            actions += `<button class="join-job-btn bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 text-sm font-medium" data-job-id="${job.job_id}" data-title="${jobEsc(job.title)}" data-company="${jobEsc(job.company)}">Apply with résumé</button>`;
+        }
+        if (jobUrl(job.application_url)) {
+            actions += `<a href="${jobUrl(job.application_url)}" target="_blank" rel="noopener noreferrer" class="inline-flex items-center px-3 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 text-sm">Company page ↗</a>`;
+        }
+        return `<article class="job-card bg-white rounded-xl shadow-sm border border-gray-200 p-6 flex flex-col ${closed ? 'opacity-70' : ''}">
+            <div class="flex items-start gap-3">
+                <div class="h-12 w-12 rounded-xl text-white font-bold flex items-center justify-center shrink-0" style="background:linear-gradient(135deg,#2563eb,#7c3aed) !important">${jobEsc(String(job.company || '?').charAt(0).toUpperCase())}</div>
+                <div class="min-w-0 flex-1">
+                    <h3 class="font-bold text-gray-900 text-lg leading-tight">${jobEsc(job.title || 'Untitled role')}</h3>
+                    <p class="text-gray-600">${jobEsc(job.company || 'Unknown company')}${job.location ? ' · ' + jobEsc(job.location) : ''}</p>
+                </div>
+                ${closed ? '<span class="text-xs font-semibold px-2 py-1 rounded-full bg-gray-200 text-gray-700">Closed</span>' : ''}
+            </div>
+            <div class="flex flex-wrap gap-2 mt-3 text-xs">
+                <span class="px-2.5 py-1 rounded-full bg-blue-100 text-blue-700 font-medium">${jobEsc(TYPE_LABEL[job.type] || job.type || 'Job')}</span>
+                ${job.salary && job.salary !== 'Not disclosed' ? `<span class="px-2.5 py-1 rounded-full bg-green-100 text-green-700 font-medium">₹ ${jobEsc(job.salary)}</span>` : ''}
+            </div>
+            <p class="text-sm text-gray-700 mt-3 whitespace-pre-line line-clamp-4">${jobEsc(job.description || '')}</p>
+            <p class="text-xs text-gray-500 mt-3">Posted by <a href="profile.php?id=${job.poster_id}" class="font-medium hover:text-blue-600">${jobEsc(job.posted_by)}</a>${when ? ' · ' + jobEsc(when) : ''}</p>
+            <div class="mt-4 pt-4 border-t border-gray-100 flex flex-wrap gap-2">${actions}</div>
+        </article>`;
+    }
+
+    function renderJobs() {
+        const q = (document.getElementById('jobSearch')?.value || '').trim().toLowerCase();
+        const type = document.getElementById('jobTypeFilter')?.value || '';
+        const level = document.getElementById('experienceFilter')?.value || '';
+        const rows = allJobs.filter((j) =>
+            (!q || `${j.title} ${j.company} ${j.location} ${j.description}`.toLowerCase().includes(q)) &&
+            (!type || j.type === type || (type === 'remote' && /remote/i.test(j.location || ''))) &&
+            (!level || jobLevel(j) === level));
+        const list = document.getElementById('jobsList');
+        const empty = document.getElementById('jobsEmptyState');
+        list.innerHTML = rows.map(jobCard).join('');
+        empty.classList.toggle('hidden', rows.length > 0);
+        if (!rows.length && allJobs.length) {
+            empty.querySelector('p.text-lg').textContent = 'No jobs match your filters';
+            empty.querySelector('p.text-sm').textContent = 'Try a different keyword or clear the filters.';
+        }
+        window.lucide?.createIcons();
+    }
+
     async function loadJobs() {
         try {
-            const token = localStorage.getItem('jwt_token');
-            const res = await fetch(`${JOBS_API_BASE}/get_jobs.php`, {
-                headers: token ? { 'Authorization': `Bearer ${token}` } : {}
-            });
-            const payload = await res.json();
-            const rows = Array.isArray(payload?.records) ? payload.records : [];
-            const jobsList = document.getElementById('jobsList');
-            const jobsEmptyState = document.getElementById('jobsEmptyState');
-
-            if (!rows.length) {
-                jobsList.innerHTML = '';
-                jobsEmptyState.classList.remove('hidden');
-                return;
-            }
-
-            jobsEmptyState.classList.add('hidden');
-            jobsList.innerHTML = rows.map((job) => `
-                <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-                    <h3 class="font-bold text-gray-900 text-lg">${job.title || 'Untitled role'}</h3>
-                    <p class="text-gray-600 mt-1">${job.company || 'Unknown company'}${job.location ? ' - ' + job.location : ''}</p>
-                    <p class="text-sm text-gray-700 mt-3">${job.description || ''}</p>
-                    <div class="mt-4">
-                        ${canApplyJobs ? `<button class="join-job-btn bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700" data-job-id="${job.job_id}">Join / Apply</button>` : ''}
-                        ${!canApplyJobs && job.application_url ? `<a href="${job.application_url}" target="_blank" class="inline-flex items-center px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50">Open Application Link</a>` : ''}
-                    </div>
-                </div>
-            `).join('');
-
-            const companies = new Set(rows.map((r) => (r.company || '').trim()).filter(Boolean));
-            const remoteCount = rows.filter((r) => /remote/i.test(String(r.location || ''))).length;
-            const internshipCount = rows.filter((r) => /intern/i.test(String(r.type || ''))).length;
-
-            document.getElementById('activeJobsCount').textContent = String(rows.length);
-            document.getElementById('companiesCount').textContent = String(companies.size);
-            document.getElementById('remoteJobsCount').textContent = String(remoteCount);
-            document.getElementById('internshipsCount').textContent = String(internshipCount);
-            bindJobApplyButtons();
+            const res = await makeApiCall('get_jobs.php' + (canPostJobs ? '?all=1' : ''));
+            allJobs = Array.isArray(res?.records) ? res.records : [];
+            const open = allJobs.filter((r) => r.status === 'open');
+            document.getElementById('activeJobsCount').textContent = String(open.length);
+            document.getElementById('companiesCount').textContent = String(new Set(open.map((r) => (r.company || '').trim().toLowerCase()).filter(Boolean)).size);
+            document.getElementById('remoteJobsCount').textContent = String(open.filter((r) => /remote/i.test(String(r.location || ''))).length);
+            document.getElementById('internshipsCount').textContent = String(open.filter((r) => /intern/i.test(String(r.type || ''))).length);
+            renderJobs();
         } catch (e) {
             console.error('Failed to load jobs:', e);
+            window.toast?.('Could not load jobs. Please refresh.', 'error');
         }
     }
 
-    function bindJobApplyButtons() {
-        document.querySelectorAll('.join-job-btn').forEach((btn) => {
-            if (btn.dataset.bound === '1') return;
-            btn.dataset.bound = '1';
-            btn.addEventListener('click', () => {
-                const jobId = btn.getAttribute('data-job-id');
-                document.getElementById('applyJobIdInput').value = jobId || '';
-                document.getElementById('applyJobModal').classList.remove('hidden');
-            });
-        });
+    async function showApplicants(jobId, title) {
+        const res = await makeApiCall(`get_applicants.php?job_id=${encodeURIComponent(jobId)}`);
+        const list = Array.isArray(res?.applicants) ? res.applicants : (Array.isArray(res?.data) ? res.data : []);
+        const body = list.length ? list.map((a) => {
+            const resume = String(a.resume_path || '');
+            const href = /^api\/asset\.php\?token=/.test(resume) || /^storage\//.test(resume) ? jobEsc(resolvePortalPath ? resolvePortalPath(resume) : resume) : '';
+            return `• ${a.full_name || a.name || a.email || 'Applicant'}${a.created_at ? ' — ' + (window.formatDate ? window.formatDate(a.created_at) : a.created_at) : ''}${a.cover_letter ? '\n   “' + String(a.cover_letter).slice(0, 160) + '”' : ''}${href ? '\n   Résumé: ' + location.origin + '/' + href.replace(/^\//, '') : ''}`;
+        }).join('\n\n') : 'No applications yet.';
+        await window.appAlert(body, { title: `Applicants · ${title}`, icon: 'users', iconTone: 'info' });
     }
+
+    document.addEventListener('click', async (e) => {
+        const apply = e.target.closest('.join-job-btn');
+        if (apply) {
+            document.getElementById('applyJobIdInput').value = apply.dataset.jobId || '';
+            const h = document.querySelector('#applyJobModal h3');
+            if (h) h.textContent = `Apply · ${apply.dataset.title} at ${apply.dataset.company}`;
+            document.getElementById('applyJobModal').classList.remove('hidden');
+            return;
+        }
+        const ap = e.target.closest('.job-applicants-btn');
+        if (ap) { showApplicants(ap.dataset.jobId, ap.dataset.title); return; }
+        const m = e.target.closest('.job-manage-btn');
+        if (m) {
+            const action = m.dataset.action;
+            if (action === 'delete' && !(await window.appConfirm('Delete this job and all its applications? This cannot be undone.', { title: 'Delete job', confirmText: 'Delete' }))) return;
+            const res = await makeApiCall('manage_job.php', 'POST', { job_id: +m.dataset.jobId, action });
+            window.toast?.(res?.message || 'Something went wrong.', res?.success ? 'success' : 'error');
+            if (res?.success) loadJobs();
+        }
+    });
+    ['jobSearch', 'jobTypeFilter', 'experienceFilter'].forEach((id) => {
+        const el = document.getElementById(id);
+        if (el) el.addEventListener(el.tagName === 'INPUT' ? 'input' : 'change', renderJobs);
+    });
+
+    function bindJobApplyButtons() { /* handled by delegated listener above */ }
 
     function initPostJobPanel() {
         const openBtn = document.getElementById('openPostJobBtn');
@@ -379,6 +444,7 @@ include 'includes/sidebar.php';
                     if (!res.ok) {
                         throw new Error(payload?.message || 'Failed to apply');
                     }
+                    loadJobs();
                     await window.appAlert('Application submitted.', {
                         title: 'Application submitted',
                         icon: 'send',

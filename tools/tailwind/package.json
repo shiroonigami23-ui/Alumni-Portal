@@ -1,0 +1,10 @@
+{
+  "name": "rjit-alumni-portal-css",
+  "private": true,
+  "description": "Builds assets/css/tailwind.css (pre-compiled Tailwind, replaces the Play CDN).",
+  "scripts": {
+    "build": "tailwindcss -c tailwind.config.js -i input.css -o ../../assets/css/tailwind.css --minify",
+    "watch": "tailwindcss -c tailwind.config.js -i input.css -o ../../assets/css/tailwind.css --watch"
+  },
+  "devDependencies": { "tailwindcss": "^3.4.17" }
+}

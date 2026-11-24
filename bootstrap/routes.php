@@ -27,6 +27,8 @@ return [
         'moderation'      => 'pages/moderation.php',
         'help'            => 'pages/help.php',
         'live'            => 'pages/live.php',
+        'atlas'           => 'pages/atlas.php',
+        'referrals'       => 'pages/referrals.php',
 
         // Auth
         'login'           => 'pages/auth/login.php',
@@ -66,6 +68,13 @@ return [
         'faq'                => 'help.php',
         'support'            => 'help.php',
         'admin'              => 'admin/dashboard.php',
+        'insights'           => 'admin/insights.php',
+        'map'                => 'atlas.php',
+        'alumni-map'         => 'atlas.php',
+        'batches'            => 'atlas.php',
+        'referral'           => 'referrals.php',
+        'refer'              => 'referrals.php',
+        'referral-board'     => 'referrals.php',
         // Path that was hardcoded in an old offline page
         'alumni_portal/feed' => 'feed.php',
     ],

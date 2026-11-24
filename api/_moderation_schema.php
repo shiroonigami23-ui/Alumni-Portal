@@ -8,6 +8,12 @@ function ensure_user_moderation_schema(PDO $db): void
     if ($done) {
         return;
     }
+    require_once __DIR__ . '/../helpers/Cache.php';
+    $__schemaKey = 'schema:ensure_user_moderation_schema:' . @filemtime(__FILE__) . ':' . (getenv('DB_NAME') ?: 'db');
+    if (Cache::get($__schemaKey)) {
+        $done = true;
+        return;
+    }
 
     if (db_is_mysql($db)) {
         $db->exec("
@@ -49,6 +55,7 @@ function ensure_user_moderation_schema(PDO $db): void
     } catch (Throwable $ignored) {
     }
 
+    Cache::set($__schemaKey, 1, 86400);
     $done = true;
 }
 

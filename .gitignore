@@ -127,3 +127,9 @@ terraform-outputs.txt
 *secret*
 *private*
 *credential*
+
+# Runtime caches and logs
+storage/cache/
+storage/logs/
+storage/resumes/
+storage/log.txt

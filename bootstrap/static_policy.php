@@ -16,7 +16,7 @@ function ap_static_allowed(string $rel): bool
         return false;
     }
     // Private user data in storage
-    if (preg_match('#^storage/(verification|exports|logs|cache|messages|imports|test_reports)(/|$)#', $rel)) {
+    if (preg_match('#^storage/(verification|exports|logs|cache|messages|imports|test_reports|resumes)(/|$)#', $rel)) {
         return false;
     }
     // In storage, only media/documents — never text/json/archives/code

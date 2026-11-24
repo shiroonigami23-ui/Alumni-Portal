@@ -55,7 +55,7 @@ if (!empty($data->email) && !empty($data->password)) {
 
     // Attempt Login
     if ($user->login()) {
-        if ($user->role === 'student' && StudentLifecycleHelper::isEligibleForAlumniRoleByEmail((string)$user->email)) {
+        if ($user->role === 'student' && StudentLifecycleHelper::isStudentDueForPromotion($db, (int)$user->user_id, (string)$user->email)) {
             try {
                 $gradYear = StudentLifecycleHelper::expectedGraduationYearForEmail((string)$user->email);
                 $db->beginTransaction();

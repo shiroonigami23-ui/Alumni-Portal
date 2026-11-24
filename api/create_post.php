@@ -1,4 +1,6 @@
 <?php
+require_once __DIR__ . '/../helpers/Cache.php';
+register_shutdown_function(function () { if (($_SERVER['REQUEST_METHOD'] ?? '') !== 'GET' && http_response_code() < 400) { Cache::bump('public_feed'); } });
 header("Access-Control-Allow-Origin: *");
 header("Content-Type: application/json; charset=UTF-8");
 header("Access-Control-Allow-Methods: POST");

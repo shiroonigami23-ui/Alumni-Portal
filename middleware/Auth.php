@@ -165,7 +165,6 @@ class Auth {
         $stmt->execute(['uid' => $user_id, 'action' => $action, 'details' => $details, 'ip' => $ip]);
 
         $log_entry = "[" . date('Y-m-d H:i:s') . "] User ID: $user_id | Action: $action | Details: $details | IP: $ip" . PHP_EOL;
-        $log_file = dirname(__DIR__) . DIRECTORY_SEPARATOR . 'storage' . DIRECTORY_SEPARATOR . 'log.txt';
         $log_file = dirname(__DIR__) . DIRECTORY_SEPARATOR . 'storage' . DIRECTORY_SEPARATOR . 'logs' . DIRECTORY_SEPARATOR . 'activity.log';
         if (!file_exists(dirname($log_file))) { mkdir(dirname($log_file), 0750, true); }
         file_put_contents($log_file, $log_entry, FILE_APPEND);

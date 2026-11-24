@@ -17,11 +17,11 @@ $basePrefix = $isAdminPath ? '../' : '';
     <link rel="apple-touch-icon" href="<?php echo $basePrefix; ?>assets/icons/app-icon-192.png">
     <title>RJIT Alumni Portal</title>
 
-    <!-- Tailwind CSS CDN -->
-    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Tailwind (pre-built: npm --prefix tools/tailwind run build) -->
+    <link rel="stylesheet" href="<?php echo $basePrefix; ?>assets/css/tailwind.css?v=2">
 
     <!-- Lucide Icons CDN -->
-    <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+    <script src="https://unpkg.com/lucide@0.460.0/dist/umd/lucide.min.js"></script>
 
     <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -29,6 +29,7 @@ $basePrefix = $isAdminPath ? '../' : '';
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Roboto+Slab:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="<?php echo $basePrefix; ?>assets/css/variety-ui.css">
     <script src="<?php echo $basePrefix; ?>assets/js/variety-ui.js" defer></script>
+    <script src="<?php echo $basePrefix; ?>assets/js/motion.js" defer></script>
 
     <!-- Custom Styles -->
     <style>
@@ -478,7 +479,7 @@ $basePrefix = $isAdminPath ? '../' : '';
             const userData = localStorage.getItem('user_data');
             if (userData) {
                 const user = JSON.parse(userData);
-                document.getElementById('userName').textContent = user.email || user.name || 'Member';
+                document.getElementById('userName').textContent = user.full_name || user.name || (user.email ? String(user.email).split('@')[0] : 'Member');
                 const avatar = sanitizeCachedAvatarUrl(user.profile_picture || user.profile_picture_url || '');
                 if (avatar) {
                     const img = document.getElementById('userAvatarImage');
@@ -595,7 +596,7 @@ $basePrefix = $isAdminPath ? '../' : '';
                 if (!response || !response.success || !response.data) return;
                 const user = response.data;
                 localStorage.setItem('user_data', JSON.stringify(user));
-                document.getElementById('userName').textContent = user.email || user.name || 'Member';
+                document.getElementById('userName').textContent = user.full_name || user.name || (user.email ? String(user.email).split('@')[0] : 'Member');
                 const avatar = sanitizeCachedAvatarUrl(user.profile_picture || user.profile_picture_url || '');
                 if (avatar) {
                     const img = document.getElementById('userAvatarImage');

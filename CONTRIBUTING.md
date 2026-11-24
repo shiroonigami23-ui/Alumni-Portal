@@ -52,6 +52,14 @@ find . -name '*.php' -not -path './vendor/*' -print0 | xargs -0 -n1 php -l
 
 # 2. Route + security smoke test (no DB required)
 bash tests/smoke/routes.sh
+
+# 3. End-to-end API tests against a throwaway PostgreSQL database
+createdb alumni_test && DB_NAME=alumni_test php scripts/install_db.php --demo --admin-password='Admin@12345'
+DB_NAME=alumni_test RATE_LIMIT_DISABLED=true php -S 127.0.0.1:8099 router.php &
+php tests/integration/run.php
+
+# 4. If you added Tailwind classes, rebuild the CSS
+npm --prefix tools/tailwind install && npm --prefix tools/tailwind run build
 ```
 
 Then:
@@ -74,7 +82,9 @@ Then:
 | Change **security** behaviour | `bootstrap/security.php` (and mirror static rules in `.htaccess` ↔ `bootstrap/static_policy.php`) |
 | Shared **layout** | `includes/header.php`, `includes/sidebar.php`, `includes/footer.php` |
 | **Theme / styles** | `assets/css/variety-ui.css`, `assets/js/variety-ui.js` |
-| **Database** change | add a dated migration in `deployment/sql/` (PostgreSQL **and** MySQL variants if needed) |
+| **Database** change | update `deployment/schema_pg.sql` (fresh installs) **and** add an idempotent dated migration in `deployment/sql/` (existing databases) |
+| Cache something | `Cache::remember(Cache::key('group', $suffix), $ttl, fn () => …)` and `Cache::bump('group')` on writes |
+| New styles | Tailwind classes work after `npm --prefix tools/tailwind run build`; shared theme in `assets/css/variety-ui.css` |
 
 ### Writing an API endpoint
 

@@ -5,10 +5,11 @@
 <h3>The campus hub where RJIT students, alumni and faculty meet, mentor, hire and grow together.</h3>
 
 [![CI](https://github.com/shiroonigami23-ui/Alumni-Portal/actions/workflows/ci.yml/badge.svg)](https://github.com/shiroonigami23-ui/Alumni-Portal/actions/workflows/ci.yml)
+![Tests](https://img.shields.io/badge/tests-120%20API%20%7C%2054%20UI%20%7C%2063%20routes-22c55e)
 [![License: MIT](https://img.shields.io/badge/License-MIT-22c55e.svg)](LICENSE)
 ![PHP](https://img.shields.io/badge/PHP-8.2+-777BB4?logo=php&logoColor=white)
-![PostgreSQL](https://img.shields.io/badge/PostgreSQL-15-4169E1?logo=postgresql&logoColor=white)
-![MySQL](https://img.shields.io/badge/MySQL-supported-4479A1?logo=mysql&logoColor=white)
+![PostgreSQL](https://img.shields.io/badge/PostgreSQL-13%2B-4169E1?logo=postgresql&logoColor=white)
+![Redis](https://img.shields.io/badge/Redis-cache-DC382D?logo=redis&logoColor=white)
 ![Docker](https://img.shields.io/badge/Docker-ready-2496ED?logo=docker&logoColor=white)
 ![AWS](https://img.shields.io/badge/AWS-ECS%20%7C%20RDS%20%7C%20S3-FF9900?logo=amazonaws&logoColor=white)
 ![PWA](https://img.shields.io/badge/PWA-installable-5A0FC8?logo=pwa&logoColor=white)
@@ -17,6 +18,7 @@
 
 [**Live demo**](http://alumni-portal-alb-616743364.us-east-1.elb.amazonaws.com/) ·
 [Features](#-features) ·
+[What's new](#-whats-new-in-21) ·
 [Screenshots](#-screenshots) ·
 [Quick start](#-quick-start) ·
 [Routing](#-routing--urls) ·
@@ -33,6 +35,21 @@
 <br><sub>A quick tour — landing page, sign-in, registration, help centre, the friendly 404 and legal pages.</sub>
 </div>
 
+## 🆕 What's new in 2.1
+
+| | |
+|:---:|:---:|
+| <img src="assets/readme/admin-insights.gif" alt="Admin Insights and Control Centre animating in: counters count up, sign-up chart bars grow" width="100%"> | <img src="assets/readme/command-palette.gif" alt="Pressing Ctrl+K opens a quick-search palette; typing 'refer' and pressing Enter opens the referral board" width="100%"> |
+| **Admin Insights & Control Centre** — growth chart, live KPIs, security events, audit log, health, CSV export, site banner, broadcasts | **Ctrl + K quick search** — jump to any page, person, job, event or referral from anywhere |
+| <img src="assets/readme/alumni-atlas.gif" alt="Alumni Atlas: map of cities, ranked city list, people in Bengaluru, companies and batches tabs" width="100%"> | <img src="assets/readme/referral-board.gif" alt="Referral board with an animated gradient header, counters and referral offer cards" width="100%"> |
+| **Alumni Atlas** — where RJITians live and work, by city, company, batch and branch | **Referral board** — alumni offer referrals, students request them, everyone gets notified |
+
+- ⚡ **3–17× faster APIs.** The schema is checked once per deploy instead of on every request, plus a Redis/APCu/file cache, single-round-trip queries and pre-built CSS ([numbers](#-performance)).
+- 🗄️ **One-command PostgreSQL install.** `php scripts/install_db.php` builds all 59 tables. A complete `schema_pg.sql` now exists, so fresh installs work.
+- 🧪 **Real test suites with committed results:** 120 end-to-end API checks, 54 real-browser page checks and 63 route checks ([results](tests/results/)).
+- 🛠️ **Fixed broken features:** new students wrongly promoted to alumni, a jobs XSS, poster emails leaking, dead job filters and links, invite codes that never worked, a landing-page crash, and more ([CHANGELOG](CHANGELOG.md)).
+- ✨ **Motion:** count-ups, staggered cards, growing charts, ripples, animated gradients and confetti — all off for "reduce motion" users.
+
 ## 📚 Table of contents
 
 - [What is this?](#-what-is-this)
@@ -43,11 +60,13 @@
 - [Quick start](#-quick-start)
   - [Docker (fastest)](#option-a--docker-fastest)
   - [XAMPP + PostgreSQL](#option-b--xampp--postgresql-windows)
-  - [XAMPP + MySQL](#option-c--xampp--mysql-windows)
+  - [XAMPP + MySQL (legacy)](#option-c--xampp--mysql-legacy-not-recommended)
   - [PHP built-in server](#option-d--php-built-in-server-any-os)
+- [Database](#-database)
 - [Configuration](#-configuration)
 - [Routing & URLs](#-routing--urls)
 - [Security](#-security)
+- [Performance](#-performance)
 - [Testing](#-testing)
 - [Deployment](#-deployment)
 - [API overview](#-api-overview)
@@ -67,7 +86,7 @@
 - 📅 **Meet** — events with RSVPs, attendee lists and live streams
 - 🛡️ **Stay safe** — reporting, moderation queues, shadow-bans, device bans and an admin console
 
-It runs on plain **PHP 8 + PostgreSQL/MySQL**, works on **XAMPP** for college servers, ships as a **Docker** image, and deploys to **AWS (ECS + RDS + S3)** with Terraform.
+It runs on plain **PHP 8 + PostgreSQL** (with an optional Redis cache), works on **XAMPP** for college servers, ships as a **Docker** image, and deploys to **AWS (ECS + RDS + S3)** with Terraform.
 
 ---
 
@@ -76,6 +95,18 @@ It runs on plain **PHP 8 + PostgreSQL/MySQL**, works on **XAMPP** for college se
 <table>
 <tr>
 <td width="50%" valign="top">
+
+### 🗺️ Alumni Atlas *(new)*
+- Interactive map of where alumni live, sized by count
+- Ranked cities with top companies; click a city to see who's there
+- Companies, batches ("Batch of 2019 · 42 alumni") and branches views
+- Filters by company, branch and batch range; respects private profiles
+
+### 🤝 Referral board *(new)*
+- Alumni/faculty publish "I can refer you at …" offers with slots and expiry
+- Students and alumni send a short pitch + résumé link
+- Owners accept, mark **referred 🎉** or decline — requester is notified
+- Duplicate, spam and self-requests blocked; admins can remove offers
 
 ### 👥 Community & profiles
 - Role-aware accounts: **student, alumni, faculty, admin, moderator**
@@ -108,11 +139,16 @@ It runs on plain **PHP 8 + PostgreSQL/MySQL**, works on **XAMPP** for college se
 - 1:1 **audio/video calls** with in-app call notifications
 
 ### 💼 Careers & events
-- Job board with applications and résumé upload
+- Job board with search and filters, “Applied ✓” state, poster tools (applicants, edit, close/reopen, delete) *(rebuilt)*
+- Résumés stored privately in the database behind unguessable links
 - Events with RSVP, attendee lists, approval workflow
 - Live-stream sessions and success stories
 
 ### 🛠️ Admin & moderation
+- **Insights & Control Centre** *(new)*: 12-week growth chart, KPIs, 7-day engagement, security-event feed, audit log, system health
+- **Site-wide banner** and **broadcast notifications** to everyone / students / alumni / faculty *(new)*
+- **CSV export** of members (formula-injection safe) *(new)*
+- **Alumni invite codes** that verify alumni instantly at sign-up *(now working)*
 - Admin dashboard with live stats
 - User management: ban, suspend, shadow-ban, device ban, mute DMs
 - Reports, announcements approval, alumni token generation
@@ -122,7 +158,7 @@ It runs on plain **PHP 8 + PostgreSQL/MySQL**, works on **XAMPP** for college se
 </tr>
 </table>
 
-**Everywhere:** installable **PWA** with offline page and push notifications · **dark / light / ocean** themes · mobile bottom-nav · IST-consistent timestamps · in-app dialogs instead of browser pop-ups · accessible focus rings, skip-link and reduced-motion support.
+**Everywhere:** **Ctrl+K quick search** · toasts · motion with reduced-motion support · installable **PWA** with offline page and push notifications · **dark / light / ocean** themes · mobile bottom-nav · IST-consistent timestamps · in-app dialogs instead of browser pop-ups · accessible focus rings, skip-link and reduced-motion support.
 
 ---
 
@@ -135,6 +171,10 @@ It runs on plain **PHP 8 + PostgreSQL/MySQL**, works on **XAMPP** for college se
 | <img src="assets/readme/landing.jpg" alt="Landing page, dark theme" width="100%"> | <img src="assets/readme/landing_light.jpg" alt="Landing page, light theme" width="100%"> |
 | **Sign in** | **Register** |
 | <img src="assets/readme/login.jpg" alt="Login page" width="100%"> | <img src="assets/readme/register.jpg" alt="Registration page" width="100%"> |
+| **Referral board** | **Alumni Atlas** |
+| <img src="assets/readme/referrals.jpg" alt="Referral board" width="100%"> | <img src="assets/readme/atlas.jpg" alt="Alumni Atlas" width="100%"> |
+| **Jobs (poster view)** | **Admin Insights** |
+| <img src="assets/readme/jobs.jpg" alt="Jobs page with poster tools" width="100%"> | <img src="assets/readme/insights.jpg" alt="Admin Insights and Control Centre" width="100%"> |
 | **Help centre** | **Friendly 404 with quick links** |
 | <img src="assets/readme/help.jpg" alt="Help centre" width="100%"> | <img src="assets/readme/notfound.jpg" alt="Friendly 404 page" width="100%"> |
 
@@ -153,12 +193,13 @@ It runs on plain **PHP 8 + PostgreSQL/MySQL**, works on **XAMPP** for college se
 | Layer | Technology |
 |---|---|
 | Backend | PHP 8.2+, PDO, Composer (AWS SDK) |
-| Database | PostgreSQL 15 (primary) or MySQL 8 / MariaDB (XAMPP) via `config/DbCompat.php` |
-| Frontend | Server-rendered PHP pages, Tailwind CSS, Lucide icons, vanilla JS |
+| Database | **PostgreSQL 13+** (supported engine) — `deployment/schema_pg.sql` + runtime feature tables |
+| Cache | Redis → APCu → file (auto-selected, `helpers/Cache.php`) |
+| Frontend | Server-rendered PHP pages, pre-built Tailwind CSS, Lucide icons, Leaflet maps, vanilla JS |
 | Realtime-ish | Polling APIs, Web Push, Jitsi rooms for calls |
 | Storage | DB-backed asset & content store; S3 in production |
 | Infra | Docker, Apache (`mod_rewrite`), Terraform → AWS VPC, ALB, ECS Fargate, RDS, S3, CloudWatch, SES |
-| CI | GitHub Actions — PHP lint, route/security smoke test, image build & ECS deploy |
+| CI | GitHub Actions — PHP lint (8.2/8.3), route smoke test, PostgreSQL end-to-end tests, lockout test, repo hygiene, ECS deploy |
 
 ---
 
@@ -177,11 +218,12 @@ Alumni-Portal/
 │   ├── dashboard.php  feed.php  profile.php  settings.php  messages.php
 │   ├── discovery.php  mentorship.php  jobs.php  events.php  moderation.php
 │   ├── help.php  live.php
+│   ├── atlas.php  referrals.php          # new
 │   ├── auth/               # login, register, forgot-password, reset
 │   ├── legal/              # terms, policy (privacy), conduct
 │   └── errors/error.php    # Friendly 404 / 429 / 415 … page
 │
-├── admin/                  # Admin console pages
+├── admin/                  # Admin console (insights.php = control centre)
 ├── api/                    # JSON endpoints (files starting with _ are internal helpers)
 ├── bootstrap/
 │   ├── routes.php          # ★ Route table: pages, aliases/redirects, executable dirs
@@ -189,16 +231,17 @@ Alumni-Portal/
 │   └── static_policy.php   # Which static files may be served
 ├── config/                 # Database + AWS config
 ├── middleware/             # Auth (bearer sessions), CSRF/security helpers
-├── models/  helpers/       # Domain models and services (email, S3, logging, streams…)
+├── models/  helpers/       # Domain models and services (Cache, email, S3, logging…)
 ├── includes/               # Shared header, sidebar, footer, auth-check.js
-├── assets/                 # CSS, JS, icons, images, README media
+├── assets/                 # CSS (tailwind.css, variety-ui.css), JS (variety-ui, motion), data, media
 ├── cron/                   # Scheduled jobs (publish posts, archive, promote students)
 ├── storage/                # Runtime uploads (never committed, never executable)
 ├── fallback_content/       # Demo content shown when the DB is empty/offline
-├── deployment/             # SQL schema + migrations, Apache vhost, deploy scripts
+├── deployment/             # schema_pg.sql, migrations, Apache vhost, deploy scripts
 ├── terraform/              # AWS infrastructure as code
-├── scripts/                # Import/maintenance utilities
-├── tests/                  # Smoke tests (CI) + local PowerShell feature matrix
+├── scripts/                # install_db.php (one-command DB setup), demo data, importers
+├── tools/tailwind/         # Builds assets/css/tailwind.css
+├── tests/                  # smoke/ (routes), integration/ (API, PostgreSQL), ui/ (browser), results/
 └── docs/                   # Deployment guides, technical write-up, dev notes
     └── deployment/         # AWS_DEPLOYMENT, QUICKSTART_AWS, POSTGRES_SETUP, DEPLOYMENT
 ```
@@ -213,12 +256,12 @@ Alumni-Portal/
 git clone https://github.com/shiroonigami23-ui/Alumni-Portal.git
 cd Alumni-Portal
 cp .env.example .env
-docker compose up --build
-# then load the schema once:
-docker compose exec -T db psql -U postgres -d alumni_portal < deployment/db.sql
+docker compose up --build -d
+# build the database once (add --demo for sample alumni, posts, jobs and referrals):
+docker compose exec app php scripts/install_db.php --demo --admin-password='Choose@Strong1'
 ```
 
-Open **http://localhost/** — health check at **http://localhost/healthz**.
+Open **http://localhost/** and sign in as `admin@rjit.ac.in` with the password you chose. Health check: **http://localhost/healthz**.
 
 ### Option B — XAMPP + PostgreSQL (Windows)
 
@@ -226,49 +269,51 @@ Open **http://localhost/** — health check at **http://localhost/healthz**.
 scripts\start_local_xampp.bat
 ```
 
-This starts XAMPP PostgreSQL on `127.0.0.1:5433` and Apache. Open `http://127.0.0.1:8088/` (or `http://localhost/<folder-name>/`).
+This starts XAMPP PostgreSQL on `127.0.0.1:5433` and Apache. Then build the database once:
+
+```bat
+set DB_PORT=5433
+C:\xampp\php\php.exe scripts\install_db.php --demo --admin-password=Choose@Strong1
+```
+
+Open `http://127.0.0.1:8088/` (or `http://localhost/<folder-name>/`).
 
 > Make sure Apache has `mod_rewrite` enabled and `AllowOverride All` for the project folder (XAMPP's default for `htdocs`). The router works both at the domain root and inside a sub-folder.
 
-### Option C — XAMPP + MySQL (Windows)
+### Option C — XAMPP + MySQL *(legacy, not recommended)*
 
-1. **Start** Apache and MySQL in the XAMPP Control Panel.
-2. **Create the database**
-   ```bat
-   C:\xampp\mysql\bin\mysql.exe -u root -e "CREATE DATABASE IF NOT EXISTS alumni_portal CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;"
-   ```
-   (add `-p` if your MySQL root user has a password)
-3. **Import the schema + MySQL migration**
-   ```bat
-   C:\xampp\mysql\bin\mysql.exe -u root alumni_portal < deployment\db.sql
-   C:\xampp\mysql\bin\mysql.exe -u root alumni_portal < deployment\sql\2026_04_12_moderator_post_workflow_mysql.sql
-   ```
-4. **Tell PHP which database to use.** The app reads settings from the environment (`getenv`). Add inside your `<VirtualHost>` in `C:\xampp\apache\conf\extra\httpd-vhosts.conf`:
-   ```apache
-   SetEnv DB_DRIVER mysql
-   SetEnv DB_HOST 127.0.0.1
-   SetEnv DB_PORT 3306
-   SetEnv DB_NAME alumni_portal
-   SetEnv DB_USER root
-   SetEnv DB_PASSWORD your_mysql_password
-   ```
-   Restart Apache.
-5. **Verify the connection**
-   ```bat
-   C:\xampp\php\php.exe -r "require 'config/Database.php'; var_dump((new Database())->getConnection() !== null);"
-   ```
-   `bool(true)` means you're connected.
-6. **Open** `http://localhost/alumni_portal/` (or whatever your folder is called).
+The portal is PostgreSQL-native; `deployment/db.sql` is a **partial** legacy MySQL schema kept for reference and many modules (messages, jobs, events, mentorship…) will not work on it. XAMPP ships PostgreSQL — use Option B.
 
 ### Option D — PHP built-in server (any OS)
 
 ```bash
+createdb alumni_portal                                   # PostgreSQL
+php scripts/install_db.php --demo --admin-password='Choose@Strong1'
 php -S localhost:8088 router.php
 ```
 
 `router.php` doubles as the built-in server's router script, applying exactly the same routes and security rules as Apache.
 
 ---
+
+## 🗄️ Database
+
+PostgreSQL is the single supported engine. Everything is installed by one idempotent command:
+
+```bash
+php scripts/install_db.php                      # schema + feature tables + migrations + indexes
+php scripts/install_db.php --demo               # …plus fictional demo alumni, posts, jobs, events, referrals
+php scripts/install_db.php --admin-password=…   # set the seeded admin password
+```
+
+| Layer | Where |
+|---|---|
+| Base schema (users, profiles, posts, messages, jobs, events, polls, reports, notifications, …) | `deployment/schema_pg.sql` |
+| Feature tables created/upgraded by the code (mentorship, calls, content & asset store, referrals, settings, …) | `api/_*schema*.php`, `_content_store.php`, `_asset_store.php` |
+| Historical upgrades for existing databases (all idempotent) | `deployment/sql/*.sql` |
+| Indexes for hot queries | `scripts/ensure_perf_indexes.sql` |
+
+Re-running the installer on a live database is safe — it only adds what is missing. Demo accounts use `@demo.rjit.local` emails and the password `Demo@12345`; never run `--demo` on production.
 
 ## ⚙️ Configuration
 
@@ -287,6 +332,9 @@ Copy `.env.example` → `.env` (Docker) or set the same keys as Apache `SetEnv` 
 | `LOGIN_MAX_FAILURES`, `LOGIN_LOCK_SECONDS` | Per-account lockout after wrong passwords | `8`, `900` |
 | `MAX_REQUEST_MB` | Largest accepted request body | `25` |
 | `CSP_CONNECT_EXTRA` | Extra `connect-src` hosts (e.g. a streaming server) | — |
+| `CACHE_DRIVER` | `auto` (Redis → APCu → file), `redis`, `apcu`, `file`, `none` | `auto` |
+| `REDIS_HOST`, `REDIS_PORT`, `REDIS_PASSWORD` | Redis for shared cache across servers | — |
+| `DB_PERSISTENT` | Reuse DB connections between requests | `true` |
 
 ---
 
@@ -319,6 +367,7 @@ flowchart LR
 | `/edit-profile.php` | 301 → `/settings.php#profile` |
 | `/signup`, `/join`, `/sign-up` | 301 → `/register.php` |
 | `/privacy`, `/directory`, `/careers`, `/inbox`, `/admin` … | 301 → the right page |
+| `/map`, `/batches`, `/refer`, `/insights` | 301 → Atlas, Referral board, admin Insights |
 | `/pages/feed.php` *(internal path)* | 301 → `/feed.php` |
 | `/feed/` *(trailing slash)* | 301 → `/feed` |
 | `/config/Database.php`, `/api/_feed_schema.php`, `/storage/verification/…` | 404 — never served |
@@ -340,6 +389,7 @@ Security is centralised in `bootstrap/security.php`, which runs **before every p
 | **CORS** | The legacy `Access-Control-Allow-Origin: *` on ~100 endpoints is rewritten to **same-origin + `ALLOWED_ORIGINS`** only; hostile pre-flights are refused. |
 | **Brute-force protection** | Sliding-window rate limits per IP for all APIs, stricter limits for login, registration and password-reset, plus a **per-account lockout** after repeated wrong passwords ("try again in 12 minutes, or use Forgot password"). |
 | **Real client IP** | `X-Forwarded-For` is trusted **only** from configured proxies (e.g. the ALB), so bans and rate limits can't be bypassed by spoofing a header. |
+| **Private files** | Résumés and identity documents live in the database or private storage behind unguessable tokens — never at guessable public paths. |
 | **Uploads** | Every file is checked platform-wide: dangerous and double extensions (`shell.php.jpg`) refused, real MIME sniffed with `finfo` and matched to the extension, images must decode, and files with embedded `<?php` / `<script>` (polyglots) are blocked. |
 | **Storage** | `storage/` can never execute PHP, serves media/documents only, and private areas (verification documents, exports, logs, caches) are never web-visible. Uploaded files are served with a sandbox CSP. |
 | **Data exports** | Personal data archives are streamed to the authenticated owner and deleted immediately — never left at a guessable public URL. |
@@ -351,26 +401,47 @@ Found a vulnerability? Please follow **[SECURITY.md](SECURITY.md)** — don't op
 
 ---
 
+## ⚡ Performance
+
+Measured locally: PHP 8.3 + PostgreSQL 16, average of 30 requests per endpoint, before and after 2.1.
+
+| Endpoint | Before | After | |
+|---|---:|---:|---:|
+| `api/me.php` (every page) | 29.1 ms | **1.7 ms** | 17× |
+| `api/get_feed.php` | 37.7 ms | **5.3 ms** | 7× |
+| `api/get_conversations.php` | 9.1 ms | **2.6 ms** | 3.5× |
+| `api/search_directory.php` | 7.5 ms | **2.9 ms** | 2.6× |
+| `api/get_jobs.php` | 6.3 ms | **1.9 ms** | 3.3× |
+| `api/alumni_atlas.php` | — | **1.5 ms** | cached |
+| `api/admin_insights.php` | — | **3.9 ms** | |
+
+What changed:
+- **Schema checks once per deploy, not per request.** The `ensure_*` helpers used to run ~40 `information_schema` queries on every API call. They're now remembered in the cache and re-run automatically when the helper file changes.
+- **One DB connection per request**, persistent across requests, using PostgreSQL's single-round-trip parameterised execution (no PREPARE/DEALLOCATE per query).
+- **Cache layer** (`helpers/Cache.php`): Redis when `REDIS_HOST` is set (docker-compose wires it up), otherwise APCu, otherwise files. Hot endpoints (Atlas, referral stats, public feed, site banner) are cached with version-based invalidation on writes.
+- **Pre-built Tailwind** (50 KB CSS) replaces the ~400 KB in-browser compiler that ran on every page load. Rebuild with `npm --prefix tools/tailwind install && npm --prefix tools/tailwind run build`.
+- **Docker image** ships OPcache + JIT, APCu, phpredis, realpath cache and long-lived static asset caching.
+
 ## 🧪 Testing
 
+Three automated suites; the latest results are committed in [`tests/results/`](tests/results/).
+
+| Suite | What it checks | Run |
+|---|---|---|
+| **Routes & security** | 63 checks: every old and clean URL, redirects, hidden internals, assets, CORS, CSP | `bash tests/smoke/routes.sh` (no DB needed) |
+| **End-to-end API** — [results](tests/results/integration-latest.md) | 120 checks as admin, alumnus and student: sign-up and invite codes, profile, settings, password change, uploads, feed create/edit/delete, comments, reactions, reposts, pins, messages send/edit/delete, connections, jobs, events, mentorship, notifications, referrals, atlas, admin tools, upload/permission security | `php tests/integration/run.php http://127.0.0.1:8099` |
+| **Real browser** — [results](tests/results/ui-latest.md) | 54 checks: signs in as each role in Chrome and opens every page; fails on any JS error, failed request or blank page | `python3 tests/ui/browser_smoke.py --base http://127.0.0.1:8099` |
+| **Brute-force lockout** | Wrong passwords lock the account with a friendly message | `php tests/integration/security_limits.php` |
+
+CI runs lint, routes, the full PostgreSQL end-to-end suite and the lockout test on every push. For a local run against a test database:
+
 ```bash
-# Route + security smoke test (no database needed) — also runs in CI
-bash tests/smoke/routes.sh
-
-# Lint every PHP file
-find . -name '*.php' -not -path './vendor/*' -print0 | xargs -0 -n1 php -l
+createdb alumni_test && DB_NAME=alumni_test php scripts/install_db.php --demo --admin-password='Admin@12345'
+DB_NAME=alumni_test RATE_LIMIT_DISABLED=true php -S 127.0.0.1:8099 router.php &
+php tests/integration/run.php
 ```
 
-Full end-to-end feature matrix against a local database (Windows / PowerShell):
-
-```powershell
-$env:PGPASSWORD=""
-powershell -ExecutionPolicy Bypass -File .\tests\local\verify_feature_matrix.ps1
-```
-
-It covers auth & profile, feed/posts/comments/reactions, messaging, events & RSVP, jobs & applications, mentorship, resources & success stories, notifications, uploads, search and the live-stream lifecycle.
-
----
+The older Windows PowerShell feature matrix (`tests/local/verify_feature_matrix.ps1`) still works against a local XAMPP install.
 
 ## ☁️ Deployment
 
@@ -405,7 +476,11 @@ All endpoints live in `api/` and return JSON. Authenticate with `Authorization: 
 | Mentorship | `mentorship?action=…` (list mentors, request, accept, groups, moderation) |
 | Messages | `get_conversations`, `get_messages`, `send_message`, `edit_message`, `delete_message`, `start_call` |
 | Careers & events | `get_jobs`, `post_job`, `apply_job`, `get_applicants`, `get_events`, `create_event`, `rsvp_event`, `get_event_attendees` |
-| Admin | `admin_stats`, `admin_users`, `admin_user_actions`, `admin_report_action`, `moderation_queue`, `approve_user`, `generate_token` |
+| Referrals & Atlas | `referrals?action=list\|stats\|my_requests\|offer_requests`, POST `create_offer\|update_offer\|request\|respond\|withdraw`; `alumni_atlas` |
+| Jobs (poster) | `manage_job` (`update`, `close`, `reopen`, `delete`) |
+| Search | `master_search` (people, jobs, events, referral offers — used by Ctrl+K) |
+| Admin | `admin_insights` (GET + `set_banner`, `clear_banner`, `broadcast`), `admin_export_users` (CSV), `admin_stats`, `admin_users`, `admin_user_actions`, `admin_report_action`, `moderation_queue`, `approve_user`, `generate_token` |
+| Public | `site_banner`, `public_feed`, `healthz` |
 
 Clean forms like `/api/get_feed` work too.
 
@@ -414,11 +489,15 @@ Clean forms like `/api/get_feed` work too.
 ## 🗺️ Roadmap
 
 - [ ] HTTPS on the production ALB (ACM certificate)
-- [ ] Self-hosted Tailwind build (drop the CDN warning, tighten CSP further)
+- [x] Self-hosted Tailwind build *(2.1)*
 - [ ] Server-synced post drafts across devices
 - [ ] Two-factor sign-in for admins and faculty
-- [ ] Alumni map by city and company, batch reunions page
-- [ ] Referral board ("I can refer you at …") and give-back / donations
+- [x] Alumni map by city and company, batches view *(2.1 — Alumni Atlas)*
+- [x] Referral board *(2.1)*
+- [ ] Batch reunion pages with RSVP + photo wall
+- [ ] Give-back: scholarships and donation pledges
+- [ ] Real-time chat over WebSockets (currently polling)
+- [ ] Self-hosted Lucide/Leaflet to drop the last CDNs from the CSP
 
 See the full history in **[CHANGELOG.md](CHANGELOG.md)** and the running deploy log in **[docs/DEV_NOTES.md](docs/DEV_NOTES.md)**.
 

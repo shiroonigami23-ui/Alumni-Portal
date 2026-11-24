@@ -7,6 +7,12 @@ function ensure_community_schema(PDO $db): void
     if ($done) {
         return;
     }
+    require_once __DIR__ . '/../helpers/Cache.php';
+    $__schemaKey = 'schema:ensure_community_schema:' . @filemtime(__FILE__) . ':' . (getenv('DB_NAME') ?: 'db');
+    if (Cache::get($__schemaKey)) {
+        $done = true;
+        return;
+    }
 
     if (!db_column_exists($db, 'users', 'is_moderator')) {
         $db->exec("ALTER TABLE users ADD COLUMN is_moderator BOOLEAN NOT NULL DEFAULT FALSE");
@@ -95,6 +101,7 @@ function ensure_community_schema(PDO $db): void
         WHERE revision_no IS NULL OR revision_no < 1
     ");
 
+    Cache::set($__schemaKey, 1, 86400);
     $done = true;
 }
 

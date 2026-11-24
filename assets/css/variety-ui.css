@@ -343,3 +343,116 @@ p, li { line-height: 1.6; }
 }
 html { scroll-behavior: smooth; }
 [data-theme="dark"] .bg-blue-50 { background: rgba(56, 189, 248, 0.14) !important; color: #7dd3fc !important; }
+
+/* ---------------- toasts ---------------- */
+#vu-toasts { position: fixed; right: 16px; bottom: 16px; z-index: 10000; display: flex; flex-direction: column; gap: 8px; max-width: min(92vw, 380px); }
+@media (max-width: 767px) { #vu-toasts { bottom: 88px; left: 12px; right: 12px; max-width: none; } }
+.vu-toast { display: flex; align-items: flex-start; gap: 10px; padding: 12px 14px; border-radius: 14px; font-size: 14px; line-height: 1.4;
+  background: #0f172a; color: #f8fafc; box-shadow: 0 16px 40px rgba(2, 6, 23, .35); border: 1px solid rgba(148, 163, 184, .2);
+  opacity: 0; transform: translateY(8px); transition: opacity .2s ease, transform .2s ease; }
+.vu-toast.vu-in { opacity: 1; transform: none; }
+.vu-toast span:nth-child(2) { flex: 1; }
+.vu-toast-icon { width: 22px; height: 22px; border-radius: 999px; display: inline-flex; align-items: center; justify-content: center; font-weight: 700; font-size: 12px; flex: none; }
+.vu-toast-success .vu-toast-icon { background: #16a34a; } .vu-toast-error .vu-toast-icon { background: #dc2626; }
+.vu-toast-warning .vu-toast-icon { background: #d97706; } .vu-toast-info .vu-toast-icon { background: #2563eb; }
+.vu-toast-x { background: none; border: 0; color: #94a3b8; font-size: 18px; line-height: 1; cursor: pointer; padding: 0 2px; }
+
+/* ---------------- command palette ---------------- */
+#vu-palette { position: fixed; inset: 0; z-index: 10001; background: rgba(2, 6, 23, .55); backdrop-filter: blur(4px); display: none; align-items: flex-start; justify-content: center; padding: 12vh 16px 16px; }
+#vu-palette.vu-open { display: flex; }
+.vu-pal-box { width: 100%; max-width: 620px; border-radius: 18px; overflow: hidden; background: #ffffff; color: #0f172a; box-shadow: 0 30px 80px rgba(2, 6, 23, .45); border: 1px solid #e2e8f0; }
+[data-theme="dark"] .vu-pal-box { background: #0b1220; color: #e2e8f0; border-color: #1e293b; }
+.vu-pal-head { display: flex; align-items: center; gap: 10px; padding: 14px 16px; border-bottom: 1px solid rgba(148, 163, 184, .25); font-size: 18px; }
+.vu-pal-head input { flex: 1; border: 0 !important; outline: none !important; box-shadow: none !important; background: transparent !important; font-size: 16px; color: inherit; }
+#vu-pal-list { max-height: 50vh; overflow-y: auto; margin: 0; padding: 6px; list-style: none; }
+#vu-pal-list li[data-i] { padding: 10px 12px; border-radius: 10px; cursor: pointer; font-size: 14px; }
+#vu-pal-list li.vu-active { background: var(--brand-1, #2563eb); color: #fff; }
+.vu-pal-group { padding: 10px 12px 4px; font-size: 11px; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; opacity: .55; }
+.vu-pal-empty { padding: 18px; text-align: center; opacity: .6; }
+.vu-pal-foot { display: flex; gap: 16px; padding: 8px 14px; font-size: 12px; opacity: .65; border-top: 1px solid rgba(148, 163, 184, .25); }
+kbd { font: 600 11px/1 ui-monospace, SFMono-Regular, Menlo, monospace; padding: 3px 6px; border-radius: 6px; border: 1px solid rgba(148, 163, 184, .45); margin: 0 2px; }
+
+/* ---------------- quick search chip ---------------- */
+#vu-kbar-btn { position: fixed; right: 18px; bottom: 18px; z-index: 60; display: inline-flex; align-items: center; gap: 8px; padding: 9px 14px; border-radius: 999px;
+  background: var(--surface-strong, #fff); color: var(--text-main, #0f172a); border: 1px solid var(--surface-border, #e2e8f0); box-shadow: var(--shadow-strong); font-size: 13px; font-weight: 600; cursor: pointer; }
+#vu-kbar-btn:hover { transform: translateY(-1px); }
+@media (max-width: 767px) { #vu-kbar-btn { bottom: 86px; right: 12px; padding: 10px 12px; } #vu-kbar-btn .vu-kbar-text, #vu-kbar-btn kbd { display: none; } }
+
+/* ---------------- site banner ---------------- */
+.vu-banner { position: relative; z-index: 70; display: flex; align-items: center; justify-content: center; gap: 12px; flex-wrap: wrap; padding: 10px 44px; font-size: 14px; font-weight: 500; color: #fff; text-align: center; }
+.vu-banner a { color: #fff; font-weight: 700; text-decoration: underline; text-underline-offset: 3px; }
+.vu-banner button { position: absolute; right: 12px; top: 50%; transform: translateY(-50%); background: rgba(255, 255, 255, .18); border: 0; color: #fff; width: 26px; height: 26px; border-radius: 999px; cursor: pointer; font-size: 16px; }
+.vu-banner-info { background: linear-gradient(90deg, #1d4ed8, #4f46e5); } .vu-banner-success { background: linear-gradient(90deg, #15803d, #0d9488); }
+.vu-banner-warning { background: linear-gradient(90deg, #b45309, #d97706); } .vu-banner-danger { background: linear-gradient(90deg, #b91c1c, #be123c); }
+
+/* ---------------- empty & skeleton states ---------------- */
+.vu-skeleton { background: linear-gradient(90deg, rgba(148,163,184,.12) 25%, rgba(148,163,184,.25) 37%, rgba(148,163,184,.12) 63%); background-size: 400% 100%; animation: vuShimmer 1.4s ease infinite; border-radius: 12px; }
+@keyframes vuShimmer { 0% { background-position: 100% 50%; } 100% { background-position: 0 50%; } }
+
+/* =================================================================
+   Motion layer (assets/js/motion.js) — disabled for reduced motion
+   ================================================================= */
+@keyframes vuEnter { from { opacity: 0; transform: translateY(14px) scale(.985); } to { opacity: 1; transform: none; } }
+.vu-enter { animation: vuEnter .5s cubic-bezier(.22, 1, .36, 1) both; }
+
+.vu-ripple { position: absolute; border-radius: 999px; pointer-events: none; background: rgba(255, 255, 255, .35);
+  transform: scale(0); animation: vuRipple .6s ease-out forwards; }
+@keyframes vuRipple { to { transform: scale(1); opacity: 0; } }
+
+.vu-confetti { position: fixed; inset: 0; width: 100vw; height: 100vh; pointer-events: none; z-index: 10002; }
+
+/* Animated hero gradients (referral banner, landing hero …) */
+.vu-hero-anim { background-size: 220% 220% !important; animation: vuHero 12s ease-in-out infinite; }
+@keyframes vuHero { 0%, 100% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } }
+
+/* Gradient-text eyebrow shimmer */
+.vu-shimmer-text { background: linear-gradient(90deg, #f59e0b, #ec4899, #8b5cf6, #38bdf8, #f59e0b); background-size: 300% 100%;
+  -webkit-background-clip: text; background-clip: text; color: transparent !important; animation: vuShimmerText 6s linear infinite; }
+@keyframes vuShimmerText { to { background-position: 300% 0; } }
+
+/* Stat / KPI cards: glow ring + light sweep on hover */
+.ins-kpi, .atlas-stat { position: relative; overflow: hidden; isolation: isolate; }
+.ins-kpi::after, .atlas-stat::after { content: ""; position: absolute; inset: -1px; border-radius: inherit; padding: 1px; z-index: -1; opacity: 0;
+  background: conic-gradient(from var(--vu-angle, 0deg), #2563eb, #7c3aed, #ec4899, #f59e0b, #22c55e, #2563eb);
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0); -webkit-mask-composite: xor; mask-composite: exclude;
+  transition: opacity .3s ease; animation: vuSpin 4s linear infinite; }
+.ins-kpi:hover::after, .atlas-stat:hover::after { opacity: 1; }
+.ins-kpi::before, .atlas-stat::before { content: ""; position: absolute; top: 0; left: -60%; width: 40%; height: 100%; z-index: 1; pointer-events: none;
+  background: linear-gradient(100deg, transparent, rgba(255, 255, 255, .12), transparent); transform: skewX(-20deg); }
+.ins-kpi:hover::before, .atlas-stat:hover::before { animation: vuSweep .8s ease; }
+@keyframes vuSweep { to { left: 130%; } }
+@property --vu-angle { syntax: "<angle>"; initial-value: 0deg; inherits: false; }
+@keyframes vuSpin { to { --vu-angle: 360deg; } }
+
+/* Charts: bars grow from the baseline */
+.vu-motion #growthChart rect { transform-box: fill-box; transform-origin: bottom; animation: vuGrow .8s cubic-bezier(.22, 1, .36, 1) both; }
+.vu-motion #growthChart rect:nth-of-type(3n) { animation-delay: .08s; } .vu-motion #growthChart rect:nth-of-type(3n+1) { animation-delay: .16s; }
+@keyframes vuGrow { from { transform: scaleY(0); } to { transform: scaleY(1); } }
+.vu-motion .atlas-bar, .vu-motion .ref-progress { animation: vuBar 1s cubic-bezier(.22, 1, .36, 1) both; transform-origin: left; }
+@keyframes vuBar { from { transform: scaleX(0); } to { transform: scaleX(1); } }
+
+/* Live dot */
+.vu-live { display: inline-block; width: 8px; height: 8px; border-radius: 999px; background: #22c55e; box-shadow: 0 0 0 0 rgba(34, 197, 94, .6); animation: vuLive 1.8s infinite; }
+@keyframes vuLive { 70% { box-shadow: 0 0 0 10px rgba(34, 197, 94, 0); } 100% { box-shadow: 0 0 0 0 rgba(34, 197, 94, 0); } }
+
+/* Sidebar: active item accent slides in, icons nudge on hover */
+.sidebar-link { transition: background-color .2s ease, color .2s ease, transform .2s ease; }
+.sidebar-link:hover { transform: translateX(2px); }
+.sidebar-link:hover svg { transform: scale(1.08); transition: transform .2s ease; }
+
+/* Cards lift with a soft colored glow */
+.job-card, .post-card, article.bg-white { transition: transform .2s ease, box-shadow .25s ease, border-color .2s ease; }
+.job-card:hover, article.bg-white:hover { transform: translateY(-3px); box-shadow: 0 18px 40px rgba(37, 99, 235, .18) !important; }
+
+/* Modals & palette pop in */
+.ref-modal.flex > *, #vu-palette.vu-open .vu-pal-box, .portal-dialog-backdrop:not(.hidden) > * { animation: vuPop .28s cubic-bezier(.22, 1, .36, 1) both; }
+@keyframes vuPop { from { opacity: 0; transform: translateY(10px) scale(.97); } to { opacity: 1; transform: none; } }
+
+/* Page fade-in */
+.vu-motion body { animation: vuFade .35s ease both; }
+@keyframes vuFade { from { opacity: 0; } to { opacity: 1; } }
+
+@media (prefers-reduced-motion: reduce) {
+  .vu-enter, .vu-hero-anim, .vu-shimmer-text, .ins-kpi::after, .atlas-stat::after, .vu-live, .vu-motion body,
+  .vu-motion #growthChart rect, .vu-motion .atlas-bar, .vu-motion .ref-progress { animation: none !important; }
+}

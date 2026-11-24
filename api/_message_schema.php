@@ -6,10 +6,17 @@ function ensure_message_columns(PDO $db): void
     if ($done) {
         return;
     }
+    require_once __DIR__ . '/../helpers/Cache.php';
+    $__schemaKey = 'schema:ensure_message_columns:' . @filemtime(__FILE__) . ':' . (getenv('DB_NAME') ?: 'db');
+    if (Cache::get($__schemaKey)) {
+        $done = true;
+        return;
+    }
 
     $db->exec("ALTER TABLE messages ADD COLUMN IF NOT EXISTS edited_at TIMESTAMP NULL");
     $db->exec("ALTER TABLE messages ADD COLUMN IF NOT EXISTS deleted_at TIMESTAMP NULL");
 
+    Cache::set($__schemaKey, 1, 86400);
     $done = true;
 }
 
@@ -17,6 +24,12 @@ function ensure_calls_table(PDO $db): void
 {
     static $done = false;
     if ($done) {
+        return;
+    }
+    require_once __DIR__ . '/../helpers/Cache.php';
+    $__schemaKey = 'schema:ensure_calls_table:' . @filemtime(__FILE__) . ':' . (getenv('DB_NAME') ?: 'db');
+    if (Cache::get($__schemaKey)) {
+        $done = true;
         return;
     }
 
@@ -32,6 +45,7 @@ function ensure_calls_table(PDO $db): void
         )
     ");
 
+    Cache::set($__schemaKey, 1, 86400);
     $done = true;
 }
 
@@ -39,6 +53,12 @@ function ensure_group_call_schema(PDO $db): void
 {
     static $done = false;
     if ($done) {
+        return;
+    }
+    require_once __DIR__ . '/../helpers/Cache.php';
+    $__schemaKey = 'schema:ensure_group_call_schema:' . @filemtime(__FILE__) . ':' . (getenv('DB_NAME') ?: 'db');
+    if (Cache::get($__schemaKey)) {
+        $done = true;
         return;
     }
 
@@ -62,6 +82,7 @@ function ensure_group_call_schema(PDO $db): void
     $db->exec("CREATE INDEX IF NOT EXISTS idx_mentorship_group_calls_group ON mentorship_group_calls(group_id, status, created_at DESC)");
     $db->exec("CREATE UNIQUE INDEX IF NOT EXISTS uq_mentorship_group_calls_active_group ON mentorship_group_calls(group_id) WHERE status = 'active'");
 
+    Cache::set($__schemaKey, 1, 86400);
     $done = true;
 }
 
@@ -86,6 +107,12 @@ function ensure_group_message_schema(PDO $db): void
     if ($done) {
         return;
     }
+    require_once __DIR__ . '/../helpers/Cache.php';
+    $__schemaKey = 'schema:ensure_group_message_schema:' . @filemtime(__FILE__) . ':' . (getenv('DB_NAME') ?: 'db');
+    if (Cache::get($__schemaKey)) {
+        $done = true;
+        return;
+    }
 
     $db->exec("
         CREATE TABLE IF NOT EXISTS mentorship_groups (
@@ -96,6 +123,8 @@ function ensure_group_message_schema(PDO $db): void
             updated_at TIMESTAMP NOT NULL DEFAULT NOW()
         )
     ");
+    // Messages may create this table before the mentorship module does; keep columns in sync.
+    $db->exec("ALTER TABLE mentorship_groups ADD COLUMN IF NOT EXISTS admin_user_id BIGINT NULL REFERENCES users(user_id) ON DELETE SET NULL");
 
     $db->exec("
         CREATE TABLE IF NOT EXISTS mentorship_group_members (
@@ -133,5 +162,6 @@ function ensure_group_message_schema(PDO $db): void
     $db->exec("CREATE INDEX IF NOT EXISTS idx_mentorship_group_messages_group ON mentorship_group_messages(group_id, created_at DESC)");
     $db->exec("CREATE INDEX IF NOT EXISTS idx_mentorship_group_reads_user ON mentorship_group_message_reads(user_id)");
 
+    Cache::set($__schemaKey, 1, 86400);
     $done = true;
 }

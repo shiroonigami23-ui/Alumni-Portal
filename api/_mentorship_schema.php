@@ -6,6 +6,12 @@ function ensureMentorshipSchema(PDO $db): void
     if ($done) {
         return;
     }
+    require_once __DIR__ . '/../helpers/Cache.php';
+    $__schemaKey = 'schema:ensureMentorshipSchema:' . @filemtime(__FILE__) . ':' . (getenv('DB_NAME') ?: 'db');
+    if (Cache::get($__schemaKey)) {
+        $done = true;
+        return;
+    }
 
     $db->exec("
         CREATE TABLE IF NOT EXISTS mentorship_profiles (
@@ -116,6 +122,7 @@ function ensureMentorshipSchema(PDO $db): void
         WHERE admin_user_id IS NULL
     ");
 
+    Cache::set($__schemaKey, 1, 86400);
     $done = true;
 }
 

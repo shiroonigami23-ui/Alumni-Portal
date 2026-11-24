@@ -1,0 +1,544 @@
+{
+  "date": "2026-11-24T08:12:35+0530",
+  "passed": 54,
+  "total": 54,
+  "results": [
+    {
+      "role": "guest",
+      "page": "/",
+      "final_url": "/",
+      "ms": 1609,
+      "pass": true,
+      "errors": [],
+      "failed_requests": [],
+      "blank": false
+    },
+    {
+      "role": "guest",
+      "page": "/login.php",
+      "final_url": "/login.php",
+      "ms": 1367,
+      "pass": true,
+      "errors": [],
+      "failed_requests": [],
+      "blank": false
+    },
+    {
+      "role": "guest",
+      "page": "/register.php",
+      "final_url": "/register.php",
+      "ms": 1394,
+      "pass": true,
+      "errors": [],
+      "failed_requests": [],
+      "blank": false
+    },
+    {
+      "role": "guest",
+      "page": "/forgot-password.php",
+      "final_url": "/forgot-password.php",
+      "ms": 1279,
+      "pass": true,
+      "errors": [],
+      "failed_requests": [],
+      "blank": false
+    },
+    {
+      "role": "guest",
+      "page": "/terms.php",
+      "final_url": "/terms.php",
+      "ms": 1372,
+      "pass": true,
+      "errors": [],
+      "failed_requests": [],
+      "blank": false
+    },
+    {
+      "role": "guest",
+      "page": "/policy.php",
+      "final_url": "/policy.php",
+      "ms": 1406,
+      "pass": true,
+      "errors": [],
+      "failed_requests": [],
+      "blank": false
+    },
+    {
+      "role": "guest",
+      "page": "/conduct.php",
+      "final_url": "/conduct.php",
+      "ms": 1395,
+      "pass": true,
+      "errors": [],
+      "failed_requests": [],
+      "blank": false
+    },
+    {
+      "role": "guest",
+      "page": "/old-link-404",
+      "final_url": "/old-link-404",
+      "ms": 1284,
+      "pass": true,
+      "errors": [],
+      "failed_requests": [],
+      "blank": false
+    },
+    {
+      "role": "admin",
+      "page": "login via UI",
+      "pass": true,
+      "ms": null,
+      "errors": [],
+      "failed_requests": [],
+      "blank": false
+    },
+    {
+      "role": "admin",
+      "page": "/dashboard.php",
+      "final_url": "/dashboard.php",
+      "ms": 1578,
+      "pass": true,
+      "errors": [],
+      "failed_requests": [],
+      "blank": false
+    },
+    {
+      "role": "admin",
+      "page": "/feed.php",
+      "final_url": "/feed.php",
+      "ms": 1526,
+      "pass": true,
+      "errors": [],
+      "failed_requests": [],
+      "blank": false
+    },
+    {
+      "role": "admin",
+      "page": "/profile.php",
+      "final_url": "/profile.php",
+      "ms": 1563,
+      "pass": true,
+      "errors": [],
+      "failed_requests": [],
+      "blank": false
+    },
+    {
+      "role": "admin",
+      "page": "/settings.php",
+      "final_url": "/settings.php",
+      "ms": 1450,
+      "pass": true,
+      "errors": [],
+      "failed_requests": [],
+      "blank": false
+    },
+    {
+      "role": "admin",
+      "page": "/messages.php",
+      "final_url": "/messages.php",
+      "ms": 1444,
+      "pass": true,
+      "errors": [],
+      "failed_requests": [],
+      "blank": false
+    },
+    {
+      "role": "admin",
+      "page": "/discovery.php",
+      "final_url": "/discovery.php?sort=name_asc",
+      "ms": 1473,
+      "pass": true,
+      "errors": [],
+      "failed_requests": [],
+      "blank": false
+    },
+    {
+      "role": "admin",
+      "page": "/atlas.php",
+      "final_url": "/atlas.php",
+      "ms": 1804,
+      "pass": true,
+      "errors": [],
+      "failed_requests": [],
+      "blank": false
+    },
+    {
+      "role": "admin",
+      "page": "/referrals.php",
+      "final_url": "/referrals.php",
+      "ms": 1375,
+      "pass": true,
+      "errors": [],
+      "failed_requests": [],
+      "blank": false
+    },
+    {
+      "role": "admin",
+      "page": "/jobs.php",
+      "final_url": "/jobs.php",
+      "ms": 1402,
+      "pass": true,
+      "errors": [],
+      "failed_requests": [],
+      "blank": false
+    },
+    {
+      "role": "admin",
+      "page": "/events.php",
+      "final_url": "/events.php",
+      "ms": 1411,
+      "pass": true,
+      "errors": [],
+      "failed_requests": [],
+      "blank": false
+    },
+    {
+      "role": "admin",
+      "page": "/mentorship.php",
+      "final_url": "/mentorship.php",
+      "ms": 1481,
+      "pass": true,
+      "errors": [],
+      "failed_requests": [],
+      "blank": false
+    },
+    {
+      "role": "admin",
+      "page": "/help.php",
+      "final_url": "/help.php",
+      "ms": 1357,
+      "pass": true,
+      "errors": [],
+      "failed_requests": [],
+      "blank": false
+    },
+    {
+      "role": "admin",
+      "page": "/admin/insights.php",
+      "final_url": "/admin/insights.php",
+      "ms": 1423,
+      "pass": true,
+      "errors": [],
+      "failed_requests": [],
+      "blank": false
+    },
+    {
+      "role": "admin",
+      "page": "/admin/dashboard.php",
+      "final_url": "/admin/dashboard.php",
+      "ms": 1498,
+      "pass": true,
+      "errors": [],
+      "failed_requests": [],
+      "blank": false
+    },
+    {
+      "role": "admin",
+      "page": "/admin/users.php",
+      "final_url": "/admin/users.php",
+      "ms": 1358,
+      "pass": true,
+      "errors": [],
+      "failed_requests": [],
+      "blank": false
+    },
+    {
+      "role": "admin",
+      "page": "/admin/reports.php",
+      "final_url": "/admin/reports.php",
+      "ms": 1391,
+      "pass": true,
+      "errors": [],
+      "failed_requests": [],
+      "blank": false
+    },
+    {
+      "role": "admin",
+      "page": "/admin/tokens.php",
+      "final_url": "/admin/tokens.php",
+      "ms": 1437,
+      "pass": true,
+      "errors": [],
+      "failed_requests": [],
+      "blank": false
+    },
+    {
+      "role": "admin",
+      "page": "/admin/system-settings.php",
+      "final_url": "/admin/system-settings.php",
+      "ms": 1401,
+      "pass": true,
+      "errors": [],
+      "failed_requests": [],
+      "blank": false
+    },
+    {
+      "role": "admin",
+      "page": "/moderation.php",
+      "final_url": "/moderation.php",
+      "ms": 1467,
+      "pass": true,
+      "errors": [],
+      "failed_requests": [],
+      "blank": false
+    },
+    {
+      "role": "alumni",
+      "page": "login via UI",
+      "pass": true,
+      "ms": null,
+      "errors": [],
+      "failed_requests": [],
+      "blank": false
+    },
+    {
+      "role": "alumni",
+      "page": "/dashboard.php",
+      "final_url": "/dashboard.php",
+      "ms": 1606,
+      "pass": true,
+      "errors": [],
+      "failed_requests": [],
+      "blank": false
+    },
+    {
+      "role": "alumni",
+      "page": "/feed.php",
+      "final_url": "/feed.php",
+      "ms": 1539,
+      "pass": true,
+      "errors": [],
+      "failed_requests": [],
+      "blank": false
+    },
+    {
+      "role": "alumni",
+      "page": "/profile.php",
+      "final_url": "/profile.php",
+      "ms": 1548,
+      "pass": true,
+      "errors": [],
+      "failed_requests": [],
+      "blank": false
+    },
+    {
+      "role": "alumni",
+      "page": "/settings.php",
+      "final_url": "/settings.php",
+      "ms": 1486,
+      "pass": true,
+      "errors": [],
+      "failed_requests": [],
+      "blank": false
+    },
+    {
+      "role": "alumni",
+      "page": "/messages.php",
+      "final_url": "/messages.php",
+      "ms": 1405,
+      "pass": true,
+      "errors": [],
+      "failed_requests": [],
+      "blank": false
+    },
+    {
+      "role": "alumni",
+      "page": "/discovery.php",
+      "final_url": "/discovery.php?sort=name_asc",
+      "ms": 1488,
+      "pass": true,
+      "errors": [],
+      "failed_requests": [],
+      "blank": false
+    },
+    {
+      "role": "alumni",
+      "page": "/atlas.php",
+      "final_url": "/atlas.php",
+      "ms": 1843,
+      "pass": true,
+      "errors": [],
+      "failed_requests": [],
+      "blank": false
+    },
+    {
+      "role": "alumni",
+      "page": "/referrals.php",
+      "final_url": "/referrals.php",
+      "ms": 1444,
+      "pass": true,
+      "errors": [],
+      "failed_requests": [],
+      "blank": false
+    },
+    {
+      "role": "alumni",
+      "page": "/jobs.php",
+      "final_url": "/jobs.php",
+      "ms": 1533,
+      "pass": true,
+      "errors": [],
+      "failed_requests": [],
+      "blank": false
+    },
+    {
+      "role": "alumni",
+      "page": "/events.php",
+      "final_url": "/events.php",
+      "ms": 1412,
+      "pass": true,
+      "errors": [],
+      "failed_requests": [],
+      "blank": false
+    },
+    {
+      "role": "alumni",
+      "page": "/mentorship.php",
+      "final_url": "/mentorship.php",
+      "ms": 1546,
+      "pass": true,
+      "errors": [],
+      "failed_requests": [],
+      "blank": false
+    },
+    {
+      "role": "alumni",
+      "page": "/help.php",
+      "final_url": "/help.php",
+      "ms": 1337,
+      "pass": true,
+      "errors": [],
+      "failed_requests": [],
+      "blank": false
+    },
+    {
+      "role": "student",
+      "page": "login via UI",
+      "pass": true,
+      "ms": null,
+      "errors": [],
+      "failed_requests": [],
+      "blank": false
+    },
+    {
+      "role": "student",
+      "page": "/dashboard.php",
+      "final_url": "/dashboard.php",
+      "ms": 1571,
+      "pass": true,
+      "errors": [],
+      "failed_requests": [],
+      "blank": false
+    },
+    {
+      "role": "student",
+      "page": "/feed.php",
+      "final_url": "/feed.php",
+      "ms": 1514,
+      "pass": true,
+      "errors": [],
+      "failed_requests": [],
+      "blank": false
+    },
+    {
+      "role": "student",
+      "page": "/profile.php",
+      "final_url": "/profile.php",
+      "ms": 1520,
+      "pass": true,
+      "errors": [],
+      "failed_requests": [],
+      "blank": false
+    },
+    {
+      "role": "student",
+      "page": "/settings.php",
+      "final_url": "/settings.php",
+      "ms": 1458,
+      "pass": true,
+      "errors": [],
+      "failed_requests": [],
+      "blank": false
+    },
+    {
+      "role": "student",
+      "page": "/messages.php",
+      "final_url": "/messages.php",
+      "ms": 1454,
+      "pass": true,
+      "errors": [],
+      "failed_requests": [],
+      "blank": false
+    },
+    {
+      "role": "student",
+      "page": "/discovery.php",
+      "final_url": "/discovery.php?sort=name_asc",
+      "ms": 1429,
+      "pass": true,
+      "errors": [],
+      "failed_requests": [],
+      "blank": false
+    },
+    {
+      "role": "student",
+      "page": "/atlas.php",
+      "final_url": "/atlas.php",
+      "ms": 1777,
+      "pass": true,
+      "errors": [],
+      "failed_requests": [],
+      "blank": false
+    },
+    {
+      "role": "student",
+      "page": "/referrals.php",
+      "final_url": "/referrals.php",
+      "ms": 1401,
+      "pass": true,
+      "errors": [],
+      "failed_requests": [],
+      "blank": false
+    },
+    {
+      "role": "student",
+      "page": "/jobs.php",
+      "final_url": "/jobs.php",
+      "ms": 1492,
+      "pass": true,
+      "errors": [],
+      "failed_requests": [],
+      "blank": false
+    },
+    {
+      "role": "student",
+      "page": "/events.php",
+      "final_url": "/events.php",
+      "ms": 1409,
+      "pass": true,
+      "errors": [],
+      "failed_requests": [],
+      "blank": false
+    },
+    {
+      "role": "student",
+      "page": "/mentorship.php",
+      "final_url": "/mentorship.php",
+      "ms": 1522,
+      "pass": true,
+      "errors": [],
+      "failed_requests": [],
+      "blank": false
+    },
+    {
+      "role": "student",
+      "page": "/help.php",
+      "final_url": "/help.php",
+      "ms": 1337,
+      "pass": true,
+      "errors": [],
+      "failed_requests": [],
+      "blank": false
+    }
+  ]
+}

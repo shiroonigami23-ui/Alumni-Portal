@@ -1,3 +1,10 @@
+-- ============================================================================
+-- LEGACY — MySQL/MariaDB schema (partial).
+-- The portal is PostgreSQL-native: messaging, jobs, events, mentorship and
+-- several other modules use PostgreSQL SQL and tables that are NOT in this file.
+-- Use deployment/schema_pg.sql via `php scripts/install_db.php` instead.
+-- Kept only for reference / historical installs.
+-- ============================================================================
 -- RJIT Alumni Portal bootstrap schema (MySQL 8+)
 -- Import:
 --   mysql -u root -p < deployment/db.sql

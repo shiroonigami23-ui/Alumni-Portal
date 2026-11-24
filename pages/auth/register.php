@@ -20,10 +20,10 @@ if (!in_array($type, $validTypes)) {
     <title>Register - RJIT Alumni Portal</title>
     
     <!-- Tailwind CSS CDN -->
-    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="assets/css/tailwind.css?v=2">
     
     <!-- Lucide Icons CDN -->
-    <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+    <script src="https://unpkg.com/lucide@0.460.0/dist/umd/lucide.min.js"></script>
     
     <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -31,6 +31,7 @@ if (!in_array($type, $validTypes)) {
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Roboto+Slab:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="assets/css/variety-ui.css">
     <script src="assets/js/variety-ui.js" defer></script>
+    <script src="assets/js/motion.js" defer></script>
     
     <style>
         body {
@@ -351,6 +352,18 @@ if (!in_array($type, $validTypes)) {
                                rows="3"
                                class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                                placeholder="Tell us a little about yourself..."></textarea>
+                    </div>
+
+                    <div>
+                        <label for="alumni_invite_code" class="block text-sm font-medium text-gray-700 mb-2">Invite code <span class="font-normal text-gray-500">(optional — skips the approval wait)</span></label>
+                        <input type="text"
+                               id="alumni_invite_code"
+                               name="invite_code"
+                               maxlength="64"
+                               autocomplete="off"
+                               class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent uppercase tracking-wider"
+                               placeholder="e.g. RJIT-ALUM-7F3K">
+                        <p class="mt-1 text-xs text-gray-500">Got a code from the alumni cell? Enter it to be verified instantly.</p>
                     </div>
 
                     <div>

@@ -1,4 +1,6 @@
 <?php
+require_once __DIR__ . '/../helpers/Cache.php';
+register_shutdown_function(function () { if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST' && http_response_code() < 400) { Cache::bump('atlas'); } });
 header("Access-Control-Allow-Origin: *");
 header("Content-Type: application/json; charset=UTF-8");
 header("Access-Control-Allow-Methods: POST");
@@ -112,13 +114,31 @@ try {
 
     $db->beginTransaction();
 
+    // Optional admin-issued invite code: verified alumni skip the approval queue.
+    $inviteCode = strtoupper(trim((string)($data->invite_code ?? '')));
+    $inviteValid = false;
+    if ($inviteCode !== '') {
+        $tok = $db->prepare("SELECT token_id FROM alumni_tokens WHERE UPPER(token) = :t AND used = " . (db_is_pgsql($db) ? 'FALSE' : '0') . "
+                             AND (expires_at IS NULL OR expires_at > CURRENT_TIMESTAMP)" . (db_is_pgsql($db) ? ' FOR UPDATE' : ''));
+        $tok->execute(['t' => $inviteCode]);
+        $inviteTokenId = $tok->fetchColumn();
+        if (!$inviteTokenId) {
+            $db->rollBack();
+            http_response_code(400);
+            echo json_encode(["success" => false, "message" => "That invite code is invalid, expired or already used. Leave it empty to register for admin approval instead."]);
+            exit();
+        }
+        $inviteValid = true;
+    }
+
     $uStmt = $db->prepare("
         INSERT INTO users (email, password_hash, role, status)
-        VALUES (:email, :password_hash, 'alumni', 'pending')
+        VALUES (:email, :password_hash, 'alumni', :status)
     ");
     $uStmt->execute([
         'email' => $email,
-        'password_hash' => $hash
+        'password_hash' => $hash,
+        'status' => $inviteValid ? 'active' : 'pending'
     ]);
     $userId = (int)$db->lastInsertId();
     if (db_is_pgsql($db) && $userId <= 0) {
@@ -164,21 +184,31 @@ try {
     $pStmt->bindValue(':help_alumni_mates', $helpAlumniMates !== '' ? $helpAlumniMates : null, $helpAlumniMates !== '' ? PDO::PARAM_STR : PDO::PARAM_NULL);
     $pStmt->execute();
 
+    if ($inviteValid) {
+        $db->prepare("UPDATE alumni_tokens SET used = " . (db_is_pgsql($db) ? 'TRUE' : '1') . ", used_by_email = :e, used_by_user_id = :u, used_at = CURRENT_TIMESTAMP WHERE token_id = :id")
+           ->execute(['e' => $email, 'u' => $userId, 'id' => $inviteTokenId]);
+    }
+
     $db->commit();
 
     http_response_code(201);
     echo json_encode([
         "success" => true,
-        "message" => "Alumni registration submitted successfully. Your account is pending approval."
+        "status" => $inviteValid ? 'active' : 'pending',
+        "message" => $inviteValid
+            ? "Welcome back to RJIT! Your invite code verified you — you can sign in right away."
+            : "Alumni registration submitted successfully. Your account is pending approval."
+            . (trim((string)($data->password ?? '')) === '' ? " Use “Forgot password” to set your password once approved." : '')
     ]);
 } catch (Throwable $e) {
+    error_log('register_alumni: ' . $e->getMessage());
     if ($db && $db->inTransaction()) {
         $db->rollBack();
     }
     http_response_code(500);
     echo json_encode([
         "success" => false,
-        "message" => "Registration failed: " . $e->getMessage()
+        "message" => "Registration failed. Please try again in a moment." 
     ]);
 }
 ?>

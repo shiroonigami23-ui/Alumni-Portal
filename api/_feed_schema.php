@@ -6,6 +6,12 @@ function ensure_feed_metrics_schema(PDO $db): void
     if ($done) {
         return;
     }
+    require_once __DIR__ . '/../helpers/Cache.php';
+    $__schemaKey = 'schema:ensure_feed_metrics_schema:' . @filemtime(__FILE__) . ':' . (getenv('DB_NAME') ?: 'db');
+    if (Cache::get($__schemaKey)) {
+        $done = true;
+        return;
+    }
 
     $db->exec("ALTER TABLE posts ADD COLUMN IF NOT EXISTS view_count INTEGER NOT NULL DEFAULT 0");
     $db->exec("ALTER TABLE posts ADD COLUMN IF NOT EXISTS share_count INTEGER NOT NULL DEFAULT 0");
@@ -63,5 +69,6 @@ function ensure_feed_metrics_schema(PDO $db): void
     $db->exec("CREATE INDEX IF NOT EXISTS idx_reposts_post ON reposts(post_id)");
     $db->exec("CREATE INDEX IF NOT EXISTS idx_reposts_user ON reposts(user_id)");
 
+    Cache::set($__schemaKey, 1, 86400);
     $done = true;
 }

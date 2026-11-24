@@ -6,6 +6,12 @@ function ensure_asset_store_schema(PDO $db): void
     if ($done) {
         return;
     }
+    require_once __DIR__ . '/../helpers/Cache.php';
+    $__schemaKey = 'schema:ensure_asset_store_schema:' . @filemtime(__FILE__) . ':' . (getenv('DB_NAME') ?: 'db');
+    if (Cache::get($__schemaKey)) {
+        $done = true;
+        return;
+    }
 
     $db->exec("
         CREATE TABLE IF NOT EXISTS uploaded_assets (
@@ -23,6 +29,7 @@ function ensure_asset_store_schema(PDO $db): void
         )
     ");
 
+    Cache::set($__schemaKey, 1, 86400);
     $done = true;
 }
 

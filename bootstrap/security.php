@@ -119,9 +119,43 @@ function ap_is_api_request(): bool
     return strpos($script, '/api/') !== false;
 }
 
+/**
+ * Append a security event (JSON line) to storage/logs/security.log for the
+ * admin Insights page. Rotates at ~2 MB. Never throws.
+ */
+function ap_security_event(string $type, string $detail = '', array $extra = []): void
+{
+    try {
+        $dir = APP_ROOT . '/storage/logs';
+        if (!is_dir($dir)) {
+            @mkdir($dir, 0750, true);
+        }
+        $file = $dir . '/security.log';
+        if (is_file($file) && filesize($file) > 2 * 1024 * 1024) {
+            @rename($file, $file . '.1');
+        }
+        $line = json_encode(array_merge([
+            't' => gmdate('c'),
+            'type' => $type,
+            'ip' => function_exists('ap_client_ip') ? ap_client_ip() : ($_SERVER['REMOTE_ADDR'] ?? ''),
+            'path' => substr((string)parse_url((string)($_SERVER['REQUEST_URI'] ?? ''), PHP_URL_PATH), 0, 200),
+            'method' => $_SERVER['REQUEST_METHOD'] ?? '',
+            'detail' => substr($detail, 0, 300),
+            'ua' => substr((string)($_SERVER['HTTP_USER_AGENT'] ?? ''), 0, 160),
+        ], $extra), JSON_UNESCAPED_SLASHES);
+        @file_put_contents($file, $line . "\n", FILE_APPEND | LOCK_EX);
+    } catch (Throwable $e) {
+        // logging must never break a request
+    }
+}
+
 /** Friendly, consistent rejection for both API and page requests. */
 function ap_reject(int $status, string $message, array $extraHeaders = []): void
 {
+    $types = [403 => 'forbidden', 405 => 'bad_method', 413 => 'too_large', 415 => 'blocked_upload', 429 => 'rate_limited', 400 => 'bad_request'];
+    if (isset($types[$status])) {
+        ap_security_event($types[$status], $message);
+    }
     if (!headers_sent()) {
         http_response_code($status);
         foreach ($extraHeaders as $h) {
@@ -195,7 +229,7 @@ function ap_csp(): string
     $directives = [
         "default-src 'self'",
         // Tailwind Play CDN + Lucide + inline handlers used across pages
-        "script-src 'self' 'unsafe-inline' https://cdn.tailwindcss.com https://unpkg.com https://vjs.zencdn.net https://cdn.jsdelivr.net",
+        "script-src 'self' 'unsafe-inline' https://unpkg.com https://vjs.zencdn.net https://cdn.jsdelivr.net",
         "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://unpkg.com https://vjs.zencdn.net https://cdn.jsdelivr.net",
         "font-src 'self' data: https://fonts.gstatic.com",
         "img-src 'self' data: blob: https:",
@@ -389,6 +423,7 @@ if (ap_is_api_request() && ap_env('RATE_LIMIT_DISABLED') !== 'true') {
                 $code = http_response_code();
                 if ($code === 401) {
                     ap_rate_hit('loginfail', $email, $maxFails, $lockWindow);
+                    ap_security_event('login_failed', 'Wrong password', ['account' => substr(hash('sha256', $email), 0, 12)]);
                 } elseif ($code === 200) {
                     ap_rate_clear('loginfail', $email);
                 }

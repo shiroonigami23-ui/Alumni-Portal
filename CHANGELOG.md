@@ -5,6 +5,49 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and 
 
 ## [Unreleased]
 
+## [2.1.0] — 2026-11-24 — "Supreme hub"
+
+### ✨ Added
+- **Alumni Atlas** (`/atlas.php`, `api/alumni_atlas.php`) — interactive map of alumni by city, ranked cities with top companies, people per city, companies / batches / branches views, filters. Respects private profiles.
+- **Referral board** (`/referrals.php`, `api/referrals.php`) — offers with slots and expiry, requests with pitch + résumé link, accept / referred / decline with notifications, withdraw, admin removal, abuse limits.
+- **Admin Insights & Control Centre** (`/admin/insights.php`, `api/admin_insights.php`) — 12-week sign-up chart, KPIs, 7-day engagement, roles, security events (from the new `storage/logs/security.log`), audit log, system health, top companies, auto-refresh.
+- **Site-wide banner** (admin-set, shown on every page, dismissible) and **broadcast notifications** by audience.
+- **CSV export** of members (`api/admin_export_users.php`, formula-injection safe, audited).
+- **Ctrl+K command palette** with live global search (`api/master_search.php` rebuilt), toasts, quick-search chip.
+- **Job management** — `api/manage_job.php` (edit, close/reopen, delete), poster tools on the jobs page, “Applied ✓” state, working search and filters.
+- **Alumni invite codes** now work: an admin-issued code verifies an alumnus instantly at sign-up and is marked used.
+- **Motion layer** (`assets/js/motion.js`) — count-ups, staggered entrances, growing charts, ripples, animated gradients, confetti; disabled for reduced-motion users.
+- **One-command database install** — `scripts/install_db.php` (+ `--demo`, `--admin-password`) and a complete PostgreSQL schema `deployment/schema_pg.sql` (59 tables).
+- **Cache layer** `helpers/Cache.php` (Redis → APCu → file) with group invalidation and `schema_once`.
+- **Test suites with committed results**: `tests/integration/run.php` (120 API checks), `tests/ui/browser_smoke.py` (54 real-browser checks), `tests/integration/security_limits.php` (lockout). CI now runs the PostgreSQL suite.
+- `/favicon.ico`, `/map`, `/batches`, `/refer`, `/insights` routes.
+
+### ⚡ Performance
+- Schema `ensure_*` checks (~40 queries) now run once per deploy instead of every request — `me.php` 29 ms → 1.7 ms, feed 38 ms → 5 ms, most APIs 2–3 ms.
+- One DB connection per request, persistent connections, single-round-trip parameterised queries on PostgreSQL.
+- Pre-built Tailwind CSS (50 KB) replaces the in-browser Tailwind compiler on every page; Lucide pinned instead of `@latest`.
+- Docker image: OPcache + JIT, APCu, phpredis, realpath cache; docker-compose wires the app to Redis.
+
+### 🐛 Fixed
+- **New students were promoted to alumni on their first login** when their email didn't match the roll-number pattern. Promotion now uses the email pattern or profile graduation year and never guesses.
+- **Stored XSS on the jobs page** (titles, companies, descriptions and links rendered as HTML).
+- **Poster emails leaked** publicly by `get_jobs.php`; the public landing feed fell back to emails and returned restricted (alumni/student-only) posts with no limit.
+- Jobs: “Open application link” never showed (API/UI field mismatch); search and filters did nothing; `post_job` returned no ID and had no validation; closed jobs still accepted applications; posters could apply to their own jobs.
+- `master_search.php` queried a non-existent `campus_events` table.
+- Messages could fail with “column admin_user_id does not exist” depending on which feature created `mentorship_groups` first.
+- Admin invite-token list crashed (schema mismatch); invite codes were never consumed by registration.
+- Landing page crashed while formatting dates (infinite recursion) so fallback posts never rendered.
+- Header showed the user's email instead of their name; gradient badges lost their colour in dark mode.
+- PHP warning in `public_feed.php`.
+
+### 🔒 Security
+- Résumés moved from guessable `storage/resumes/` paths to the private database asset store; `storage/resumes` is no longer served.
+- Security events (rate limits, blocked uploads, failed logins, forbidden requests) are logged for admins.
+- CSP no longer allows the Tailwind CDN.
+
+### 🗄️ Database
+- PostgreSQL is the single supported engine. `deployment/db.sql` (MySQL) is marked legacy/partial.
+
 ## [2.0.0] — 2026-11-24 — "Organised & Hardened"
 
 ### ✨ Added
@@ -104,5 +147,6 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and 
 - Initial AWS-deployable alumni portal with Terraform, Docker and CI/CD.
 - Premium UI theme; PostgreSQL/AWS setup docs; local verification scripts.
 
-[Unreleased]: https://github.com/shiroonigami23-ui/Alumni-Portal/compare/v2.0.0...HEAD
+[Unreleased]: https://github.com/shiroonigami23-ui/Alumni-Portal/compare/v2.1.0...HEAD
+[2.1.0]: https://github.com/shiroonigami23-ui/Alumni-Portal/releases/tag/v2.1.0
 [2.0.0]: https://github.com/shiroonigami23-ui/Alumni-Portal/releases/tag/v2.0.0

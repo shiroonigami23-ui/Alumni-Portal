@@ -15,10 +15,14 @@ services:
       - DB_PASSWORD=postgres
       - APP_ENV=development
       - APP_DEBUG=true
+      - REDIS_HOST=redis
+      - CACHE_DRIVER=auto
+      - DB_PERSISTENT=true
     volumes:
       - ./storage:/var/www/html/storage
     depends_on:
       - db
+      - redis
     networks:
       - alumni-network
 

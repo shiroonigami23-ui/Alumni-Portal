@@ -1,0 +1,974 @@
+{
+    "meta": {
+        "run": "34db50",
+        "date": "2026-11-24T02:41:11+00:00",
+        "base": "http://127.0.0.1:8099",
+        "php": "8.3.6",
+        "passed": 120,
+        "total": 120,
+        "median_ms": 2.3,
+        "p95_ms": 252.4
+    },
+    "results": [
+        {
+            "area": "platform",
+            "name": "Health check /healthz",
+            "pass": true,
+            "code": 200,
+            "ms": 1.6,
+            "note": ""
+        },
+        {
+            "area": "auth",
+            "name": "Admin can sign in",
+            "pass": true,
+            "code": 200,
+            "ms": 76.4,
+            "note": ""
+        },
+        {
+            "area": "auth",
+            "name": "Wrong password is rejected (401)",
+            "pass": true,
+            "code": 401,
+            "ms": 66.2,
+            "note": ""
+        },
+        {
+            "area": "auth",
+            "name": "API without token is rejected (401)",
+            "pass": true,
+            "code": 401,
+            "ms": 5.5,
+            "note": ""
+        },
+        {
+            "area": "auth",
+            "name": "Invalid token is rejected (401)",
+            "pass": true,
+            "code": 401,
+            "ms": 5.6,
+            "note": ""
+        },
+        {
+            "area": "auth",
+            "name": "me.php returns the signed-in user",
+            "pass": true,
+            "code": 200,
+            "ms": 3,
+            "note": ""
+        },
+        {
+            "area": "auth",
+            "name": "CSRF token issued",
+            "pass": true,
+            "code": 200,
+            "ms": 1.2,
+            "note": ""
+        },
+        {
+            "area": "signup",
+            "name": "Student can register",
+            "pass": true,
+            "code": 201,
+            "ms": 252.4,
+            "note": ""
+        },
+        {
+            "area": "signup",
+            "name": "Alumnus can register",
+            "pass": true,
+            "code": 201,
+            "ms": 260.3,
+            "note": ""
+        },
+        {
+            "area": "signup",
+            "name": "Duplicate email is rejected",
+            "pass": true,
+            "code": 400,
+            "ms": 1,
+            "note": ""
+        },
+        {
+            "area": "signup",
+            "name": "Admin generates an alumni invite code",
+            "pass": true,
+            "code": 200,
+            "ms": 2.2,
+            "note": ""
+        },
+        {
+            "area": "signup",
+            "name": "Invite code verifies the alumnus instantly",
+            "pass": true,
+            "code": 201,
+            "ms": 243.7,
+            "note": ""
+        },
+        {
+            "area": "signup",
+            "name": "Invited alumnus can sign in without approval",
+            "pass": true,
+            "code": 200,
+            "ms": 241.1,
+            "note": ""
+        },
+        {
+            "area": "signup",
+            "name": "A used invite code cannot be reused",
+            "pass": true,
+            "code": 400,
+            "ms": 245,
+            "note": ""
+        },
+        {
+            "area": "admin",
+            "name": "Invite list shows the code as used",
+            "pass": true,
+            "code": 200,
+            "ms": 2.2,
+            "note": ""
+        },
+        {
+            "area": "admin",
+            "name": "Admin approves new account (it.alumni.34db50@example.com)",
+            "pass": true,
+            "code": 200,
+            "ms": 9.3,
+            "note": ""
+        },
+        {
+            "area": "admin",
+            "name": "Admin user search finds new accounts",
+            "pass": true,
+            "code": 200,
+            "ms": 4.1,
+            "note": ""
+        },
+        {
+            "area": "auth",
+            "name": "New student can sign in",
+            "pass": true,
+            "code": 200,
+            "ms": 252.5,
+            "note": ""
+        },
+        {
+            "area": "auth",
+            "name": "New alumnus can sign in",
+            "pass": true,
+            "code": 200,
+            "ms": 270.8,
+            "note": ""
+        },
+        {
+            "area": "profile",
+            "name": "Alumnus updates profile",
+            "pass": true,
+            "code": 200,
+            "ms": 2.9,
+            "note": ""
+        },
+        {
+            "area": "profile",
+            "name": "Profile changes are visible to others",
+            "pass": true,
+            "code": 200,
+            "ms": 8.5,
+            "note": ""
+        },
+        {
+            "area": "profile",
+            "name": "Avatar upload (PNG)",
+            "pass": true,
+            "code": 200,
+            "ms": 5.6,
+            "note": ""
+        },
+        {
+            "area": "profile",
+            "name": "Cover photo upload",
+            "pass": true,
+            "code": 200,
+            "ms": 4.7,
+            "note": ""
+        },
+        {
+            "area": "settings",
+            "name": "Make profile private",
+            "pass": true,
+            "code": 200,
+            "ms": 2.1,
+            "note": ""
+        },
+        {
+            "area": "settings",
+            "name": "Make profile public again",
+            "pass": true,
+            "code": 200,
+            "ms": 1.4,
+            "note": ""
+        },
+        {
+            "area": "settings",
+            "name": "Change password",
+            "pass": true,
+            "code": 200,
+            "ms": 769.2,
+            "note": ""
+        },
+        {
+            "area": "settings",
+            "name": "Change password with wrong current password fails",
+            "pass": true,
+            "code": 400,
+            "ms": 250.8,
+            "note": ""
+        },
+        {
+            "area": "settings",
+            "name": "Sign in with the new password",
+            "pass": true,
+            "code": 200,
+            "ms": 253.7,
+            "note": ""
+        },
+        {
+            "area": "feed",
+            "name": "Alumnus creates a post",
+            "pass": true,
+            "code": 200,
+            "ms": 5.3,
+            "note": "(queued for moderator review)"
+        },
+        {
+            "area": "moderation",
+            "name": "Admin approves the queued post",
+            "pass": true,
+            "code": 200,
+            "ms": 3.2,
+            "note": ""
+        },
+        {
+            "area": "feed",
+            "name": "Students cannot create top-level posts (rule)",
+            "pass": true,
+            "code": 403,
+            "ms": 1.3,
+            "note": ""
+        },
+        {
+            "area": "feed",
+            "name": "Feed loads and shows the new post",
+            "pass": true,
+            "code": 200,
+            "ms": 7.2,
+            "note": ""
+        },
+        {
+            "area": "feed",
+            "name": "Author edits the post",
+            "pass": true,
+            "code": 200,
+            "ms": 3.9,
+            "note": ""
+        },
+        {
+            "area": "feed",
+            "name": "Others cannot edit someone else's post",
+            "pass": true,
+            "code": 403,
+            "ms": 1.2,
+            "note": ""
+        },
+        {
+            "area": "feed",
+            "name": "Like / react to a post",
+            "pass": true,
+            "code": 200,
+            "ms": 2.8,
+            "note": ""
+        },
+        {
+            "area": "feed",
+            "name": "Comment on a post",
+            "pass": true,
+            "code": 200,
+            "ms": 2.9,
+            "note": ""
+        },
+        {
+            "area": "feed",
+            "name": "Reply to a comment",
+            "pass": true,
+            "code": 200,
+            "ms": 2.7,
+            "note": ""
+        },
+        {
+            "area": "feed",
+            "name": "Comments load",
+            "pass": true,
+            "code": 200,
+            "ms": 3,
+            "note": ""
+        },
+        {
+            "area": "feed",
+            "name": "Edit own comment",
+            "pass": true,
+            "code": 200,
+            "ms": 2.2,
+            "note": ""
+        },
+        {
+            "area": "feed",
+            "name": "Repost",
+            "pass": true,
+            "code": 200,
+            "ms": 2.3,
+            "note": ""
+        },
+        {
+            "area": "feed",
+            "name": "Share",
+            "pass": true,
+            "code": 200,
+            "ms": 1.5,
+            "note": ""
+        },
+        {
+            "area": "feed",
+            "name": "View is tracked",
+            "pass": true,
+            "code": 200,
+            "ms": 2.3,
+            "note": ""
+        },
+        {
+            "area": "feed",
+            "name": "Author pins the post to their profile",
+            "pass": true,
+            "code": 200,
+            "ms": 2.9,
+            "note": ""
+        },
+        {
+            "area": "feed",
+            "name": "Cannot pin someone else's post",
+            "pass": true,
+            "code": 403,
+            "ms": 1.3,
+            "note": ""
+        },
+        {
+            "area": "feed",
+            "name": "Author unpins the post",
+            "pass": true,
+            "code": 200,
+            "ms": 2.2,
+            "note": ""
+        },
+        {
+            "area": "feed",
+            "name": "Search posts",
+            "pass": true,
+            "code": 200,
+            "ms": 1.8,
+            "note": ""
+        },
+        {
+            "area": "feed",
+            "name": "Delete own comment",
+            "pass": true,
+            "code": 200,
+            "ms": 3.5,
+            "note": ""
+        },
+        {
+            "area": "messages",
+            "name": "Start a conversation",
+            "pass": true,
+            "code": 200,
+            "ms": 1.6,
+            "note": ""
+        },
+        {
+            "area": "messages",
+            "name": "Send a message",
+            "pass": true,
+            "code": 200,
+            "ms": 5.3,
+            "note": ""
+        },
+        {
+            "area": "messages",
+            "name": "Recipient sees unread count",
+            "pass": true,
+            "code": 200,
+            "ms": 1.5,
+            "note": ""
+        },
+        {
+            "area": "messages",
+            "name": "Recipient reads the conversation",
+            "pass": true,
+            "code": 200,
+            "ms": 3.2,
+            "note": ""
+        },
+        {
+            "area": "messages",
+            "name": "Reply",
+            "pass": true,
+            "code": 200,
+            "ms": 3,
+            "note": ""
+        },
+        {
+            "area": "messages",
+            "name": "Conversation list",
+            "pass": true,
+            "code": 200,
+            "ms": 4,
+            "note": ""
+        },
+        {
+            "area": "messages",
+            "name": "Edit own message",
+            "pass": true,
+            "code": 200,
+            "ms": 2.5,
+            "note": ""
+        },
+        {
+            "area": "messages",
+            "name": "Cannot edit someone else's message",
+            "pass": true,
+            "code": 403,
+            "ms": 1.3,
+            "note": ""
+        },
+        {
+            "area": "messages",
+            "name": "Delete own message",
+            "pass": true,
+            "code": 200,
+            "ms": 1.9,
+            "note": ""
+        },
+        {
+            "area": "network",
+            "name": "Follow / connect with an alumnus",
+            "pass": true,
+            "code": 200,
+            "ms": 2.1,
+            "note": ""
+        },
+        {
+            "area": "network",
+            "name": "Directory search finds the alumnus",
+            "pass": true,
+            "code": 200,
+            "ms": 9.9,
+            "note": ""
+        },
+        {
+            "area": "network",
+            "name": "Global search",
+            "pass": true,
+            "code": 200,
+            "ms": 2.7,
+            "note": ""
+        },
+        {
+            "area": "network",
+            "name": "Featured alumni",
+            "pass": true,
+            "code": 200,
+            "ms": 0.9,
+            "note": ""
+        },
+        {
+            "area": "network",
+            "name": "Connections count",
+            "pass": true,
+            "code": 200,
+            "ms": 1.3,
+            "note": ""
+        },
+        {
+            "area": "jobs",
+            "name": "Alumnus posts a job",
+            "pass": true,
+            "code": 201,
+            "ms": 3.3,
+            "note": ""
+        },
+        {
+            "area": "jobs",
+            "name": "Jobs list shows it",
+            "pass": true,
+            "code": 200,
+            "ms": 2.3,
+            "note": ""
+        },
+        {
+            "area": "jobs",
+            "name": "Student applies with résumé",
+            "pass": true,
+            "code": 200,
+            "ms": 4.5,
+            "note": ""
+        },
+        {
+            "area": "jobs",
+            "name": "Poster sees applicants",
+            "pass": true,
+            "code": 200,
+            "ms": 1.6,
+            "note": ""
+        },
+        {
+            "area": "jobs",
+            "name": "Others cannot see applicants",
+            "pass": true,
+            "code": 403,
+            "ms": 0.9,
+            "note": ""
+        },
+        {
+            "area": "jobs",
+            "name": "Applying twice is blocked",
+            "pass": true,
+            "code": 409,
+            "ms": 1.6,
+            "note": ""
+        },
+        {
+            "area": "jobs",
+            "name": "Job shows “applied” for the student and hides poster email",
+            "pass": true,
+            "code": 200,
+            "ms": 2.2,
+            "note": ""
+        },
+        {
+            "area": "jobs",
+            "name": "Poster edits the job",
+            "pass": true,
+            "code": 200,
+            "ms": 2.5,
+            "note": ""
+        },
+        {
+            "area": "jobs",
+            "name": "Others cannot delete the job",
+            "pass": true,
+            "code": 403,
+            "ms": 1,
+            "note": ""
+        },
+        {
+            "area": "jobs",
+            "name": "Poster closes the job",
+            "pass": true,
+            "code": 200,
+            "ms": 1.3,
+            "note": ""
+        },
+        {
+            "area": "jobs",
+            "name": "Invalid job is rejected with a clear message",
+            "pass": true,
+            "code": 400,
+            "ms": 1,
+            "note": ""
+        },
+        {
+            "area": "jobs",
+            "name": "Poster deletes the job",
+            "pass": true,
+            "code": 200,
+            "ms": 2.1,
+            "note": ""
+        },
+        {
+            "area": "events",
+            "name": "Create an event",
+            "pass": true,
+            "code": 201,
+            "ms": 4.1,
+            "note": ""
+        },
+        {
+            "area": "events",
+            "name": "Events list shows it",
+            "pass": true,
+            "code": 200,
+            "ms": 3,
+            "note": ""
+        },
+        {
+            "area": "events",
+            "name": "RSVP",
+            "pass": true,
+            "code": 200,
+            "ms": 2.1,
+            "note": ""
+        },
+        {
+            "area": "events",
+            "name": "Attendee list",
+            "pass": true,
+            "code": 200,
+            "ms": 1,
+            "note": ""
+        },
+        {
+            "area": "events",
+            "name": "Cancel RSVP",
+            "pass": true,
+            "code": 200,
+            "ms": 1.9,
+            "note": ""
+        },
+        {
+            "area": "events",
+            "name": "Upcoming events count",
+            "pass": true,
+            "code": 200,
+            "ms": 1.2,
+            "note": ""
+        },
+        {
+            "area": "mentorship",
+            "name": "Mentorship status",
+            "pass": true,
+            "code": 200,
+            "ms": 6.5,
+            "note": ""
+        },
+        {
+            "area": "mentorship",
+            "name": "List mentors",
+            "pass": true,
+            "code": 200,
+            "ms": 2.6,
+            "note": ""
+        },
+        {
+            "area": "mentorship",
+            "name": "Alumnus applies to be a mentor",
+            "pass": true,
+            "code": 200,
+            "ms": 2.8,
+            "note": ""
+        },
+        {
+            "area": "notify",
+            "name": "Notifications load",
+            "pass": true,
+            "code": 200,
+            "ms": 3.1,
+            "note": ""
+        },
+        {
+            "area": "notify",
+            "name": "Mark a notification read",
+            "pass": true,
+            "code": 200,
+            "ms": 1.8,
+            "note": ""
+        },
+        {
+            "area": "notify",
+            "name": "Unread notifications count",
+            "pass": true,
+            "code": 200,
+            "ms": 1.1,
+            "note": ""
+        },
+        {
+            "area": "referrals",
+            "name": "Alumnus publishes a referral offer",
+            "pass": true,
+            "code": 201,
+            "ms": 3.6,
+            "note": ""
+        },
+        {
+            "area": "referrals",
+            "name": "Students cannot publish offers",
+            "pass": true,
+            "code": 403,
+            "ms": 1.1,
+            "note": ""
+        },
+        {
+            "area": "referrals",
+            "name": "Student finds the offer",
+            "pass": true,
+            "code": 200,
+            "ms": 2.3,
+            "note": ""
+        },
+        {
+            "area": "referrals",
+            "name": "Too-short pitch is rejected with guidance",
+            "pass": true,
+            "code": 400,
+            "ms": 1.2,
+            "note": ""
+        },
+        {
+            "area": "referrals",
+            "name": "Student requests a referral",
+            "pass": true,
+            "code": 201,
+            "ms": 2.9,
+            "note": ""
+        },
+        {
+            "area": "referrals",
+            "name": "Duplicate request is blocked",
+            "pass": true,
+            "code": 409,
+            "ms": 1.6,
+            "note": ""
+        },
+        {
+            "area": "referrals",
+            "name": "Owner sees the request",
+            "pass": true,
+            "code": 200,
+            "ms": 1.8,
+            "note": ""
+        },
+        {
+            "area": "referrals",
+            "name": "Others cannot see the requests",
+            "pass": true,
+            "code": 403,
+            "ms": 1.1,
+            "note": ""
+        },
+        {
+            "area": "referrals",
+            "name": "Owner marks as referred",
+            "pass": true,
+            "code": 200,
+            "ms": 3,
+            "note": ""
+        },
+        {
+            "area": "referrals",
+            "name": "Student sees status “referred”",
+            "pass": true,
+            "code": 200,
+            "ms": 1.5,
+            "note": ""
+        },
+        {
+            "area": "referrals",
+            "name": "Board stats",
+            "pass": true,
+            "code": 200,
+            "ms": 1.8,
+            "note": ""
+        },
+        {
+            "area": "referrals",
+            "name": "Admin can remove an offer",
+            "pass": true,
+            "code": 200,
+            "ms": 2.6,
+            "note": ""
+        },
+        {
+            "area": "atlas",
+            "name": "Atlas aggregates load",
+            "pass": true,
+            "code": 200,
+            "ms": 3.1,
+            "note": ""
+        },
+        {
+            "area": "atlas",
+            "name": "Atlas lists alumni in Bengaluru",
+            "pass": true,
+            "code": 200,
+            "ms": 1.7,
+            "note": ""
+        },
+        {
+            "area": "admin",
+            "name": "Admin stats",
+            "pass": true,
+            "code": 200,
+            "ms": 3.2,
+            "note": ""
+        },
+        {
+            "area": "admin",
+            "name": "Non-admins cannot see admin stats",
+            "pass": true,
+            "code": 403,
+            "ms": 1,
+            "note": ""
+        },
+        {
+            "area": "admin",
+            "name": "Insights dashboard data",
+            "pass": true,
+            "code": 200,
+            "ms": 4.8,
+            "note": ""
+        },
+        {
+            "area": "admin",
+            "name": "Non-admins blocked from insights",
+            "pass": true,
+            "code": 403,
+            "ms": 1,
+            "note": ""
+        },
+        {
+            "area": "admin",
+            "name": "Publish site banner",
+            "pass": true,
+            "code": 200,
+            "ms": 2.1,
+            "note": ""
+        },
+        {
+            "area": "admin",
+            "name": "Banner is public on every page",
+            "pass": true,
+            "code": 200,
+            "ms": 0.7,
+            "note": ""
+        },
+        {
+            "area": "admin",
+            "name": "Clear site banner",
+            "pass": true,
+            "code": 200,
+            "ms": 1.6,
+            "note": ""
+        },
+        {
+            "area": "admin",
+            "name": "Broadcast to students",
+            "pass": true,
+            "code": 200,
+            "ms": 2.1,
+            "note": ""
+        },
+        {
+            "area": "admin",
+            "name": "Student receives the broadcast",
+            "pass": true,
+            "code": 200,
+            "ms": 2,
+            "note": ""
+        },
+        {
+            "area": "admin",
+            "name": "Export alumni CSV",
+            "pass": true,
+            "code": 200,
+            "ms": 2.5,
+            "note": ""
+        },
+        {
+            "area": "admin",
+            "name": "Audit log",
+            "pass": true,
+            "code": 200,
+            "ms": 1.6,
+            "note": ""
+        },
+        {
+            "area": "uploads",
+            "name": "Upload an image attachment",
+            "pass": true,
+            "code": 200,
+            "ms": 2.7,
+            "note": ""
+        },
+        {
+            "area": "uploads",
+            "name": "PHP hidden in a JPEG is blocked (415)",
+            "pass": true,
+            "code": 415,
+            "ms": 0.7,
+            "note": ""
+        },
+        {
+            "area": "uploads",
+            "name": "Double extension is blocked (415)",
+            "pass": true,
+            "code": 415,
+            "ms": 0.6,
+            "note": ""
+        },
+        {
+            "area": "uploads",
+            "name": "Fake PDF is blocked (415)",
+            "pass": true,
+            "code": 415,
+            "ms": 8.7,
+            "note": ""
+        },
+        {
+            "area": "security",
+            "name": "Hostile origin gets no CORS header",
+            "pass": true,
+            "code": 200,
+            "ms": 1.6,
+            "note": ""
+        },
+        {
+            "area": "security",
+            "name": "Pages send a Content-Security-Policy",
+            "pass": true,
+            "code": 200,
+            "ms": 1.7,
+            "note": ""
+        },
+        {
+            "area": "security",
+            "name": "Internal files are hidden (404)",
+            "pass": true,
+            "code": 404,
+            "ms": 0.6,
+            "note": ""
+        },
+        {
+            "area": "security",
+            "name": "Cannot delete someone else's post",
+            "pass": true,
+            "code": 403,
+            "ms": 1.6,
+            "note": ""
+        },
+        {
+            "area": "feed",
+            "name": "Author deletes the post",
+            "pass": true,
+            "code": 200,
+            "ms": 3.7,
+            "note": ""
+        },
+        {
+            "area": "feed",
+            "name": "Deleted post is gone from the feed",
+            "pass": true,
+            "code": 200,
+            "ms": 6,
+            "note": ""
+        }
+    ]
+}

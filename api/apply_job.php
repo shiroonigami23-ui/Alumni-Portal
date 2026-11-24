@@ -67,13 +67,23 @@ try {
     }
     
     // Check if job exists
-    $stmt = $pdo->prepare("SELECT job_id, company_name FROM jobs WHERE job_id = :job_id");
+    $stmt = $pdo->prepare("SELECT job_id, company_name, poster_id, COALESCE(status, 'open') AS status FROM jobs WHERE job_id = :job_id");
     $stmt->execute([':job_id' => $job_id]);
     $job = $stmt->fetch(PDO::FETCH_ASSOC);
     
     if (!$job) {
         http_response_code(404);
         echo json_encode(['message' => 'Job not found']);
+        exit;
+    }
+    if ($job['status'] !== 'open') {
+        http_response_code(409);
+        echo json_encode(['message' => 'This job is closed and no longer accepts applications.']);
+        exit;
+    }
+    if ((int)$job['poster_id'] === (int)$user['user_id']) {
+        http_response_code(400);
+        echo json_encode(['message' => "You can't apply to a job you posted."]);
         exit;
     }
     
@@ -120,25 +130,17 @@ try {
         exit;
     }
     
-    // Create unique filename
-    $storage_dir = __DIR__ . '/../storage/resumes/';
-    if (!file_exists($storage_dir)) {
-        mkdir($storage_dir, 0755, true);
-    }
-    
-    $unique_name = 'cv_' . $user['user_id'] . '_' . $job_id . '_' . time() . '.' . $file_ext;
-    $file_path = $storage_dir . $unique_name;
-    
-    // Move uploaded file
-    if (!move_uploaded_file($file_tmp, $file_path)) {
+    // Store the résumé in the database asset store: survives app-server changes and
+    // is only reachable through an unguessable token (never a public storage/ path).
+    require_once __DIR__ . '/_asset_store.php';
+    $asset = store_uploaded_asset($pdo, (int)$user['user_id'], $file, 'file', 'resume');
+    if (!$asset || empty($asset['url'])) {
         http_response_code(500);
-        echo json_encode(['message' => 'Failed to save resume file']);
+        echo json_encode(['message' => 'Could not save your résumé. Please try again.']);
         exit;
     }
-    
-    // Save application to database
-    $relative_path = 'storage/resumes/' . $unique_name;
-    
+    $relative_path = $asset['url'];
+
     $stmt = $pdo->prepare("
         INSERT INTO job_applications 
         (job_id, applicant_id, resume_path, cover_letter, status)
@@ -178,7 +180,8 @@ try {
     }
     
     // Log activity
-    $log_file = __DIR__ . '/../storage/log.txt';
+    $log_file = __DIR__ . '/../storage/logs/activity.log';
+    if (!is_dir(dirname($log_file))) { @mkdir(dirname($log_file), 0750, true); }
     $log_message = sprintf(
         "[%s] User %d applied for job %d (Application ID: %d)\n",
         date('Y-m-d H:i:s'),

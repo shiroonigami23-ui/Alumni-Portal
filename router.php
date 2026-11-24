@@ -59,8 +59,8 @@ function ap_redirect(string $target, int $code = 301): void
 
 // ---- Reject path tricks early ----------------------------------------------
 if ($__r['rel'] !== '' && (strpos($__r['rel'], "\0") !== false || preg_match('#(^|/)\.\.?(/|$)#', $__r['rel']))) {
-    http_response_code(400);
-    exit('Bad request');
+    require_once APP_ROOT . '/bootstrap/security.php';
+    ap_reject(400, 'That link looks malformed.');
 }
 
 // ---- Health check (used by Docker/ECS) — no DB, no session ------------------
@@ -68,6 +68,14 @@ if ($__r['rel'] === 'healthz') {
     header('Content-Type: application/json');
     header('Cache-Control: no-store');
     echo json_encode(['status' => 'ok', 'time' => gmdate('c')]);
+    exit;
+}
+
+// ---- /favicon.ico (browsers request it automatically) -----------------------
+if ($__r['rel'] === 'favicon.ico') {
+    header('Content-Type: image/png');
+    header('Cache-Control: public, max-age=604800');
+    readfile(APP_ROOT . '/assets/icons/app-icon-192.png');
     exit;
 }
 

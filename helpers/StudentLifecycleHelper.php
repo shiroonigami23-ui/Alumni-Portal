@@ -43,6 +43,30 @@ class StudentLifecycleHelper
         return $now >= self::graduationCutoffDate($gradYear);
     }
 
+    /**
+     * Should this student account become alumni now?
+     * Graduation year comes from the RJIT email pattern, else from the profile.
+     * Unknown graduation year => never auto-promote (a fresh student must stay a student).
+     */
+    public static function isStudentDueForPromotion(PDO $db, int $userId, string $email, ?DateTimeImmutable $asOf = null): bool
+    {
+        $gradYear = self::expectedGraduationYearForEmail($email);
+        if (!$gradYear) {
+            try {
+                $stmt = $db->prepare("SELECT graduation_year FROM profiles WHERE user_id = :uid");
+                $stmt->execute(['uid' => $userId]);
+                $gradYear = (int)$stmt->fetchColumn() ?: null;
+            } catch (Throwable $e) {
+                $gradYear = null;
+            }
+        }
+        if (!$gradYear) {
+            return false;
+        }
+        $now = $asOf ?: new DateTimeImmutable('now');
+        return $now >= self::graduationCutoffDate($gradYear);
+    }
+
     public static function promoteEligibleStudents(PDO $db, ?DateTimeImmutable $asOf = null): int
     {
         $now = $asOf ?: new DateTimeImmutable('now');

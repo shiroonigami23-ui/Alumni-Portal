@@ -162,6 +162,19 @@ $isAdminDashboardPage = $currentPage === 'dashboard.php' && strpos($_SERVER['REQ
                     <span class="sidebar-label">Mentorship</span>
                 </a>
                 
+                <!-- Alumni Atlas -->
+                <a href="<?php echo $basePrefix; ?>atlas.php" class="sidebar-link group flex items-center px-3 py-3 text-sm font-medium rounded-lg <?php echo $currentPage == 'atlas.php' ? 'bg-blue-50 text-blue-700' : 'text-gray-700 hover:bg-gray-50 hover:text-gray-900'; ?>">
+                    <i data-lucide="map" class="h-5 w-5 mr-3"></i>
+                    <span class="sidebar-label">Alumni Atlas</span>
+                </a>
+
+                <!-- Referral board -->
+                <a href="<?php echo $basePrefix; ?>referrals.php" class="sidebar-link group flex items-center px-3 py-3 text-sm font-medium rounded-lg <?php echo $currentPage == 'referrals.php' ? 'bg-blue-50 text-blue-700' : 'text-gray-700 hover:bg-gray-50 hover:text-gray-900'; ?>">
+                    <i data-lucide="handshake" class="h-5 w-5 mr-3"></i>
+                    <span class="sidebar-label">Referrals</span>
+                    <span class="sidebar-meta ml-auto text-[10px] font-semibold uppercase tracking-wide text-emerald-600">New</span>
+                </a>
+
                 <!-- Messages -->
                 <a href="<?php echo $basePrefix; ?>messages.php" class="sidebar-link group flex items-center px-3 py-3 text-sm font-medium rounded-lg <?php echo $currentPage == 'messages.php' ? 'bg-blue-50 text-blue-700' : 'text-gray-700 hover:bg-gray-50 hover:text-gray-900'; ?>">
                     <i data-lucide="message-square" class="h-5 w-5 mr-3"></i>
@@ -184,6 +197,10 @@ $isAdminDashboardPage = $currentPage === 'dashboard.php' && strpos($_SERVER['REQ
                     <a href="<?php echo $basePrefix; ?>admin/dashboard.php" class="sidebar-link group flex items-center px-3 py-3 text-sm font-medium rounded-lg <?php echo $isAdminDashboardPage ? 'bg-amber-50 text-amber-700 border-l-4 border-amber-500' : 'text-gray-700 hover:bg-gray-50 hover:text-gray-900'; ?>">
                         <i data-lucide="shield" class="h-5 w-5 mr-3"></i>
                         <span class="sidebar-label">Admin Panel</span>
+                    </a>
+                    <a href="<?php echo $basePrefix; ?>admin/insights.php" class="sidebar-link group flex items-center px-3 py-3 text-sm font-medium rounded-lg <?php echo $currentPage == 'insights.php' ? 'bg-amber-50 text-amber-700 border-l-4 border-amber-500' : 'text-gray-700 hover:bg-gray-50 hover:text-gray-900'; ?>">
+                        <i data-lucide="activity" class="h-5 w-5 mr-3"></i>
+                        <span class="sidebar-label">Insights &amp; Control</span>
                     </a>
                     <a href="<?php echo $basePrefix; ?>admin/users.php" class="sidebar-link group flex items-center px-3 py-3 text-sm font-medium rounded-lg <?php echo $currentPage == 'users.php' ? 'bg-amber-50 text-amber-700 border-l-4 border-amber-500' : 'text-gray-700 hover:bg-gray-50 hover:text-gray-900'; ?>">
                         <i data-lucide="users" class="h-5 w-5 mr-3"></i>
@@ -273,6 +290,14 @@ $isAdminDashboardPage = $currentPage === 'dashboard.php' && strpos($_SERVER['REQ
                 <div class="mb-2 inline-flex rounded-xl bg-slate-800 p-2 text-emerald-300"><i data-lucide="users" class="h-4 w-4"></i></div>
                 <div>Mentorship</div>
             </a>
+            <a href="<?php echo $basePrefix; ?>atlas.php" class="rounded-2xl border border-slate-800 bg-slate-900/70 px-4 py-4 text-sm font-medium text-slate-100">
+                <div class="mb-2 inline-flex rounded-xl bg-slate-800 p-2 text-sky-300"><i data-lucide="map" class="h-4 w-4"></i></div>
+                <div>Alumni Atlas</div>
+            </a>
+            <a href="<?php echo $basePrefix; ?>referrals.php" class="rounded-2xl border border-slate-800 bg-slate-900/70 px-4 py-4 text-sm font-medium text-slate-100">
+                <div class="mb-2 inline-flex rounded-xl bg-slate-800 p-2 text-pink-300"><i data-lucide="handshake" class="h-4 w-4"></i></div>
+                <div>Referrals</div>
+            </a>
             <a href="<?php echo $basePrefix; ?>settings.php" class="rounded-2xl border border-slate-800 bg-slate-900/70 px-4 py-4 text-sm font-medium text-slate-100">
                 <div class="mb-2 inline-flex rounded-xl bg-slate-800 p-2 text-slate-300"><i data-lucide="settings" class="h-4 w-4"></i></div>
                 <div>Settings</div>
@@ -285,9 +310,9 @@ $isAdminDashboardPage = $currentPage === 'dashboard.php' && strpos($_SERVER['REQ
                 <div class="mb-2 inline-flex rounded-xl bg-indigo-900/60 p-2 text-indigo-200"><i data-lucide="shield-check" class="h-4 w-4"></i></div>
                 <div>Moderation</div>
             </a>
-            <a href="<?php echo $basePrefix; ?>admin/dashboard.php" id="mobileAdminLink" class="hidden rounded-2xl border border-amber-800/60 bg-amber-950/60 px-4 py-4 text-sm font-medium text-amber-200">
+            <a href="<?php echo $basePrefix; ?>admin/insights.php" id="mobileAdminLink" class="hidden rounded-2xl border border-amber-800/60 bg-amber-950/60 px-4 py-4 text-sm font-medium text-amber-200">
                 <div class="mb-2 inline-flex rounded-xl bg-amber-900/60 p-2 text-amber-200"><i data-lucide="shield" class="h-4 w-4"></i></div>
-                <div>Admin Panel</div>
+                <div>Admin · Insights</div>
             </a>
         </nav>
         <div id="mobileRoleLinks" class="mt-3 space-y-2">

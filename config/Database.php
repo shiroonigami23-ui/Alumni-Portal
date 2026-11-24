@@ -22,8 +22,15 @@ class Database
         $this->password = getenv('DB_PASSWORD') ?: ''; // Empty by default for local trust auth
     }
 
+    /** One shared connection per request (models/APIs call getConnection() repeatedly). */
+    private static array $pool = [];
+
     public function getConnection()
     {
+        $poolKey = $this->driver . '|' . $this->host . '|' . $this->port . '|' . $this->db_name . '|' . $this->username;
+        if (isset(self::$pool[$poolKey])) {
+            return $this->conn = self::$pool[$poolKey];
+        }
         $this->conn = null;
 
         $ports = [$this->port];
@@ -40,11 +47,23 @@ class Database
                 } else {
                     $dsn = "pgsql:host=" . $this->host . ";port=" . $port . ";dbname=" . $this->db_name;
                 }
-                $this->conn = new PDO($dsn, $this->username, $this->password, [
+                $options = [
                     PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
                     PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
-                    PDO::ATTR_EMULATE_PREPARES => false
-                ]);
+                    PDO::ATTR_EMULATE_PREPARES => false,
+                    PDO::ATTR_TIMEOUT => 5,
+                    // Reuse server connections between requests (set DB_PERSISTENT=false to disable)
+                    PDO::ATTR_PERSISTENT => strtolower((string)(getenv('DB_PERSISTENT') ?: 'true')) !== 'false',
+                ];
+                if ($this->driver !== 'mysql' && defined('PDO::PGSQL_ATTR_DISABLE_PREPARES')) {
+                    // One network round trip per query (no PREPARE/DEALLOCATE), still fully parameterised
+                    $options[PDO::PGSQL_ATTR_DISABLE_PREPARES] = true;
+                }
+                $this->conn = new PDO($dsn, $this->username, $this->password, $options);
+                if ($this->conn->inTransaction()) {
+                    $this->conn->rollBack(); // never inherit a half-finished transaction from a reused connection
+                }
+                self::$pool[$poolKey] = $this->conn;
                 break;
             } catch (PDOException $exception) {
                 $lastException = $exception;

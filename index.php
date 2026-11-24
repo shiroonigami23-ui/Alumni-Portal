@@ -129,10 +129,10 @@ if (($landingStats['total_posts'] ?? 0) <= 0) {
     <title>Welcome to RJIT Alumni Portal</title>
 
     <!-- Tailwind CSS CDN -->
-    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="assets/css/tailwind.css?v=2">
 
     <!-- Lucide Icons CDN -->
-    <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+    <script src="https://unpkg.com/lucide@0.460.0/dist/umd/lucide.min.js"></script>
 
     <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -140,6 +140,7 @@ if (($landingStats['total_posts'] ?? 0) <= 0) {
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Roboto+Slab:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="assets/css/variety-ui.css">
     <script src="assets/js/variety-ui.js" defer></script>
+    <script src="assets/js/motion.js" defer></script>
 
     <style>
         body {
@@ -156,7 +157,7 @@ if (($landingStats['total_posts'] ?? 0) <= 0) {
         }
 
         .hero-gradient {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 45%, #db2777 75%, #2563eb 100%);
         }
 
         .card-hover:hover {
@@ -202,7 +203,7 @@ if (($landingStats['total_posts'] ?? 0) <= 0) {
     </nav>
 
     <!-- Hero Section -->
-    <section class="hero-gradient text-white">
+    <section class="hero-gradient vu-hero-anim text-white">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20">
             <div class="text-center">
                 <h1 class="text-4xl md:text-6xl font-bold mb-6">Welcome to the RJIT Alumni Portal</h1>
@@ -641,7 +642,16 @@ if (($landingStats['total_posts'] ?? 0) <= 0) {
         }
 
         function formatDate(dateString) {
-            return window.portalTime ? window.portalTime.format(dateString, 'relative') : window.formatDate(dateString, 'relative');
+            if (window.portalTime) return window.portalTime.format(dateString, 'relative');
+            // Landing page runs without auth-check.js: small local relative formatter
+            const d = new Date(String(dateString || '').replace(' ', 'T'));
+            if (isNaN(d)) return '';
+            const s = Math.max(0, (Date.now() - d.getTime()) / 1000);
+            if (s < 60) return 'just now';
+            if (s < 3600) return Math.floor(s / 60) + 'm ago';
+            if (s < 86400) return Math.floor(s / 3600) + 'h ago';
+            if (s < 604800) return Math.floor(s / 86400) + 'd ago';
+            return d.toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' });
         }
     </script>
 </body>

@@ -20,7 +20,7 @@ FileETag None
     RewriteRule ^includes/.+\.php$ - [R=404,L]
 
     # Private user data in storage
-    RewriteRule ^storage/(verification|exports|logs|cache|messages|imports|test_reports)(/|$) - [R=404,L]
+    RewriteRule ^storage/(verification|exports|logs|cache|messages|imports|test_reports|resumes)(/|$) - [R=404,L]
     # Storage serves media/documents only — never text, json, archives or code
     RewriteCond %{REQUEST_URI} !\.(jpe?g|png|gif|webp|pdf|docx?|mp3|mp4|m4a|webm)$ [NC]
     RewriteRule ^storage/ - [R=404,L]
