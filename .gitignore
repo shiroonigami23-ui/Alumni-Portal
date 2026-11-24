@@ -63,6 +63,7 @@ build/
 storage/uploads/
 storage/avatars/
 storage/documents/
+storage/verification/
 storage/profile_pictures/
 storage/comments/comm_*.txt
 storage/comments/comm_*.json

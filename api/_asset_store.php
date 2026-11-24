@@ -33,6 +33,30 @@ function ensure_asset_store_schema(PDO $db): void
     $done = true;
 }
 
+/**
+ * The user's file name is only a display label: strip folders, control characters and anything that could
+ * confuse a download header, cap its length, and make sure it keeps a sensible extension.
+ */
+function asset_clean_name(string $name, string $ext = ''): string
+{
+    $name = str_replace('\\', '/', $name);
+    $name = basename($name);
+    $name = preg_replace('/[\x00-\x1F\x7F"<>|*?:]+/u', '', $name) ?? '';
+    $name = trim(preg_replace('/\s+/u', ' ', $name) ?? '', " .\t");
+    if ($name === '') {
+        $name = 'file';
+    }
+    if (mb_strlen($name) > 150) {
+        $dot = strrpos($name, '.');
+        $tail = $dot !== false ? substr($name, $dot) : '';
+        $name = mb_substr($name, 0, 150 - mb_strlen($tail)) . $tail;
+    }
+    if ($ext !== '' && strtolower(pathinfo($name, PATHINFO_EXTENSION)) !== strtolower($ext)) {
+        $name .= '.' . $ext;
+    }
+    return $name;
+}
+
 function insert_binary_asset(
     PDO $db,
     int $ownerUserId,
@@ -45,8 +69,18 @@ function insert_binary_asset(
     string $binary
 ): ?array {
     ensure_asset_store_schema($db);
+    $original = asset_clean_name($original, $safeExt);
 
-    $token = bin2hex(random_bytes(24));
+    // 192-bit random token under a UNIQUE key: storage names can never collide, whatever the user called the file.
+    // (Retry is belt-and-braces; a clash is ~1 in 10^57.)
+    for ($attempt = 0; $attempt < 3; $attempt++) {
+        $token = bin2hex(random_bytes(24));
+        $dup = $db->prepare("SELECT 1 FROM uploaded_assets WHERE public_token = :t");
+        $dup->execute([':t' => $token]);
+        if (!$dup->fetchColumn()) {
+            break;
+        }
+    }
     $stmt = $db->prepare("
         INSERT INTO uploaded_assets
             (public_token, owner_user_id, scope, asset_kind, original_name, mime_type, file_ext, file_size, binary_data)

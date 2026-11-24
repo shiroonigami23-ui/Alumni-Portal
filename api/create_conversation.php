@@ -6,6 +6,7 @@ header("Access-Control-Allow-Methods: POST");
 require_once __DIR__ . '/../config/Database.php';
 require_once __DIR__ . '/../middleware/Auth.php';
 require_once __DIR__ . '/_moderation_schema.php';
+require_once __DIR__ . '/_privacy.php';
 
 try {
     $database = new Database();
@@ -30,6 +31,11 @@ try {
     if ($otherUserId === $currentUserId) {
         http_response_code(400);
         echo json_encode(['success' => false, 'message' => 'Cannot start a conversation with yourself']);
+        exit;
+    }
+    if (privacy_is_blocked($db, $currentUserId, $otherUserId)) {
+        http_response_code(403);
+        echo json_encode(['success' => false, 'message' => 'You can\'t message this person.']);
         exit;
     }
 

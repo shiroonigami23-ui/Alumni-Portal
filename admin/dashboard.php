@@ -9,7 +9,7 @@ if (session_status() === PHP_SESSION_NONE) {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Admin Dashboard - RJIT Alumni Portal</title>
-    <link rel="stylesheet" href="../assets/css/tailwind.css?v=2">
+    <link rel="stylesheet" href="../assets/css/tailwind.css?v=3">
     <script src="https://unpkg.com/lucide@0.460.0/dist/umd/lucide.min.js"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -583,23 +583,23 @@ if (session_status() === PHP_SESSION_NONE) {
                             <td class="py-4 px-4">
                                 <div class="flex items-center">
                                     <div class="h-10 w-10 bg-gray-100 rounded-full flex items-center justify-center mr-3">
-                                        ${user.avatar ? `<img src="${user.avatar}" alt="${user.name}" class="h-10 w-10 rounded-full">` : `<i data-lucide="user" class="h-5 w-5 text-gray-400"></i>`}
+                                        ${user.avatar ? `<img src="${escapeHtml(safeUrl(user.avatar))}" alt="${escapeHtml(user.name)}" class="h-10 w-10 rounded-full">` : `<i data-lucide="user" class="h-5 w-5 text-gray-400"></i>`}
                                     </div>
                                     <div>
-                                        <div class="font-medium text-gray-900">${user.name}</div>
-                                        <div class="text-sm text-gray-500">${user.email}</div>
+                                        <div class="font-medium text-gray-900">${escapeHtml(user.name)}</div>
+                                        <div class="text-sm text-gray-500">${escapeHtml(user.email)}</div>
                                     </div>
                                 </div>
                             </td>
-                            <td class="py-4 px-4"><span class="px-2 py-1 rounded-full text-xs ${getRoleBadgeClass(user.role)}">${user.role || 'user'}</span></td>
+                            <td class="py-4 px-4"><span class="px-2 py-1 rounded-full text-xs ${getRoleBadgeClass(user.role)}">${escapeHtml(user.role || 'user')}</span></td>
                             <td class="py-4 px-4 text-sm text-gray-600">${formatDate(user.created_at)}</td>
-                            <td class="py-4 px-4"><div class="text-sm">${user.branch ? `<div>${user.branch}</div>` : ''}${user.graduation_year ? `<div>Class of ${user.graduation_year}</div>` : ''}</div></td>
+                            <td class="py-4 px-4"><div class="text-sm">${user.branch ? `<div>${escapeHtml(user.branch)}</div>` : ''}${user.graduation_year ? `<div>Class of ${escapeHtml(user.graduation_year)}</div>` : ''}</div></td>
                             <td class="py-4 px-4"><span class="badge-pending px-2 py-1 rounded-full text-xs font-medium">Pending</span></td>
                             <td class="py-4 px-4">
                                 <div class="flex space-x-2">
-                                    <button onclick="approveUser(${user.id})" class="px-3 py-1 bg-green-600 text-white rounded-lg text-sm hover:bg-green-700">Approve</button>
-                                    <button onclick="rejectUser(${user.id})" class="px-3 py-1 bg-red-600 text-white rounded-lg text-sm hover:bg-red-700">Reject</button>
-                                    <button onclick="viewUserDetails(${user.id})" class="px-3 py-1 border border-gray-300 rounded-lg text-sm text-gray-700 hover:bg-gray-50">View</button>
+                                    <button onclick="approveUser(${escapeHtml(user.id)})" class="px-3 py-1 bg-green-600 text-white rounded-lg text-sm hover:bg-green-700">Approve</button>
+                                    <button onclick="rejectUser(${escapeHtml(user.id)})" class="px-3 py-1 bg-red-600 text-white rounded-lg text-sm hover:bg-red-700">Reject</button>
+                                    <button onclick="viewUserDetails(${escapeHtml(user.id)})" class="px-3 py-1 border border-gray-300 rounded-lg text-sm text-gray-700 hover:bg-gray-50">View</button>
                                 </div>
                             </td>
                         `;
@@ -648,7 +648,7 @@ if (session_status() === PHP_SESSION_NONE) {
                     else if (sev === 'INFO') colorClass = 'text-blue-400';
                     else if (sev === 'SUCCESS') colorClass = 'text-green-400';
                     const message = log.message || `${log.action || 'LOG'} ${log.details || ''}`;
-                    logLine.innerHTML = `<span class="text-gray-500">[${formatDate(log.created_at || log.timestamp, 'HH:mm:ss')}]</span><span class="${colorClass} ml-2">${message}</span>`;
+                    logLine.innerHTML = `<span class="text-gray-500">[${formatDate(log.created_at || log.timestamp, 'HH:mm:ss')}]</span><span class="${escapeHtml(colorClass)} ml-2">${escapeHtml(message)}</span>`;
                     logContent.appendChild(logLine);
                 });
                 const terminal = document.getElementById('terminal');
@@ -678,7 +678,7 @@ if (session_status() === PHP_SESSION_NONE) {
                             <span class="text-xs ${token.is_active ? 'text-green-600' : 'text-gray-500'}">${token.is_active ? 'Active' : 'Used'}</span>
                         </div>
                         <div class="text-xs text-gray-600">
-                            <div>For: ${token.email || 'N/A'}</div>
+                            <div>For: ${escapeHtml(token.email || 'N/A')}</div>
                             <div>Uses: ${token.used_count || 0}/${token.usage_limit || 1}</div>
                             <div>Created: ${formatDate(token.created_at)}</div>
                         </div>
@@ -711,9 +711,9 @@ if (session_status() === PHP_SESSION_NONE) {
                             </div>
                         </div>
                         <div class="ml-3 flex-1">
-                            <p class="text-sm text-gray-800">${activity.action}${activity.details ? ` - ${activity.details}` : ''}</p>
+                            <p class="text-sm text-gray-800">${escapeHtml(activity.action)}${activity.details ? ` - ${escapeHtml(activity.details)}` : ''}</p>
                             <div class="flex items-center justify-between mt-1">
-                                <span class="text-xs text-gray-500">By ${activity.actor || 'System'}</span>
+                                <span class="text-xs text-gray-500">By ${escapeHtml(activity.actor || 'System')}</span>
                                 <span class="text-xs text-gray-500">${formatDate(activity.created_at)}</span>
                             </div>
                         </div>

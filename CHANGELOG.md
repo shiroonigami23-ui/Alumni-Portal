@@ -5,6 +5,59 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and 
 
 ## [Unreleased]
 
+## [2.3.0] — 2026-11-24 — "Private means private"
+
+A full audit of profiles, privacy, uploads, permissions and injection, driven by new automated attack suites that now run in CI.
+
+### 🔐 Security fixes
+- **Any signed-in user could ban any account (including the admin)** through the unused `api/admin_moderation.php`, which had no role check. Retired (410).
+- **Stored XSS** on the feed, dashboard, profile, messages, mentorship, the public landing page and the notification bell: post text, names, comments, file names, job/event fields and notifications were inserted as raw HTML. All user text is now escaped (`assets/js/safe.js`), links are restricted to safe schemes (also against `java\tscript:`), and a browser sweep plants payloads in every field to prove it.
+- **Reflected XSS** via `profile.php?id=…` (the value was echoed into a script).
+- JS-string injection in `onclick` handlers (names with apostrophes on Discovery, message editing, attachment links).
+- `upload_verification.php` switched **any active account** to `pending_verification` (locking them out) and wrote files to a world-writable folder.
+- Students could file entries in a hidden legacy announcements table; endpoint retired.
+- GIF URLs were stored unchecked (`javascript:` and tracking pixels); now https from known GIF hosts only.
+- The feed returned every author's email to everyone; message search matched and returned everyone's email.
+- Roll numbers were visible to all members; now only the owner, faculty and admins see them.
+
+### 🔒 Privacy (it didn't work before)
+- Private accounts' posts appeared in everyone's feed, on their timeline, in post search and in replies; even approved followers got "This profile is private". Now one rule set (`api/_privacy.php`) covers feeds, search, profiles, comments, likes, reposts, shares, views and polls.
+- **Follow requests** for private accounts, with approve/decline in Settings → Privacy; going public auto-approves pending requests.
+- Private profiles show a **locked card** (name, photo, role, branch, counts) with *Request to follow*, and are findable by name but never by company/city/bio.
+- **Show email / show phone** toggles (the columns existed but nothing could set them).
+- Sending `"false"` as text made a profile private.
+
+### ✨ Added
+- **@handles** (Twitter-style, separate from display names): unique regardless of case (database index), auto-generated for every account by a DB trigger (from the name, never the email), live availability check with suggestions, reserved and staff-lookalike names refused, 14-day change cool-down, old handles redirect and stay reserved for 30 days, `/@handle` and `/u/handle` links, `@mentions` and URLs become links in posts and comments, search by handle.
+- **Blocking** (it returned "Blocking is disabled"): block/unblock/list; mutual and total (profiles, feeds, search, chats, calls, follows); staff can't be blocked.
+- **Profile strength** meter, **profile views** (last 30 days), pronouns, *open to mentoring / referrals / opportunities* badges.
+- **Download my data**: one JSON file of everything you created (the button said "coming soon").
+- Students can edit their photo, cover, headline, skills, links and city; only identity fields stay locked.
+
+### 🐛 Fixed
+- **Message search failed with a 500 for every non-admin**, so nobody could start a new chat.
+- **Feed post search never showed results** (wrong response shape); it now searches post text, titles and authors with all visibility rules.
+- "Following" feed also showed posts from people who follow *you*.
+- Profile saves crashed with 500 on long values; now 422 with per-field messages, `linkedin.com/in/x` gets `https://`, HTML is stripped from names.
+- Non-numeric IDs crashed 15 endpoints with database errors; a central check returns a clear 400.
+- Creating a referral offer without an experience level returned 500.
+- Liking, reposting or sharing a deleted post returned a 500 (foreign key), now 404.
+- Emails differing only by case could create duplicate accounts; sign-in with capital letters failed. Emails are now normalised by trigger with a unique `lower(email)` index.
+- Oversized uploads said "No avatar file received" / "Post content is required"; now "too large (max N MB)". Animated GIF avatars allowed.
+- Broken placeholder images (`via.placeholder.com`).
+
+### 📷 Uploads
+- Camera/GPS metadata stripped losslessly from JPEG, PNG and WebP (JPEG orientation preserved).
+- "Image bombs" (>12,000 px a side or >50 MP) refused.
+- Stored-file display names are cleaned (no paths or control characters); Unicode names download correctly (RFC 5987).
+
+### 🧪 Tests (all run in CI)
+- API suite 185 → **230** checks; browser suite 68 → **78** (handle checker, `/@handle`, locked card, request → approve).
+- New: **authorization sweep** (64), **SQL-injection fuzz** (2,744 requests, 98 endpoints, 0 injections), **stored-XSS sweep** (37 pages, including raw legacy rows), and a new **Chrome CI job**.
+
+### 🗑️ Retired (410 with the replacement)
+`add_comment`, `add_reply`, `manage-post`, `join_event`, `search_alumni`, `upload`, `admin_moderation`, `create_announcement`, `approve_announcement`.
+
 ## [2.2.0] — 2026-11-24 — "Everything works"
 
 Every feature was exercised end-to-end (185 API checks, 68 browser checks); everything that was broken or never wired up now works.
@@ -173,7 +226,8 @@ Every feature was exercised end-to-end (185 API checks, 68 browser checks); ever
 - Initial AWS-deployable alumni portal with Terraform, Docker and CI/CD.
 - Premium UI theme; PostgreSQL/AWS setup docs; local verification scripts.
 
-[Unreleased]: https://github.com/shiroonigami23-ui/Alumni-Portal/compare/v2.2.0...HEAD
+[Unreleased]: https://github.com/shiroonigami23-ui/Alumni-Portal/compare/v2.3.0...HEAD
+[2.3.0]: https://github.com/shiroonigami23-ui/Alumni-Portal/releases/tag/v2.3.0
 [2.2.0]: https://github.com/shiroonigami23-ui/Alumni-Portal/releases/tag/v2.2.0
 [2.1.0]: https://github.com/shiroonigami23-ui/Alumni-Portal/releases/tag/v2.1.0
 [2.0.0]: https://github.com/shiroonigami23-ui/Alumni-Portal/releases/tag/v2.0.0

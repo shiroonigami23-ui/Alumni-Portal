@@ -666,10 +666,19 @@ include 'includes/sidebar.php';
                 : '';
             const pendingPreview = (post.is_owner && hasPendingEditReview && post.pending_edit_preview && post.pending_edit_preview.content)
                 ? `<div class="mt-2 text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-md p-2">
-                        Pending revision #${post.pending_edit_preview.pending_revision_no || ''}: ${escapeHtml(post.pending_edit_preview.content).slice(0, 180)}${(post.pending_edit_preview.content || '').length > 180 ? '…' : ''}
+                        Pending revision #${post.pending_edit_preview.pending_revision_no || ''}: ${escapeHtml(String(post.pending_edit_preview.content).slice(0, 180))}${(post.pending_edit_preview.content || '').length > 180 ? '…' : ''}
                    </div>`
                 : '';
             const hasPreviousVersion = !!(post.previous_version_preview && post.previous_version_preview.content);
+            // Everything user-written is escaped before it touches innerHTML.
+            const authorName = escapeHtml(post.author_name || 'RJIT member');
+            const authorAvatar = escapeHtml(safeUrl(post.author_avatar || ''));
+            const branchLabel = escapeHtml(post.branch || '');
+            content = linkifyText(escapeHtml(content));
+            const authorHandle = post.author_username ? `<span class="text-xs text-gray-400">@${escapeHtml(post.author_username)}</span>` : '';
+            const attachmentsSafe = (post.attachments || []).map(a => ({
+                type: a.type, url: escapeHtml(safeUrl(a.url || '')), name: escapeHtml(a.name || 'Attachment')
+            })).filter(a => a.url && a.url !== '#');
             
             postElement.innerHTML = `
                 <div class="p-6">
@@ -677,15 +686,16 @@ include 'includes/sidebar.php';
                     <div class="flex items-start justify-between mb-4">
                         <div class="flex items-start space-x-3">
                             <div class="flex-shrink-0">
-                                ${post.author_avatar ? 
-                                    `<img src="${post.author_avatar}" alt="${post.author_name}" class="h-10 w-10 rounded-full cursor-pointer" onerror="this.outerHTML='<div class=&quot;h-10 w-10 bg-blue-100 rounded-full flex items-center justify-center&quot;><i data-lucide=&quot;user&quot; class=&quot;h-5 w-5 text-blue-600&quot;></i></div>'" onclick="goToProfile(${Number(post.user_id || 0)})">` : 
+                                ${authorAvatar ? 
+                                    `<img src="${authorAvatar}" alt="${authorName}" class="h-10 w-10 rounded-full cursor-pointer" onerror="this.outerHTML='<div class=&quot;h-10 w-10 bg-blue-100 rounded-full flex items-center justify-center&quot;><i data-lucide=&quot;user&quot; class=&quot;h-5 w-5 text-blue-600&quot;></i></div>'" onclick="goToProfile(${Number(post.user_id || 0)})">` : 
                                     `<div class="h-10 w-10 bg-blue-100 rounded-full flex items-center justify-center">
                                         <i data-lucide="user" class="h-5 w-5 text-blue-600"></i>
                                     </div>`}
                             </div>
                             <div>
                                 <div class="flex items-center space-x-2">
-                                    <h3 class="font-semibold text-gray-900 cursor-pointer hover:underline" onclick="goToProfile(${Number(post.user_id || 0)})">${post.author_name}</h3>
+                                    <h3 class="font-semibold text-gray-900 cursor-pointer hover:underline" onclick="goToProfile(${Number(post.user_id || 0)})">${authorName}</h3>
+                                    ${authorHandle}
                                     ${post.author_role === 'admin' ? 
                                         '<span class="px-2 py-0.5 bg-amber-100 text-amber-800 text-xs rounded-full">ADMIN</span>' : 
                                         post.author_role === 'faculty' ? 
@@ -694,7 +704,7 @@ include 'includes/sidebar.php';
                                         '<span class="px-2 py-0.5 bg-green-100 text-green-800 text-xs rounded-full">ALUMNI</span>' : ''}
                                 </div>
                                 <p class="text-sm text-gray-500">
-                                    ${post.branch ? `${post.branch} • ` : ''}${postDate}
+                                    ${branchLabel ? `${branchLabel} • ` : ''}${escapeHtml(postDate)}
                                     ${isPinned ? '<span class="ml-2 text-amber-600 font-medium">📌 Pinned</span>' : ''}
                                     ${ownerPendingBadge}
                                 </p>
@@ -747,13 +757,13 @@ include 'includes/sidebar.php';
                     </div>
                     
                     <!-- Post Attachments -->
-                    ${post.attachments && post.attachments.length > 0 ? `
+                    ${attachmentsSafe.length > 0 ? `
                         <div class="mb-4">
                             <div class="grid grid-cols-2 md:grid-cols-3 gap-2">
-                                ${post.attachments.map(attachment => `
+                                ${attachmentsSafe.map(attachment => `
                                     ${(attachment.type === 'image' || attachment.type === 'gif') ? 
-                                        `<img src="${attachment.url}" alt="Attachment" class="w-full h-32 object-cover rounded-lg cursor-pointer hover:opacity-90" onerror="this.style.display='none'" onclick="viewImage('${attachment.url}')">` : 
-                                        `<a href="${attachment.url}" target="_blank" class="flex items-center p-3 border border-gray-200 rounded-lg hover:bg-gray-50">
+                                        `<img src="${attachment.url}" alt="Attachment" class="w-full h-32 object-cover rounded-lg cursor-pointer hover:opacity-90" onerror="this.style.display='none'" data-view-image="${attachment.url}">` : 
+                                        `<a href="${attachment.url}" target="_blank" rel="noopener noreferrer" class="flex items-center p-3 border border-gray-200 rounded-lg hover:bg-gray-50">
                                             <i data-lucide="file" class="h-5 w-5 text-gray-400 mr-3"></i>
                                             <span class="text-sm text-gray-700 truncate">${attachment.name}</span>
                                         </a>`}
@@ -1396,10 +1406,15 @@ include 'includes/sidebar.php';
                 wrapper.style.marginLeft = `${Math.max(depth, level) * 16}px`;
             }
 
+            const cName = escapeHtml(comment.author_name || 'RJIT member');
+            const cAvatar = escapeHtml(safeUrl(comment.author_avatar || ''));
+            const cContent = escapeHtml(comment.content || '');
+            const cAttachments = (comment.attachments || []).map(a => ({ type: a.type, url: escapeHtml(safeUrl(a.url || '')), name: escapeHtml(a.name || 'Attachment') }))
+                .filter(a => a.url && a.url !== '#');
             wrapper.innerHTML = `
                 <div class="flex-shrink-0">
-                    ${comment.author_avatar ?
-                        `<img src="${comment.author_avatar}" alt="${comment.author_name}" class="h-8 w-8 rounded-full object-cover cursor-pointer" onerror="this.onerror=null;this.src='${getDefaultAvatarDataUri(comment.author_name || 'U', 'f1f5f9', '475569', 32)}'" onclick="goToProfile(${Number(comment.author_id || 0)})">` :
+                    ${cAvatar ?
+                        `<img src="${cAvatar}" alt="${cName}" class="h-8 w-8 rounded-full object-cover cursor-pointer" onerror="this.onerror=null;this.src='${getDefaultAvatarDataUri(comment.author_name || 'U', 'f1f5f9', '475569', 32)}'" onclick="goToProfile(${Number(comment.author_id || 0)})">` :
                         `<div class="h-8 w-8 bg-gray-100 rounded-full flex items-center justify-center">
                             <i data-lucide="user" class="h-4 w-4 text-gray-400"></i>
                         </div>`}
@@ -1407,24 +1422,24 @@ include 'includes/sidebar.php';
                 <div class="ml-3 flex-1">
                     <div class="bg-white rounded-lg p-3 border border-gray-100">
                         <div class="flex items-center justify-between">
-                            <h4 class="font-medium text-gray-900 text-sm cursor-pointer hover:underline" onclick="goToProfile(${Number(comment.author_id || 0)})">${comment.author_name}</h4>
-                            <span class="text-xs text-gray-500">${formatDate(comment.created_at)} ${comment.is_edited ? '<span class="ml-1">(edited)</span>' : ''}</span>
+                            <h4 class="font-medium text-gray-900 text-sm cursor-pointer hover:underline" onclick="goToProfile(${Number(comment.author_id || 0)})">${cName}</h4>
+                            <span class="text-xs text-gray-500">${escapeHtml(formatDate(comment.created_at))} ${comment.is_edited ? '<span class="ml-1">(edited)</span>' : ''}</span>
                         </div>
-                        <p class="text-gray-700 text-sm mt-1 whitespace-pre-line">${comment.content || ''}</p>
+                        <p class="text-gray-700 text-sm mt-1 whitespace-pre-line">${linkifyText(cContent)}</p>
                         <div class="comment-edit-box hidden mt-2">
-                            <textarea class="comment-edit-input w-full px-2 py-1 border border-gray-300 rounded text-sm resize-none" rows="2">${(comment.content || '').replace(/</g, '&lt;')}</textarea>
+                            <textarea class="comment-edit-input w-full px-2 py-1 border border-gray-300 rounded text-sm resize-none" rows="2">${cContent}</textarea>
                             <div class="mt-2 flex items-center gap-2 justify-end">
                                 <button type="button" class="comment-edit-cancel px-3 py-1 text-xs border border-gray-300 rounded hover:bg-gray-50">Cancel</button>
                                 <button type="button" class="comment-edit-save px-3 py-1 text-xs bg-blue-600 text-white rounded hover:bg-blue-700">Save</button>
                             </div>
                         </div>
-                        ${comment.attachments && comment.attachments.length ? `
+                        ${cAttachments.length ? `
                             <div class="mt-2 flex flex-wrap gap-2">
-                                ${comment.attachments.map(a => {
+                                ${cAttachments.map(a => {
                                     if (a.type === 'image' || a.type === 'gif') {
-                                        return `<img src="${a.url}" alt="${a.name || 'attachment'}" class="h-20 w-20 object-cover rounded border border-gray-200 cursor-pointer" onerror="this.style.display='none'" onclick="viewImage('${a.url}')">`;
+                                        return `<img src="${a.url}" alt="${a.name}" class="h-20 w-20 object-cover rounded border border-gray-200 cursor-pointer" onerror="this.style.display='none'" data-view-image="${a.url}">`;
                                     }
-                                    return `<a href="${a.url}" target="_blank" class="text-xs text-blue-600 underline">${a.name || 'Attachment'}</a>`;
+                                    return `<a href="${a.url}" target="_blank" rel="noopener noreferrer" class="text-xs text-blue-600 underline">${a.name}</a>`;
                                 }).join('')}
                             </div>
                         ` : ''}
@@ -1897,7 +1912,7 @@ include 'includes/sidebar.php';
                         postsContainer.innerHTML = `
                             <div class="text-center py-12">
                                 <i data-lucide="search" class="h-12 w-12 text-gray-300 mx-auto mb-4"></i>
-                                <p class="text-gray-500">No posts found matching "${query}"</p>
+                                <p class="text-gray-500">No posts found matching "${escapeHtml(query)}"</p>
                             </div>
                         `;
                     } else {
@@ -2008,7 +2023,7 @@ include 'includes/sidebar.php';
             container.classList.remove('hidden');
             container.innerHTML = `
                 <div class="relative inline-block overflow-hidden rounded-xl border border-slate-700 bg-slate-900">
-                    <img src="${url}" alt="Selected GIF" class="h-28 w-auto object-cover">
+                    <img src="${escapeHtml(safeUrl(url))}" alt="Selected GIF" class="h-28 w-auto object-cover">
                     <button type="button" class="absolute right-2 top-2 rounded-full bg-black/70 px-2 py-1 text-xs font-medium text-white hover:bg-black" data-clear-gif>Remove</button>
                 </div>
             `;
@@ -2145,7 +2160,7 @@ include 'includes/sidebar.php';
                 preview.className = 'flex items-center p-2 border border-gray-200 rounded-lg';
                 preview.innerHTML = `
                     <i data-lucide="file" class="h-5 w-5 text-gray-400 mr-2"></i>
-                    <span class="text-sm text-gray-700 truncate" style="max-width: 100px;">${file.name}</span>
+                    <span class="text-sm text-gray-700 truncate" style="max-width: 100px;">${escapeHtml(file.name)}</span>
                     <button type="button" class="ml-2 text-red-500 text-xs" onclick="removeFilePreview(this)">
                         ×
                     </button>
@@ -2165,8 +2180,13 @@ include 'includes/sidebar.php';
         }
         
         function viewImage(url) {
-            window.open(url, '_blank');
+            const safe = safeUrl(url);
+            if (safe && safe !== '#') window.open(safe, '_blank', 'noopener');
         }
+        document.addEventListener('click', (e) => {
+            const img = e.target.closest && e.target.closest('[data-view-image]');
+            if (img) viewImage(img.getAttribute('data-view-image'));
+        });
 
         function goToProfile(userId) {
             const uid = Number(userId || 0);
@@ -2197,7 +2217,7 @@ include 'includes/sidebar.php';
             postsContainer.innerHTML = `
                 <div class="text-center py-12">
                     <i data-lucide="alert-circle" class="h-12 w-12 text-red-300 mx-auto mb-4"></i>
-                    <p class="text-gray-500">${message}</p>
+                    <p class="text-gray-500">${escapeHtml(message)}</p>
                     <button onclick="reloadFeed()" class="mt-4 text-blue-600 hover:text-blue-800">
                         Try Again
                     </button>

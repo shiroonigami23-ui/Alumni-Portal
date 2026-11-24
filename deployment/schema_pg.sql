@@ -36,7 +36,7 @@ DO $$ BEGIN
         'general','system','admin','announcement','new_post','new_comment','comment','reply','mention','like','reaction',
         'repost','share','new_message','message','call_invite','follow','connection','accepted','new_applicant','job',
         'event','event_reminder','registration_pending','approval','mentorship','mentorship_request','referral',
-        'report','moderation','warning','poll','faculty','active','badge'
+        'report','moderation','warning','poll','faculty','active','badge','follow_request'
     );
 EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 
@@ -90,6 +90,10 @@ CREATE TABLE IF NOT EXISTS profiles (
     is_private BOOLEAN NOT NULL DEFAULT FALSE,
     show_email BOOLEAN NOT NULL DEFAULT TRUE,
     show_contact BOOLEAN NOT NULL DEFAULT FALSE,
+    open_to_mentor BOOLEAN NOT NULL DEFAULT FALSE,
+    open_to_refer BOOLEAN NOT NULL DEFAULT FALSE,
+    open_to_work BOOLEAN NOT NULL DEFAULT FALSE,
+    pronouns VARCHAR(40) NULL,
     roll_number VARCHAR(80) NULL,
     year_of_study VARCHAR(80) NULL,
     created_at TIMESTAMP NOT NULL DEFAULT NOW(),
@@ -302,6 +306,17 @@ CREATE TABLE IF NOT EXISTS connections (
     UNIQUE (requester_user_id, addressee_user_id)
 );
 CREATE INDEX IF NOT EXISTS idx_connections_addressee ON connections (addressee_user_id, status);
+CREATE INDEX IF NOT EXISTS idx_connections_pair ON connections (requester_user_id, addressee_user_id, status);
+
+-- Who viewed your profile (one row per viewer per day)
+CREATE TABLE IF NOT EXISTS profile_views (
+    viewer_user_id BIGINT NOT NULL REFERENCES users(user_id) ON DELETE CASCADE,
+    viewed_user_id BIGINT NOT NULL REFERENCES users(user_id) ON DELETE CASCADE,
+    view_day DATE NOT NULL DEFAULT CURRENT_DATE,
+    viewed_at TIMESTAMP NOT NULL DEFAULT NOW(),
+    PRIMARY KEY (viewer_user_id, viewed_user_id, view_day)
+);
+CREATE INDEX IF NOT EXISTS idx_profile_views_viewed ON profile_views (viewed_user_id, viewed_at DESC);
 
 CREATE TABLE IF NOT EXISTS blocks (
     block_id BIGSERIAL PRIMARY KEY,

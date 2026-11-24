@@ -126,24 +126,24 @@
             if (response && response.length > 0) {
                 grid.innerHTML = response.map(event => `
                 <div class="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden hover:shadow-md transition">
-                    ${event.banner_url ? `<img src="${event.banner_url}" alt="${event.title}" class="w-full h-48 object-cover">` : ''}
+                    ${event.banner_url ? `<img src="${escapeHtml(safeUrl(event.banner_url))}" alt="${escapeHtml(event.title)}" class="w-full h-48 object-cover">` : ''}
                     <div class="p-6">
                         <div class="flex items-center text-sm text-gray-500 mb-2">
                             <i data-lucide="calendar" class="h-4 w-4 mr-1"></i>
                             ${window.portalTime ? window.portalTime.format(event.event_date, 'date') : window.formatDate(event.event_date, 'date')}
                         </div>
-                        <h3 class="text-lg font-semibold text-gray-900 mb-2">${event.title}</h3>
-                        <p class="text-gray-600 text-sm mb-4 line-clamp-2">${event.description}</p>
+                        <h3 class="text-lg font-semibold text-gray-900 mb-2">${escapeHtml(event.title)}</h3>
+                        <p class="text-gray-600 text-sm mb-4 line-clamp-2">${escapeHtml(event.description)}</p>
                         <div class="flex items-center justify-between">
                             <div class="flex items-center text-sm text-gray-500">
                                 <i data-lucide="map-pin" class="h-4 w-4 mr-1"></i>
                                 ${event.location || 'TBD'}
                             </div>
-                            <button onclick="rsvpEvent(${event.event_id})" class="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-blue-700">
+                            <button onclick="rsvpEvent(${escapeHtml(event.event_id)})" class="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-blue-700">
                                 RSVP
                             </button>
                         </div>
-                        ${event.rsvp_count ? `<div class="mt-3 text-xs text-gray-500">${event.rsvp_count} attending</div>` : ''}
+                        ${event.rsvp_count ? `<div class="mt-3 text-xs text-gray-500">${escapeHtml(event.rsvp_count)} attending</div>` : ''}
                     </div>
                 </div>
             `).join('');
@@ -164,7 +164,7 @@
             tab.classList.remove('border-blue-500', 'text-blue-600');
             tab.classList.add('border-transparent', 'text-gray-500');
         });
-        const activeTab = trigger || document.querySelector(`.event-filter-tab[data-filter="${filter}"]`);
+        const activeTab = trigger || document.querySelector(`.event-filter-tab[data-filter="${escapeHtml(filter)}"]`);
         if (activeTab) {
             activeTab.classList.remove('border-transparent', 'text-gray-500');
             activeTab.classList.add('border-blue-500', 'text-blue-600');

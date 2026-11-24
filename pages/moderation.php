@@ -9,7 +9,7 @@ if (session_status() === PHP_SESSION_NONE) {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Moderation Queue - RJIT Alumni Portal</title>
-    <link rel="stylesheet" href="assets/css/tailwind.css?v=2">
+    <link rel="stylesheet" href="assets/css/tailwind.css?v=3">
     <script src="https://unpkg.com/lucide@0.460.0/dist/umd/lucide.min.js"></script>
     <link rel="stylesheet" href="assets/css/variety-ui.css">
     <script src="includes/auth-check.js"></script>
@@ -83,7 +83,7 @@ if (session_status() === PHP_SESSION_NONE) {
             }
 
             container.innerHTML = rows.map((item) => `
-                <article class="bg-white rounded-xl shadow-sm p-5" id="queue-post-${item.post_id}">
+                <article class="bg-white rounded-xl shadow-sm p-5" id="queue-post-${escapeHtml(item.post_id)}">
                     <div class="flex items-start justify-between gap-4">
                         <div>
                             <h3 class="text-lg font-semibold text-gray-900">${escapeHtml(item.title || 'Untitled post')}</h3>
@@ -102,15 +102,15 @@ if (session_status() === PHP_SESSION_NONE) {
                             <p class="text-gray-700 whitespace-pre-wrap text-sm">${escapeHtml(item.current_live_content || '')}</p>
                         </div>
                         <div class="mt-3 rounded-lg border border-blue-200 bg-blue-50 p-3">
-                            <p class="text-xs font-semibold text-blue-700 mb-1">Proposed revision #${item.pending_revision_no || ''}</p>
+                            <p class="text-xs font-semibold text-blue-700 mb-1">Proposed revision #${escapeHtml(item.pending_revision_no || '')}</p>
                             <p class="text-gray-800 whitespace-pre-wrap">${escapeHtml(item.content || '')}</p>
                         </div>
                     ` : `<p class="text-gray-800 mt-3 whitespace-pre-wrap">${escapeHtml(item.content || '')}</p>`}
                     ${renderAttachments(item.attachments)}
                     <div class="mt-4 flex flex-wrap gap-2">
-                        <button class="px-3 py-1.5 bg-green-600 text-white rounded-lg hover:bg-green-700" onclick="reviewPost(${item.post_id}, 'approve')">Approve</button>
-                        <button class="px-3 py-1.5 bg-red-600 text-white rounded-lg hover:bg-red-700" onclick="reviewPost(${item.post_id}, 'reject')">Reject</button>
-                        <a class="px-3 py-1.5 border rounded-lg hover:bg-gray-100" target="_blank" href="profile.php?id=${item.author_id}">Open author profile</a>
+                        <button class="px-3 py-1.5 bg-green-600 text-white rounded-lg hover:bg-green-700" onclick="reviewPost(${escapeHtml(item.post_id)}, 'approve')">Approve</button>
+                        <button class="px-3 py-1.5 bg-red-600 text-white rounded-lg hover:bg-red-700" onclick="reviewPost(${escapeHtml(item.post_id)}, 'reject')">Reject</button>
+                        <a class="px-3 py-1.5 border rounded-lg hover:bg-gray-100" target="_blank" href="profile.php?id=${escapeHtml(item.author_id)}">Open author profile</a>
                     </div>
                 </article>
             `).join('');

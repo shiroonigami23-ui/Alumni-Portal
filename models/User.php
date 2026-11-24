@@ -24,7 +24,7 @@ class User {
 
         $stmt = $this->conn->prepare($query);
 
-        $this->email = htmlspecialchars(strip_tags($this->email));
+        $this->email = strtolower(trim(strip_tags((string)$this->email)));
         $this->role = htmlspecialchars(strip_tags($this->role));
         $password_hash = password_hash($this->password, PASSWORD_BCRYPT);
 
@@ -56,7 +56,7 @@ class User {
                   LIMIT 1";
 
         $stmt = $this->conn->prepare($query);
-        $this->email = htmlspecialchars(strip_tags($this->email));
+        $this->email = strtolower(trim(strip_tags((string)$this->email)));
         $stmt->bindParam(":email", $this->email);
         $stmt->execute();
 
@@ -74,7 +74,7 @@ class User {
                   LIMIT 1";
 
         $stmt = $this->conn->prepare($query);
-        $this->email = htmlspecialchars(strip_tags($this->email));
+        $this->email = strtolower(trim(strip_tags((string)$this->email)));
         $stmt->bindParam(":email", $this->email);
         $stmt->execute();
 

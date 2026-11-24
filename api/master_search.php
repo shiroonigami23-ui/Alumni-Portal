@@ -39,18 +39,27 @@ $run = function (string $sql, array $params) use ($db) {
     }
 };
 
+$isPg = db_is_pgsql($db);
 $results['users'] = $run("
-    SELECT u.user_id, p.full_name, u.role, p.current_company, p.job_role, p.graduation_year, p.location_city
+    SELECT u.user_id, u.username, p.full_name, u.role,
+           CASE WHEN lk.locked THEN NULL ELSE p.current_company END AS current_company,
+           CASE WHEN lk.locked THEN NULL ELSE p.job_role END AS job_role,
+           p.graduation_year,
+           CASE WHEN lk.locked THEN NULL ELSE p.location_city END AS location_city,
+           lk.locked AS is_private
     FROM users u JOIN profiles p ON p.user_id = u.user_id
+    CROSS JOIN LATERAL (SELECT (:adm = 0 AND u.role <> 'student' AND COALESCE(p.is_private, FALSE) = TRUE AND u.user_id <> :me
+        AND NOT EXISTS (SELECT 1 FROM connections c WHERE c.status = 'accepted' AND c.requester_user_id = :me AND c.addressee_user_id = u.user_id)) AS locked) lk
     WHERE u.status = 'active'
-      AND (p.full_name $op :q1 OR p.current_company $op :q2 OR p.location_city $op :q3)
-      " . ($isAdmin ? '' : "AND COALESCE(p.is_private, " . (db_is_pgsql($db) ? 'false' : '0') . ") = " . (db_is_pgsql($db) ? 'false' : '0')) . "
+      AND (p.full_name $op :q1 OR lower(u.username) LIKE :qh OR (NOT lk.locked AND (p.current_company $op :q2 OR p.location_city $op :q3)))
+      AND NOT EXISTS (SELECT 1 FROM blocks b WHERE (b.blocker_user_id = :me AND b.blocked_user_id = u.user_id)
+                                              OR (b.blocked_user_id = :me AND b.blocker_user_id = u.user_id))
     ORDER BY CASE WHEN p.full_name $op :q4 THEN 0 ELSE 1 END, p.full_name
-    LIMIT 5", ['q1' => $like, 'q2' => $like, 'q3' => $like, 'q4' => $term . '%']);
+    LIMIT 5", ['q1' => $like, 'q2' => $like, 'q3' => $like, 'q4' => $term . '%', 'qh' => str_replace(['\\', '%', '_'], ['\\\\', '\\%', '\\_'], ltrim(strtolower($term), '@')) . '%', 'me' => (int)$viewer, 'adm' => $isAdmin ? 1 : 0]);
 
 $results['jobs'] = $run("
     SELECT job_id, company_name, job_title, location
-    FROM jobs WHERE (job_title $op :q1 OR company_name $op :q2)
+    FROM jobs WHERE COALESCE(status, 'open') = 'open' AND (job_title $op :q1 OR company_name $op :q2)
     ORDER BY created_at DESC LIMIT 5", ['q1' => $like, 'q2' => $like]);
 
 $results['events'] = $run("

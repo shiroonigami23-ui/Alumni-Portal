@@ -164,6 +164,53 @@ async def interactions(b, results):
         rec('Vote on a poll and see results', False, 'poll not found in feed')
     await ctx.close()
 
+    # ---- privacy + @handles: alumnus goes private, student finds them by /@handle and asks to follow
+    actx = await b.new_context(viewport={'width': 1440, 'height': 900}); await actx.route('**/*', route)
+    await login(actx, *ACCOUNTS['alumni'])
+    ap = await actx.new_page()
+    aerrs = []
+    ap.on('pageerror', lambda e: aerrs.append(str(e)))
+    await ap.goto(BASE + 'settings.php?scope=basic#profile', wait_until='networkidle'); await ap.wait_for_timeout(900)
+    if await ap.is_disabled('#settingsUsername'):
+        cool = 'change it again' in (await ap.inner_text('#settingsUsernameHelp')).lower()
+        rec('Handle field rejects reserved names live', cool, 'in cool-down')
+        rec('Handle field shows a free handle as available', cool, 'in cool-down (shows next change date)')
+    else:
+        await ap.fill('#settingsUsername', 'admin'); await ap.wait_for_timeout(900)
+        rec('Handle field rejects reserved names live', 'reserved' in (await ap.inner_text('#settingsUsernameHelp')).lower())
+        await ap.fill('#settingsUsername', f'ui_free_{stamp[-6:]}'); await ap.wait_for_timeout(900)
+        rec('Handle field shows a free handle as available', 'available' in (await ap.inner_text('#settingsUsernameHelp')).lower()
+            and not await ap.is_disabled('#settingsUsernameSave'))
+    rec('Privacy page lists visibility toggles', len(await ap.query_selector_all('#settingsVisibilityToggles input[data-key]')) >= 3)
+    handle = await ap.evaluate("async () => (await makeApiCall('username.php')).data.username")
+    await ap.evaluate("async () => makeApiCall('update_privacy.php', 'POST', {is_private: true})")
+    sctx = await b.new_context(viewport={'width': 1440, 'height': 900}); await sctx.route('**/*', route)
+    await login(sctx, *ACCOUNTS['student'])
+    sp = await sctx.new_page()
+    serrs = []
+    sp.on('pageerror', lambda e: serrs.append(str(e)))
+    # make sure we start as a non-follower
+    await sp.goto(BASE + 'feed.php', wait_until='networkidle')
+    aid = await ap.evaluate("async () => (await makeApiCall('me.php')).data.user_id")
+    await sp.evaluate(f"async () => makeApiCall('connect_user.php', 'POST', {{user_id: {int(aid)}, action: 'unfollow'}})")
+    await sp.goto(BASE + '@' + handle, wait_until='networkidle'); await sp.wait_for_timeout(1200)
+    rec('/@handle opens the right profile', f'u={handle}' in sp.url and ('@' + handle) in (await sp.inner_text('#profileHandle')), sp.url)
+    locked = await sp.is_visible('#lockedPanel') and 'private' in (await sp.inner_text('#lockedPanel')).lower()
+    rec('Private profile shows a locked card to non-followers', locked)
+    rec('Follow button reads "Request to follow"', 'Request to follow' in (await sp.inner_text('#connectBtn')))
+    await sp.click('#connectBtn'); await sp.wait_for_timeout(1000)
+    rec('Sending a request switches the button to "Requested"', 'Requested' in (await sp.inner_text('#connectBtn')))
+    await ap.goto(BASE + 'settings.php?scope=privacy#privacy', wait_until='networkidle'); await ap.wait_for_timeout(1200)
+    appr = await ap.query_selector('#settingsFollowRequests [data-act="approve"]')
+    if appr:
+        await appr.click(); await ap.wait_for_timeout(1200)
+    rec('Owner approves the request from Settings', appr is not None)
+    await sp.reload(wait_until='networkidle'); await sp.wait_for_timeout(1200)
+    rec('Approved follower sees the full profile', not await sp.is_visible('#lockedPanel') and await sp.is_visible('#tabContent'))
+    await ap.evaluate("async () => makeApiCall('update_privacy.php', 'POST', {is_private: false})")
+    rec('No JavaScript errors in privacy / handle flows', not aerrs and not serrs, '; '.join((aerrs + serrs)[:2]))
+    await actx.close(); await sctx.close()
+
 async def main():
     results = []
     async with async_playwright() as p:

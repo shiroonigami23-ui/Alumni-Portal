@@ -541,25 +541,25 @@ include 'includes/sidebar.php';
                 if (list.length > 0) {
                     conversationsList.innerHTML = list.map(conv => `
                         <div class="conversation-item p-4 border-b border-gray-100 hover:bg-gray-50 cursor-pointer ${conv.unread_count > 0 ? 'message-unread' : ''} ${String(currentConversationId) === String(conv.conversation_id) ? 'message-active' : ''}" 
-                             data-conversation-id="${conv.conversation_id}" 
-                             data-user-id="${conv.other_user_id || ''}"
-                             onclick="selectConversation('${conv.conversation_id}')">
+                             data-conversation-id="${escapeHtml(conv.conversation_id)}" 
+                             data-user-id="${escapeHtml(conv.other_user_id || '')}"
+                             onclick="selectConversation('${escapeHtml(conv.conversation_id)}')">
                             <div class="flex items-center">
-                                <img src="${conv.profile_picture_url || DEFAULT_AVATAR}" 
-                                     alt="${conv.full_name}" 
+                                <img src="${escapeHtml(safeUrl(conv.profile_picture_url || DEFAULT_AVATAR))}" 
+                                     alt="${escapeHtml(conv.full_name)}" 
                                      class="h-10 w-10 rounded-full cursor-pointer"
                                      onerror="this.onerror=null;this.src=window.DEFAULT_AVATAR;"
-                                     onclick="${conv.is_group ? 'event.stopPropagation();' : `event.stopPropagation(); openProfileFromMessages('${conv.other_user_id}')`}">
+                                     onclick="${conv.is_group ? 'event.stopPropagation();' : `event.stopPropagation(); openProfileFromMessages('${escapeHtml(conv.other_user_id)}')`}">
                                 <div class="ml-3 flex-1">
                                     <div class="flex justify-between">
-                                        <h3 class="font-semibold text-gray-900 ${conv.is_group ? '' : 'cursor-pointer hover:underline'}" onclick="${conv.is_group ? 'event.stopPropagation();' : `event.stopPropagation(); openProfileFromMessages('${conv.other_user_id}')`}">
-                                            ${conv.is_group ? `<span class="inline-flex items-center gap-1"><i data-lucide="users" class="h-3.5 w-3.5 text-blue-600"></i><span>${conv.full_name}</span></span>` : conv.full_name}
+                                        <h3 class="font-semibold text-gray-900 ${conv.is_group ? '' : 'cursor-pointer hover:underline'}" onclick="${conv.is_group ? 'event.stopPropagation();' : `event.stopPropagation(); openProfileFromMessages('${escapeHtml(conv.other_user_id)}')`}">
+                                            ${conv.is_group ? `<span class="inline-flex items-center gap-1"><i data-lucide="users" class="h-3.5 w-3.5 text-blue-600"></i><span>${escapeHtml(conv.full_name)}</span></span>` : escapeHtml(conv.full_name)}
                                         </h3>
                                         <span class="text-xs text-gray-500">${formatTime(conv.last_message_at)}</span>
                                     </div>
-                                    <p class="text-sm text-gray-600 truncate">${conv.last_message || 'No messages yet'}</p>
-                                    ${conv.branch ? `<p class="text-xs text-gray-400 truncate mt-0.5">${conv.branch}</p>` : ''}
-                                    ${conv.is_group ? `<div class="mt-1 inline-flex items-center rounded-full bg-blue-50 px-2 py-0.5 text-[11px] font-medium text-blue-700">${conv.group_badge || 'Mentor Group'}${conv.member_count ? ` • ${conv.member_count} members` : ''}</div>` : ''}
+                                    <p class="text-sm text-gray-600 truncate">${escapeHtml(conv.last_message || 'No messages yet')}</p>
+                                    ${conv.branch ? `<p class="text-xs text-gray-400 truncate mt-0.5">${escapeHtml(conv.branch)}</p>` : ''}
+                                    ${conv.is_group ? `<div class="mt-1 inline-flex items-center rounded-full bg-blue-50 px-2 py-0.5 text-[11px] font-medium text-blue-700">${escapeHtml(conv.group_badge || 'Mentor Group')}${conv.member_count ? ` • ${escapeHtml(conv.member_count)} members` : ''}</div>` : ''}
                                     ${conv.unread_count > 0 ? `
                                         <span class="inline-block mt-1 px-2 py-0.5 bg-blue-600 text-white text-xs rounded-full">
                                             ${conv.unread_count}
@@ -602,16 +602,16 @@ include 'includes/sidebar.php';
                 if (data.success && data.data && data.data.length > 0) {
                     userList.innerHTML = data.data.map(user => `
                         <div class="user-item p-3 border-b border-gray-100 hover:bg-gray-50 cursor-pointer flex items-center"
-                             data-user-id="${user.user_id}"
-                             onclick="selectUser('${user.user_id}')">
-                            <img src="${user.profile_picture_url || DEFAULT_AVATAR}" 
-                                 alt="${user.full_name}" 
+                             data-user-id="${escapeHtml(user.user_id)}"
+                             onclick="selectUser('${escapeHtml(user.user_id)}')">
+                            <img src="${escapeHtml(safeUrl(user.profile_picture_url || DEFAULT_AVATAR))}" 
+                                 alt="${escapeHtml(user.full_name)}" 
                                  class="h-10 w-10 rounded-full cursor-pointer"
                                  onerror="this.onerror=null;this.src=window.DEFAULT_AVATAR;"
-                                 onclick="event.stopPropagation(); openProfileFromMessages('${user.user_id}')">
+                                 onclick="event.stopPropagation(); openProfileFromMessages('${escapeHtml(user.user_id)}')">
                             <div class="ml-3">
-                                <h4 class="font-medium text-gray-900 cursor-pointer hover:underline" onclick="event.stopPropagation(); openProfileFromMessages('${user.user_id}')">${user.full_name}</h4>
-                                <p class="text-sm text-gray-600">${user.role} - ${user.branch || ''}</p>
+                                <h4 class="font-medium text-gray-900 cursor-pointer hover:underline" onclick="event.stopPropagation(); openProfileFromMessages('${escapeHtml(user.user_id)}')">${escapeHtml(user.full_name)}</h4>
+                                <p class="text-sm text-gray-600">${escapeHtml(user.role)} - ${escapeHtml(user.branch || '')}</p>
                             </div>
                         </div>
                     `).join('');
@@ -639,7 +639,7 @@ include 'includes/sidebar.php';
             });
             
             // Add selection to clicked item
-            const selectedItem = document.querySelector(`[data-user-id="${userId}"]`);
+            const selectedItem = document.querySelector(`[data-user-id="${escapeHtml(userId)}"]`);
             if (selectedItem) {
                 selectedItem.classList.add('bg-blue-50', 'border-blue-200');
             }
@@ -695,7 +695,7 @@ include 'includes/sidebar.php';
                 item.classList.remove('message-active');
             });
             
-            const selectedItem = document.querySelector(`[data-conversation-id="${conversationId}"]`);
+            const selectedItem = document.querySelector(`[data-conversation-id="${escapeHtml(conversationId)}"]`);
             if (selectedItem) {
                 selectedItem.classList.add('message-active');
             }
@@ -806,19 +806,19 @@ include 'includes/sidebar.php';
                         const messageScope = msg.message_scope || 'direct';
                         const actionsMenu = isCurrentUser && !msg.is_deleted ? `
                             <div class="relative msg-actions">
-                                <button class="msg-menu-toggle p-1 rounded hover:bg-gray-200 text-gray-500" onclick="toggleMessageMenu(${msg.message_id})">
+                                <button class="msg-menu-toggle p-1 rounded hover:bg-gray-200 text-gray-500" onclick="toggleMessageMenu(${escapeHtml(msg.message_id)})">
                                     <i data-lucide="more-vertical" class="h-4 w-4"></i>
                                 </button>
-                                <div id="msgMenu-${msg.message_id}" class="hidden absolute right-0 mt-1 w-32 bg-white border border-gray-200 rounded-md shadow-lg z-20">
-                                    ${msg.can_edit ? `<button class="w-full text-left px-3 py-2 text-sm hover:bg-gray-50" onclick="editMessagePrompt(${msg.message_id}, '${encodeURIComponent(msg.message || '')}', '${messageScope}')">Edit</button>` : ''}
-                                    <button class="w-full text-left px-3 py-2 text-sm text-red-600 hover:bg-red-50" onclick="deleteMessage(${msg.message_id}, '${messageScope}')">Delete</button>
+                                <div id="msgMenu-${escapeHtml(msg.message_id)}" class="hidden absolute right-0 mt-1 w-32 bg-white border border-gray-200 rounded-md shadow-lg z-20">
+                                    ${msg.can_edit ? `<button class="w-full text-left px-3 py-2 text-sm hover:bg-gray-50" data-edit-text="${escapeHtml(msg.message || '')}" onclick="editMessagePrompt(${Number(msg.message_id)}, encodeURIComponent(this.dataset.editText || ''), '${messageScope === 'group' ? 'group' : 'direct'}')">Edit</button>` : ''}
+                                    <button class="w-full text-left px-3 py-2 text-sm text-red-600 hover:bg-red-50" onclick="deleteMessage(${escapeHtml(msg.message_id)}, '${escapeHtml(messageScope)}')">Delete</button>
                                 </div>
                             </div>
                         ` : '';
                         return `
                             <div class="msg-row flex mb-4 ${isCurrentUser ? 'justify-end' : ''}">
                                 ${!isCurrentUser ? `
-                                    <img src="${msg.sender_profile_picture || DEFAULT_AVATAR}" 
+                                    <img src="${escapeHtml(safeUrl(msg.sender_profile_picture || DEFAULT_AVATAR))}" 
                                          alt="User" 
                                          class="h-8 w-8 rounded-full mt-1"
                                          onerror="this.onerror=null;this.src=window.DEFAULT_AVATAR;">
@@ -838,7 +838,7 @@ include 'includes/sidebar.php';
                                 ${isCurrentUser ? actionsMenu : ''}
                                 
                                 ${isCurrentUser ? `
-                                    <img src="${msg.sender_profile_picture || DEFAULT_AVATAR}" 
+                                    <img src="${escapeHtml(safeUrl(msg.sender_profile_picture || DEFAULT_AVATAR))}" 
                                          alt="You" 
                                          class="h-8 w-8 rounded-full mt-1"
                                          onerror="this.onerror=null;this.src=window.DEFAULT_AVATAR;">
@@ -884,10 +884,10 @@ include 'includes/sidebar.php';
                 const isAdmin = Number(member.user_id) === Number(meta.admin_user_id) || member.member_role === 'admin';
                 return `
                     <span class="inline-flex items-center gap-2 rounded-full border border-gray-200 bg-white px-2.5 py-1 text-xs text-gray-700">
-                        <img src="${avatar}" alt="${name}" class="h-5 w-5 rounded-full object-cover" onerror="this.onerror=null;this.src=window.DEFAULT_AVATAR;">
-                        <span>${name}</span>
+                        <img src="${escapeHtml(safeUrl(avatar))}" alt="${escapeHtml(name)}" class="h-5 w-5 rounded-full object-cover" onerror="this.onerror=null;this.src=window.DEFAULT_AVATAR;">
+                        <span>${escapeHtml(name)}</span>
                         ${isAdmin ? `<span class="rounded-full bg-blue-100 px-2 py-0.5 text-[10px] font-semibold text-blue-700">Admin</span>` : ''}
-                        ${role ? `<span class="text-[10px] uppercase tracking-wide text-gray-400">${role}</span>` : ''}
+                        ${role ? `<span class="text-[10px] uppercase tracking-wide text-gray-400">${escapeHtml(role)}</span>` : ''}
                     </span>
                 `;
             }).join('');
@@ -1032,9 +1032,9 @@ include 'includes/sidebar.php';
             const lowerName = String(msg.attachment_name || '').toLowerCase();
             const isImage = ['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(lowerType) || /\.(jpg|jpeg|png|gif|webp)$/.test(lowerName);
             if (isImage) {
-                return `<a href="${url}" target="_blank" rel="noopener" class="block mt-2"><img src="${url}" alt="${name}" class="max-h-52 rounded-lg border border-white/20"></a>`;
+                return `<a href="${escapeHtml(safeUrl(url))}" target="_blank" rel="noopener" class="block mt-2"><img src="${escapeHtml(safeUrl(url))}" alt="${escapeHtml(name)}" class="max-h-52 rounded-lg border border-white/20"></a>`;
             }
-            return `<a href="${url}" target="_blank" rel="noopener" class="inline-flex items-center mt-2 underline break-all">${name}</a>`;
+            return `<a href="${escapeHtml(safeUrl(url))}" target="_blank" rel="noopener" class="inline-flex items-center mt-2 underline break-all">${escapeHtml(name)}</a>`;
         }
 
         function clearPendingAttachment() {
@@ -1089,7 +1089,7 @@ include 'includes/sidebar.php';
             if (!emojiPicker.dataset.ready) {
                 const emojis = ['😀', '😁', '😂', '😊', '😍', '😎', '👍', '🔥', '🎉', '🙏', '💯', '🚀', '❤️', '🙂', '🤝'];
                 emojiPicker.innerHTML = emojis.map((emoji) => `
-                    <button type="button" class="p-1 text-lg hover:bg-gray-100 rounded" onclick="insertEmoji('${emoji}')">${emoji}</button>
+                    <button type="button" class="p-1 text-lg hover:bg-gray-100 rounded" onclick="insertEmoji('${escapeHtml(emoji)}')">${escapeHtml(emoji)}</button>
                 `).join('');
                 emojiPicker.dataset.ready = '1';
             }
@@ -1224,7 +1224,7 @@ include 'includes/sidebar.php';
                     <title>Starting call...</title>
                     <body style="font-family: Inter, Arial, sans-serif; margin: 0; display: grid; place-items: center; min-height: 100vh; background: #f8fafc; color: #0f172a;">
                         <div style="text-align: center; padding: 24px;">
-                            <div style="font-size: 18px; font-weight: 700; margin-bottom: 8px;">Starting your ${label}...</div>
+                            <div style="font-size: 18px; font-weight: 700; margin-bottom: 8px;">Starting your ${escapeHtml(label)}...</div>
                             <div style="font-size: 14px; color: #475569;">We are preparing the secure meeting room.</div>
                         </div>
                     </body>

@@ -7,7 +7,7 @@ $token = trim((string)($_GET['token'] ?? ''));
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Reset Password - RJIT Alumni Portal</title>
-    <link rel="stylesheet" href="assets/css/tailwind.css?v=2">
+    <link rel="stylesheet" href="assets/css/tailwind.css?v=3">
     <script src="https://unpkg.com/lucide@0.460.0/dist/umd/lucide.min.js"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>

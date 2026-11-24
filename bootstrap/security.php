@@ -438,8 +438,28 @@ if (ap_is_api_request() && ap_env('RATE_LIMIT_DISABLED') !== 'true') {
  * Inspect every uploaded file before any script touches it. Scripts still apply
  * their own per-feature rules; this is a platform-wide safety net.
  */
+function ap_ini_bytes(string $v): int
+{
+    $v = trim($v);
+    $n = (int)$v;
+    switch (strtolower(substr($v, -1))) {
+        case 'g': $n *= 1024;
+        // no break
+        case 'm': $n *= 1024;
+        // no break
+        case 'k': $n *= 1024;
+    }
+    return $n;
+}
+
 function ap_inspect_uploads(): void
 {
+    // A body over post_max_size arrives with $_POST and $_FILES silently empty — say what actually happened.
+    $postMax = ap_ini_bytes((string)ini_get('post_max_size'));
+    $len = (int)($_SERVER['CONTENT_LENGTH'] ?? 0);
+    if ($postMax > 0 && $len > $postMax) {
+        ap_reject(413, 'That file is too large. The limit is ' . round(ap_ini_bytes((string)ini_get('upload_max_filesize')) / 1048576) . ' MB per upload.');
+    }
     if (empty($_FILES)) {
         return;
     }
@@ -469,6 +489,12 @@ function ap_inspect_uploads(): void
             }
             return;
         }
+        if ($errors === UPLOAD_ERR_INI_SIZE || $errors === UPLOAD_ERR_FORM_SIZE) {
+            ap_reject(413, 'That file is too large. The limit is ' . round(ap_ini_bytes((string)ini_get('upload_max_filesize')) / 1048576) . ' MB per file.');
+        }
+        if ($errors === UPLOAD_ERR_PARTIAL) {
+            ap_reject(400, 'The upload was interrupted. Please try again.');
+        }
         if ($errors !== UPLOAD_ERR_OK || !$tmps || !is_uploaded_file($tmps)) {
             return;
         }
@@ -491,8 +517,16 @@ function ap_inspect_uploads(): void
         if (preg_match('/<\?php|<\?=|<script\b|__halt_compiler/i', $head)) {
             ap_reject(415, 'This file contains embedded code and was blocked.');
         }
-        if (in_array($ext, ['jpg', 'jpeg', 'png', 'gif', 'webp'], true) && @getimagesize($tmps) === false) {
-            ap_reject(415, "That image couldn't be read. Please try a different file.");
+        if (in_array($ext, ['jpg', 'jpeg', 'png', 'gif', 'webp'], true)) {
+            $dim = @getimagesize($tmps);
+            if ($dim === false) {
+                ap_reject(415, "That image couldn't be read. Please try a different file.");
+            }
+            // "Image bombs": tiny files that decode to gigapixels and freeze browsers/servers.
+            if ($dim[0] > 12000 || $dim[1] > 12000 || $dim[0] * $dim[1] > 50000000) {
+                ap_reject(415, 'That image is ' . $dim[0] . '×' . $dim[1] . ' pixels — too big. Please resize it (max 12000 px per side).');
+            }
+            ap_strip_image_metadata($tmps, $ext);
         }
     };
 
@@ -504,8 +538,190 @@ function ap_inspect_uploads(): void
     }
 }
 
+/**
+ * Remove camera/location metadata (EXIF GPS, XMP, comments) from uploaded photos, losslessly.
+ * JPEG keeps its orientation so phone photos don't end up sideways.
+ */
+function ap_strip_image_metadata(string $path, string $ext): void
+{
+    $data = @file_get_contents($path);
+    if ($data === false || $data === '') {
+        return;
+    }
+    $out = null;
+    if ($ext === 'jpg' || $ext === 'jpeg') {
+        $out = ap_strip_jpeg($data, $path);
+    } elseif ($ext === 'png') {
+        $out = ap_strip_png($data);
+    } elseif ($ext === 'webp') {
+        $out = ap_strip_webp($data);
+    }
+    if (is_string($out) && $out !== '' && $out !== $data) {
+        @file_put_contents($path, $out);
+    }
+}
+
+function ap_strip_jpeg(string $d, string $path): ?string
+{
+    if (substr($d, 0, 2) !== "\xFF\xD8") {
+        return null;
+    }
+    $orientation = 1;
+    if (function_exists('exif_read_data')) {
+        $exif = @exif_read_data($path);
+        $orientation = (int)($exif['Orientation'] ?? 1);
+    }
+    $out = "\xFF\xD8";
+    if ($orientation >= 2 && $orientation <= 8) {
+        // Minimal EXIF holding only the Orientation tag (little-endian TIFF, one IFD entry).
+        $tiff = "II*\x00" . pack('V', 8) . pack('v', 1) . pack('vvVvv', 0x0112, 3, 1, $orientation, 0) . pack('V', 0);
+        $seg = "Exif\x00\x00" . $tiff;
+        $out .= "\xFF\xE1" . pack('n', strlen($seg) + 2) . $seg;
+    }
+    $i = 2;
+    $n = strlen($d);
+    while ($i + 4 <= $n) {
+        if ($d[$i] !== "\xFF") {
+            return null; // not a marker where one should be — leave the file untouched
+        }
+        $marker = ord($d[$i + 1]);
+        if ($marker === 0xDA) { // start of scan: image data follows, copy the rest verbatim
+            return $out . substr($d, $i);
+        }
+        if ($marker === 0xD8 || ($marker >= 0xD0 && $marker <= 0xD7) || $marker === 0x01 || $marker === 0xFF) {
+            $out .= substr($d, $i, 2);
+            $i += 2;
+            continue;
+        }
+        $len = unpack('n', substr($d, $i + 2, 2))[1];
+        if ($len < 2 || $i + 2 + $len > $n) {
+            return null;
+        }
+        $drop = ($marker >= 0xE1 && $marker <= 0xEF) || $marker === 0xFE; // APP1..APP15 (EXIF/XMP/IPTC…) and comments
+        if (!$drop) {
+            $out .= substr($d, $i, 2 + $len);
+        }
+        $i += 2 + $len;
+    }
+    return null;
+}
+
+function ap_strip_png(string $d): ?string
+{
+    if (substr($d, 0, 8) !== "\x89PNG\r\n\x1a\n") {
+        return null;
+    }
+    $out = substr($d, 0, 8);
+    $i = 8;
+    $n = strlen($d);
+    while ($i + 12 <= $n) {
+        $len = unpack('N', substr($d, $i, 4))[1];
+        $type = substr($d, $i + 4, 4);
+        $total = 12 + $len;
+        if ($i + $total > $n) {
+            return null;
+        }
+        if (!in_array($type, ['eXIf', 'tEXt', 'iTXt', 'zTXt', 'tIME'], true)) {
+            $out .= substr($d, $i, $total);
+        }
+        $i += $total;
+        if ($type === 'IEND') {
+            break;
+        }
+    }
+    return $out;
+}
+
+function ap_strip_webp(string $d): ?string
+{
+    if (substr($d, 0, 4) !== 'RIFF' || substr($d, 8, 4) !== 'WEBP') {
+        return null;
+    }
+    $body = '';
+    $i = 12;
+    $n = strlen($d);
+    while ($i + 8 <= $n) {
+        $type = substr($d, $i, 4);
+        $len = unpack('V', substr($d, $i + 4, 4))[1];
+        $total = 8 + $len + ($len % 2);
+        if ($i + 8 + $len > $n) {
+            return null;
+        }
+        $chunk = substr($d, $i, min($total, $n - $i));
+        if ($type === 'VP8X') {
+            $flags = ord($chunk[8]) & ~0x0C; // clear EXIF (0x08) and XMP (0x04) flags
+            $chunk[8] = chr($flags);
+        }
+        if ($type !== 'EXIF' && $type !== 'XMP ') {
+            $body .= $chunk;
+        }
+        $i += $total;
+    }
+    return 'RIFF' . pack('V', 4 + strlen($body)) . 'WEBP' . $body;
+}
+
 if ($apMethod === 'POST' || $apMethod === 'PUT') {
     ap_inspect_uploads();
+}
+
+/* ------------------------------------------------------------- id parameters */
+
+/**
+ * Every "id" / "*_id" parameter must be a whole number (conversation ids may also be "group:N").
+ * Bad values get a clear 400 here instead of reaching the database as text and failing with a 500.
+ */
+function ap_check_id_params(): void
+{
+    $bad = null;
+    $check = function ($key, $value) use (&$check, &$bad) {
+        if ($bad !== null || !is_string($key)) {
+            return;
+        }
+        $k = strtolower($key);
+        if ($k !== 'id' && substr($k, -3) !== '_id' && substr($k, -4) !== '_ids') {
+            return;
+        }
+        $values = is_array($value) ? $value : [$value];
+        foreach ($values as $v) {
+            if ($v === null || $v === '' || is_int($v) || $v === false) {
+                continue;
+            }
+            if (is_array($v) || is_object($v) || is_float($v) || is_bool($v)) {
+                $bad = $key;
+                return;
+            }
+            $v = trim((string)$v);
+            if (preg_match('/^\d{1,18}$/', $v)) {
+                continue;
+            }
+            if ($k === 'conversation_id' && preg_match('/^group:\d{1,18}$/', $v)) {
+                continue;
+            }
+            $bad = $key;
+            return;
+        }
+    };
+    foreach ([$_GET, $_POST] as $src) {
+        foreach ($src as $k => $v) {
+            $check($k, $v);
+        }
+    }
+    $ctype = strtolower((string)($_SERVER['CONTENT_TYPE'] ?? ''));
+    if ($bad === null && strpos($ctype, 'application/json') !== false) {
+        $json = json_decode((string)file_get_contents('php://input'), true);
+        if (is_array($json)) {
+            foreach ($json as $k => $v) {
+                $check($k, $v);
+            }
+        }
+    }
+    if ($bad !== null) {
+        ap_reject(400, 'Invalid ' . preg_replace('/[^a-z_]/i', '', (string)$bad) . '. It should be a number.');
+    }
+}
+
+if (ap_is_api_request()) {
+    ap_check_id_params();
 }
 
 /* ------------------------------------------------------- error-leak scrubber */

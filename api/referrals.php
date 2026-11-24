@@ -198,7 +198,8 @@ try {
             if (mb_strlen($company) < 2 || mb_strlen($roles) < 2) {
                 ref_fail('Please add the company and the roles you can refer for.');
             }
-            $exp = in_array($body['experience'] ?? 'any', REF_EXPERIENCE, true) ? $body['experience'] : 'any';
+            $exp = (string)($body['experience'] ?? 'any');
+            $exp = in_array($exp, REF_EXPERIENCE, true) ? $exp : 'any';
             $slots = max(1, min(50, (int)($body['slots'] ?? 3)));
             $expires = (string)($body['expires_at'] ?? '');
             $expires = preg_match('/^\d{4}-\d{2}-\d{2}$/', $expires) && $expires >= $today ? $expires : null;

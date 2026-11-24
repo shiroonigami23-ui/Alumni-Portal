@@ -1,4 +1,5 @@
 <?php
+require_once __DIR__ . '/_privacy.php';
 header("Access-Control-Allow-Origin: *");
 header("Content-Type: application/json; charset=UTF-8");
 
@@ -25,6 +26,7 @@ try {
     }
 
     $whereSince = '';
+    privacy_require_post($db, (int)$viewer_id, (int)$post_id);
     $params = [':pid' => $post_id, ':viewer_id' => $viewer_id];
     if ($since !== '') {
         $whereSince = " AND c.updated_at > :since_ts";
@@ -44,6 +46,7 @@ try {
                 c.updated_at,
                 u.role,
                 u.email,
+                u.username,
                 p.full_name,
                 p.profile_picture_url,
                 EXISTS (
@@ -108,6 +111,7 @@ try {
             "depth_level" => (int)($row['depth_level'] ?? 0),
             "author_id" => (int)$row['user_id'],
             "author_name" => (string)($row['full_name'] ?: 'RJIT Member'),
+            "author_username" => $row['username'] ?? null,
             "author_avatar" => $avatar,
             "content" => $content,
             "attachments" => $attachments,

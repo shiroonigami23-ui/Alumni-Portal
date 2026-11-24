@@ -276,10 +276,10 @@ include 'includes/sidebar.php';
                 <div class="border border-gray-200 rounded-lg p-4">
                     <div class="flex items-center justify-between gap-3">
                         <div>
-                            <p class="font-semibold text-gray-900">${m.mentor_name || 'Mentor'}</p>
-                            <p class="text-sm text-gray-600 capitalize">${m.role || ''}</p>
-                            <p class="text-sm text-gray-500 mt-1">${m.headline || 'Available for mentorship'}</p>
-                            ${m.expertise ? `<p class="text-xs text-gray-500 mt-1">Expertise: ${m.expertise}</p>` : ''}
+                            <p class="font-semibold text-gray-900">${escapeHtml(m.mentor_name || 'Mentor')}</p>
+                            <p class="text-sm text-gray-600 capitalize">${escapeHtml(m.role || '')}</p>
+                            <p class="text-sm text-gray-500 mt-1">${escapeHtml(m.headline || 'Available for mentorship')}</p>
+                            ${m.expertise ? `<p class="text-xs text-gray-500 mt-1">Expertise: ${escapeHtml(m.expertise)}</p>` : ''}
                         </div>
                         ${renderMentorActionButton(m)}
                     </div>
@@ -309,7 +309,7 @@ include 'includes/sidebar.php';
         }
         if (currentAdminGroupMembership && Number(currentAdminGroupMembership.mentor_id) === Number(mentor.mentor_id)) {
             return mentor.group_id
-                ? `<a href="messages.php?group_id=${mentor.group_id}" class="bg-indigo-600 text-white px-3 py-2 rounded-lg hover:bg-indigo-700">Open Admin GC</a>`
+                ? `<a href="messages.php?group_id=${escapeHtml(mentor.group_id)}" class="bg-indigo-600 text-white px-3 py-2 rounded-lg hover:bg-indigo-700">Open Admin GC</a>`
                 : '<span class="text-xs text-indigo-600 font-medium">Already in admin group</span>';
         }
         if (currentAdminGroupMembership && isAdminGroup) {
@@ -317,13 +317,13 @@ include 'includes/sidebar.php';
         }
         if (currentActiveMatch && Number(currentActiveMatch.mentor_id) === Number(mentor.mentor_id)) {
             return mentor.group_id
-                ? `<a href="messages.php?group_id=${mentor.group_id}" class="bg-green-600 text-white px-3 py-2 rounded-lg hover:bg-green-700">Open Group</a>`
+                ? `<a href="messages.php?group_id=${escapeHtml(mentor.group_id)}" class="bg-green-600 text-white px-3 py-2 rounded-lg hover:bg-green-700">Open Group</a>`
                 : '<span class="text-xs text-green-600 font-medium">Current mentor</span>';
         }
         if (currentActiveMatch) {
             return '<span class="text-xs text-amber-600 font-medium">Leave your current mentor first</span>';
         }
-        return `<button class="request-mentor-btn bg-blue-600 text-white px-3 py-2 rounded-lg hover:bg-blue-700" data-mentor-id="${mentor.mentor_id}">Request to Join</button>`;
+        return `<button class="request-mentor-btn bg-blue-600 text-white px-3 py-2 rounded-lg hover:bg-blue-700" data-mentor-id="${escapeHtml(mentor.mentor_id)}">Request to Join</button>`;
     }
 
     async function loadRequestsPanel() {
@@ -361,15 +361,15 @@ include 'includes/sidebar.php';
             listEl.innerHTML = rows.map((r) => `
                 <div class="border border-gray-200 rounded-lg p-3">
                     <p class="font-medium text-gray-900 text-sm">${(action === 'list_my_requests') ? (r.mentor_name || 'Mentor') : (r.mentee_name || 'Student')}</p>
-                    <p class="text-xs text-gray-500 mt-1">${r.message || ''}</p>
+                    <p class="text-xs text-gray-500 mt-1">${escapeHtml(r.message || '')}</p>
                     <div class="flex items-center justify-between mt-2">
-                        <span class="text-xs px-2 py-0.5 rounded-full ${r.status === 'accepted' ? 'bg-green-100 text-green-700' : (r.status === 'rejected' ? 'bg-red-100 text-red-700' : 'bg-yellow-100 text-yellow-700')}">${r.status}</span>
+                        <span class="text-xs px-2 py-0.5 rounded-full ${r.status === 'accepted' ? 'bg-green-100 text-green-700' : (r.status === 'rejected' ? 'bg-red-100 text-red-700' : 'bg-yellow-100 text-yellow-700')}">${escapeHtml(r.status)}</span>
                         ${(action !== 'list_my_requests' && (['faculty', 'admin'].includes(currentRole) || (currentRole === 'alumni' && mentorStatus?.mentor_profile?.is_active)) && r.status === 'pending') ? `
                             <div class="flex gap-2">
-                                <button class="mentor-respond-btn text-xs px-2 py-1 bg-green-600 text-white rounded" data-request-id="${r.request_id}" data-status="accepted">Accept</button>
-                                <button class="mentor-respond-btn text-xs px-2 py-1 bg-red-600 text-white rounded" data-request-id="${r.request_id}" data-status="rejected">Reject</button>
+                                <button class="mentor-respond-btn text-xs px-2 py-1 bg-green-600 text-white rounded" data-request-id="${escapeHtml(r.request_id)}" data-status="accepted">Accept</button>
+                                <button class="mentor-respond-btn text-xs px-2 py-1 bg-red-600 text-white rounded" data-request-id="${escapeHtml(r.request_id)}" data-status="rejected">Reject</button>
                             </div>
-                        ` : (r.status === 'accepted' && r.group_id ? `<a href="messages.php?group_id=${r.group_id}" class="text-xs text-blue-600 hover:text-blue-800">Open mentor group</a>` : '')}
+                        ` : (r.status === 'accepted' && r.group_id ? `<a href="messages.php?group_id=${escapeHtml(r.group_id)}" class="text-xs text-blue-600 hover:text-blue-800">Open mentor group</a>` : '')}
                     </div>
                 </div>
             `).join('');
@@ -410,12 +410,12 @@ include 'includes/sidebar.php';
 
             listEl.innerHTML = rows.map((row) => `
                 <div class="border border-gray-200 rounded-lg p-3">
-                    <p class="font-medium text-gray-900 text-sm">${row.applicant_name || row.email || 'Alumni applicant'}</p>
-                    <p class="text-xs text-gray-500 mt-1">${row.headline || 'No headline added yet.'}</p>
-                    ${row.expertise ? `<p class="text-xs text-gray-500 mt-1">Expertise: ${row.expertise}</p>` : ''}
+                    <p class="font-medium text-gray-900 text-sm">${escapeHtml(row.applicant_name || row.email || 'Alumni applicant')}</p>
+                    <p class="text-xs text-gray-500 mt-1">${escapeHtml(row.headline || 'No headline added yet.')}</p>
+                    ${row.expertise ? `<p class="text-xs text-gray-500 mt-1">Expertise: ${escapeHtml(row.expertise)}</p>` : ''}
                     <div class="flex items-center justify-end gap-2 mt-3">
-                        <button class="review-app-btn text-xs px-3 py-1.5 bg-green-600 text-white rounded" data-mentor-user-id="${row.applicant_id}" data-status="approved">Approve</button>
-                        <button class="review-app-btn text-xs px-3 py-1.5 bg-red-600 text-white rounded" data-mentor-user-id="${row.applicant_id}" data-status="rejected">Reject</button>
+                        <button class="review-app-btn text-xs px-3 py-1.5 bg-green-600 text-white rounded" data-mentor-user-id="${escapeHtml(row.applicant_id)}" data-status="approved">Approve</button>
+                        <button class="review-app-btn text-xs px-3 py-1.5 bg-red-600 text-white rounded" data-mentor-user-id="${escapeHtml(row.applicant_id)}" data-status="rejected">Reject</button>
                     </div>
                 </div>
             `).join('');
@@ -440,22 +440,22 @@ include 'includes/sidebar.php';
                 const adminGroupCard = currentAdminGroupMembership ? `
                     <div class="border border-indigo-200 bg-indigo-50 rounded-lg p-4 mb-3">
                         <p class="text-xs font-semibold uppercase tracking-wide text-indigo-700">Admin Mentor Group</p>
-                        <p class="mt-2 font-semibold text-gray-900">${currentAdminGroupMembership.mentor_name || 'Admin mentor group'}</p>
-                        <p class="text-sm text-gray-600 capitalize mt-1">${currentAdminGroupMembership.mentor_role || ''}</p>
+                        <p class="mt-2 font-semibold text-gray-900">${escapeHtml(currentAdminGroupMembership.mentor_name || 'Admin mentor group')}</p>
+                        <p class="text-sm text-gray-600 capitalize mt-1">${escapeHtml(currentAdminGroupMembership.mentor_role || '')}</p>
                         <div class="mt-3 flex flex-wrap gap-2">
-                            ${currentAdminGroupMembership.group_id ? `<a href="messages.php?group_id=${currentAdminGroupMembership.group_id}" class="text-xs px-3 py-1.5 bg-indigo-600 text-white rounded">Open admin GC</a>` : ''}
-                            <button class="leave-group-btn text-xs px-3 py-1.5 border border-amber-300 text-amber-700 rounded" data-group-id="${currentAdminGroupMembership.group_id}">Leave group</button>
+                            ${currentAdminGroupMembership.group_id ? `<a href="messages.php?group_id=${escapeHtml(currentAdminGroupMembership.group_id)}" class="text-xs px-3 py-1.5 bg-indigo-600 text-white rounded">Open admin GC</a>` : ''}
+                            <button class="leave-group-btn text-xs px-3 py-1.5 border border-amber-300 text-amber-700 rounded" data-group-id="${escapeHtml(currentAdminGroupMembership.group_id)}">Leave group</button>
                         </div>
                     </div>` : '';
                 if (mentorStatus?.can_request && currentActiveMatch) {
                     listEl.innerHTML = `
                         ${adminGroupCard}
                         <div class="border border-gray-200 rounded-lg p-4">
-                            <p class="font-semibold text-gray-900">${currentActiveMatch.mentor_name || 'Current mentor'}</p>
-                            <p class="text-sm text-gray-600 capitalize mt-1">${currentActiveMatch.mentor_role || ''}</p>
+                            <p class="font-semibold text-gray-900">${escapeHtml(currentActiveMatch.mentor_name || 'Current mentor')}</p>
+                            <p class="text-sm text-gray-600 capitalize mt-1">${escapeHtml(currentActiveMatch.mentor_role || '')}</p>
                             <p class="text-xs text-gray-500 mt-2">Joined ${window.portalTime ? window.portalTime.format(currentActiveMatch.joined_at, 'date') : window.formatDate(currentActiveMatch.joined_at, 'date')}</p>
                             <div class="mt-3 flex flex-wrap gap-2">
-                                ${currentActiveMatch.group_id ? `<a href="messages.php?group_id=${currentActiveMatch.group_id}" class="text-xs px-3 py-1.5 bg-blue-600 text-white rounded">Open mentor group</a>` : ''}
+                                ${currentActiveMatch.group_id ? `<a href="messages.php?group_id=${escapeHtml(currentActiveMatch.group_id)}" class="text-xs px-3 py-1.5 bg-blue-600 text-white rounded">Open mentor group</a>` : ''}
                                 <button class="leave-current-mentor-btn text-xs px-3 py-1.5 border border-red-300 text-red-600 rounded">Leave current mentor</button>
                             </div>
                         </div>
@@ -474,19 +474,19 @@ include 'includes/sidebar.php';
                     ${currentAdminGroupMembership ? `
                     <div class="border border-indigo-200 bg-indigo-50 rounded-lg p-4 mb-3">
                         <p class="text-xs font-semibold uppercase tracking-wide text-indigo-700">Admin Mentor Group</p>
-                        <p class="mt-2 font-semibold text-gray-900">${currentAdminGroupMembership.mentor_name || 'Admin mentor group'}</p>
-                        <p class="text-sm text-gray-600 capitalize mt-1">${currentAdminGroupMembership.mentor_role || ''}</p>
+                        <p class="mt-2 font-semibold text-gray-900">${escapeHtml(currentAdminGroupMembership.mentor_name || 'Admin mentor group')}</p>
+                        <p class="text-sm text-gray-600 capitalize mt-1">${escapeHtml(currentAdminGroupMembership.mentor_role || '')}</p>
                         <div class="mt-3 flex flex-wrap gap-2">
-                            ${currentAdminGroupMembership.group_id ? `<a href="messages.php?group_id=${currentAdminGroupMembership.group_id}" class="text-xs px-3 py-1.5 bg-indigo-600 text-white rounded">Open admin GC</a>` : ''}
-                            <button class="leave-group-btn text-xs px-3 py-1.5 border border-amber-300 text-amber-700 rounded" data-group-id="${currentAdminGroupMembership.group_id}">Leave group</button>
+                            ${currentAdminGroupMembership.group_id ? `<a href="messages.php?group_id=${escapeHtml(currentAdminGroupMembership.group_id)}" class="text-xs px-3 py-1.5 bg-indigo-600 text-white rounded">Open admin GC</a>` : ''}
+                            <button class="leave-group-btn text-xs px-3 py-1.5 border border-amber-300 text-amber-700 rounded" data-group-id="${escapeHtml(currentAdminGroupMembership.group_id)}">Leave group</button>
                         </div>
                     </div>` : ''}
                     <div class="border border-gray-200 rounded-lg p-4">
-                        <p class="font-semibold text-gray-900">${match.mentor_name || 'Current mentor'}</p>
-                        <p class="text-sm text-gray-600 capitalize mt-1">${match.mentor_role || ''}</p>
+                        <p class="font-semibold text-gray-900">${escapeHtml(match.mentor_name || 'Current mentor')}</p>
+                        <p class="text-sm text-gray-600 capitalize mt-1">${escapeHtml(match.mentor_role || '')}</p>
                         <p class="text-xs text-gray-500 mt-2">Joined ${window.portalTime ? window.portalTime.format(match.joined_at, 'date') : window.formatDate(match.joined_at, 'date')}</p>
                         <div class="mt-3 flex flex-wrap gap-2">
-                            ${match.group_id ? `<a href="messages.php?group_id=${match.group_id}" class="text-xs px-3 py-1.5 bg-blue-600 text-white rounded">Open mentor group</a>` : ''}
+                            ${match.group_id ? `<a href="messages.php?group_id=${escapeHtml(match.group_id)}" class="text-xs px-3 py-1.5 bg-blue-600 text-white rounded">Open mentor group</a>` : ''}
                             <button class="leave-current-mentor-btn text-xs px-3 py-1.5 border border-red-300 text-red-600 rounded">Leave current mentor</button>
                         </div>
                     </div>
@@ -496,10 +496,10 @@ include 'includes/sidebar.php';
                 const menteeCard = (mentorStatus?.can_request && currentActiveMatch && Number(currentActiveMatch.mentor_id) !== Number(currentUser?.user_id || 0)) ? `
                     <div class="border border-blue-200 bg-blue-50 rounded-lg p-4 mb-3">
                         <p class="text-xs font-semibold uppercase tracking-wide text-blue-700">Your current mentor</p>
-                        <p class="mt-2 font-semibold text-gray-900">${currentActiveMatch.mentor_name || 'Current mentor'}</p>
-                        <p class="text-sm text-gray-600 capitalize mt-1">${currentActiveMatch.mentor_role || ''}</p>
+                        <p class="mt-2 font-semibold text-gray-900">${escapeHtml(currentActiveMatch.mentor_name || 'Current mentor')}</p>
+                        <p class="text-sm text-gray-600 capitalize mt-1">${escapeHtml(currentActiveMatch.mentor_role || '')}</p>
                         <div class="mt-3 flex flex-wrap gap-2">
-                            ${currentActiveMatch.group_id ? `<a href="messages.php?group_id=${currentActiveMatch.group_id}" class="text-xs px-3 py-1.5 bg-blue-600 text-white rounded">Open mentor group</a>` : ''}
+                            ${currentActiveMatch.group_id ? `<a href="messages.php?group_id=${escapeHtml(currentActiveMatch.group_id)}" class="text-xs px-3 py-1.5 bg-blue-600 text-white rounded">Open mentor group</a>` : ''}
                             <button class="leave-current-mentor-btn text-xs px-3 py-1.5 border border-red-300 text-red-600 rounded">Leave current mentor</button>
                         </div>
                     </div>
@@ -508,30 +508,30 @@ include 'includes/sidebar.php';
                     ${currentAdminGroupMembership ? `
                     <div class="border border-indigo-200 bg-indigo-50 rounded-lg p-4 mb-3">
                         <p class="text-xs font-semibold uppercase tracking-wide text-indigo-700">Admin Mentor Group</p>
-                        <p class="mt-2 font-semibold text-gray-900">${currentAdminGroupMembership.mentor_name || 'Admin mentor group'}</p>
-                        <p class="text-sm text-gray-600 capitalize mt-1">${currentAdminGroupMembership.mentor_role || ''}</p>
+                        <p class="mt-2 font-semibold text-gray-900">${escapeHtml(currentAdminGroupMembership.mentor_name || 'Admin mentor group')}</p>
+                        <p class="text-sm text-gray-600 capitalize mt-1">${escapeHtml(currentAdminGroupMembership.mentor_role || '')}</p>
                         <div class="mt-3 flex flex-wrap gap-2">
-                            ${currentAdminGroupMembership.group_id ? `<a href="messages.php?group_id=${currentAdminGroupMembership.group_id}" class="text-xs px-3 py-1.5 bg-indigo-600 text-white rounded">Open admin GC</a>` : ''}
-                            <button class="leave-group-btn text-xs px-3 py-1.5 border border-amber-300 text-amber-700 rounded" data-group-id="${currentAdminGroupMembership.group_id}">Leave group</button>
+                            ${currentAdminGroupMembership.group_id ? `<a href="messages.php?group_id=${escapeHtml(currentAdminGroupMembership.group_id)}" class="text-xs px-3 py-1.5 bg-indigo-600 text-white rounded">Open admin GC</a>` : ''}
+                            <button class="leave-group-btn text-xs px-3 py-1.5 border border-amber-300 text-amber-700 rounded" data-group-id="${escapeHtml(currentAdminGroupMembership.group_id)}">Leave group</button>
                         </div>
                     </div>` : ''}
                     ${menteeCard}
-                    ${groupId ? `<div class="flex flex-wrap gap-2 mb-3"><a href="messages.php?group_id=${groupId}" class="text-xs px-3 py-1.5 bg-blue-600 text-white rounded">Open mentor group</a><button class="leave-group-btn text-xs px-3 py-1.5 border border-amber-300 text-amber-700 rounded" data-group-id="${groupId}">Leave group</button>${!mentorStatus?.can_request ? `<button class="disband-group-btn text-xs px-3 py-1.5 border border-red-300 text-red-600 rounded" data-group-id="${groupId}">Disband group</button>` : ''}</div>` : ''}
+                    ${groupId ? `<div class="flex flex-wrap gap-2 mb-3"><a href="messages.php?group_id=${escapeHtml(groupId)}" class="text-xs px-3 py-1.5 bg-blue-600 text-white rounded">Open mentor group</a><button class="leave-group-btn text-xs px-3 py-1.5 border border-amber-300 text-amber-700 rounded" data-group-id="${escapeHtml(groupId)}">Leave group</button>${!mentorStatus?.can_request ? `<button class="disband-group-btn text-xs px-3 py-1.5 border border-red-300 text-red-600 rounded" data-group-id="${escapeHtml(groupId)}">Disband group</button>` : ''}</div>` : ''}
                     ${activeMentorshipRows.map((row) => `
                         <div class="border border-gray-200 rounded-lg p-4">
                             <div class="flex items-start justify-between gap-3">
                                 <div>
-                                    <p class="font-semibold text-gray-900">${row.mentee_name || 'Member'}</p>
-                                    <p class="text-sm text-gray-600 capitalize">${row.mentee_role || ''}</p>
+                                    <p class="font-semibold text-gray-900">${escapeHtml(row.mentee_name || 'Member')}</p>
+                                    <p class="text-sm text-gray-600 capitalize">${escapeHtml(row.mentee_role || '')}</p>
                                     <p class="text-xs text-gray-500 mt-1">Joined ${window.portalTime ? window.portalTime.format(row.joined_at, 'date') : window.formatDate(row.joined_at, 'date')}</p>
                                     ${Number(row.is_banned) ? `<p class="text-xs text-red-600 mt-1">${Number(row.is_permanent) ? 'Permanently removed from this group.' : `Muted until ${window.portalTime ? window.portalTime.format(row.banned_until, 'date-time') : window.formatDate(row.banned_until, 'date-time')}`}</p>` : ''}
                                 </div>
                                 <div class="flex flex-wrap justify-end gap-2">
                                     ${Number(row.is_banned)
-                                        ? `<button class="moderate-member-btn text-xs px-3 py-1.5 border border-green-300 text-green-700 rounded" data-group-id="${row.group_id}" data-member-id="${row.mentee_id}" data-action="unban">Unban</button>`
-                                        : `<button class="moderate-member-btn text-xs px-3 py-1.5 border border-amber-300 text-amber-700 rounded" data-group-id="${row.group_id}" data-member-id="${row.mentee_id}" data-action="ban">Ban 7d</button>`
+                                        ? `<button class="moderate-member-btn text-xs px-3 py-1.5 border border-green-300 text-green-700 rounded" data-group-id="${escapeHtml(row.group_id)}" data-member-id="${escapeHtml(row.mentee_id)}" data-action="unban">Unban</button>`
+                                        : `<button class="moderate-member-btn text-xs px-3 py-1.5 border border-amber-300 text-amber-700 rounded" data-group-id="${escapeHtml(row.group_id)}" data-member-id="${escapeHtml(row.mentee_id)}" data-action="ban">Ban 7d</button>`
                                     }
-                                    <button class="moderate-member-btn text-xs px-3 py-1.5 border border-red-300 text-red-600 rounded" data-group-id="${row.group_id}" data-member-id="${row.mentee_id}" data-action="kick">Kick</button>
+                                    <button class="moderate-member-btn text-xs px-3 py-1.5 border border-red-300 text-red-600 rounded" data-group-id="${escapeHtml(row.group_id)}" data-member-id="${escapeHtml(row.mentee_id)}" data-action="kick">Kick</button>
                                 </div>
                             </div>
                         </div>

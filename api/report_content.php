@@ -1,4 +1,5 @@
 <?php
+require_once __DIR__ . '/_privacy.php';
 header("Access-Control-Allow-Origin: *");
 header("Content-Type: application/json; charset=UTF-8");
 header("Access-Control-Allow-Methods: POST");
@@ -66,6 +67,7 @@ try {
         echo json_encode(["success" => false, "status" => "error", "message" => "post_id or comment_id is required"]);
         exit;
     }
+    if ((int)$post_id > 0) privacy_require_post($db, (int)$reporter_id, (int)$post_id);
 
     $u_stmt = $db->prepare("SELECT role FROM users WHERE user_id = :uid");
     $u_stmt->execute(['uid' => $reporter_id]);

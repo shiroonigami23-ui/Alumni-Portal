@@ -176,3 +176,27 @@ function delete_content_payload_batch(PDO $db, array $pointers): void
         delete_content_payload($db, $clean);
     }
 }
+
+/**
+ * GIFs come from the GIF picker (Wikimedia Commons) — accept only https links to known GIF hosts, with no
+ * characters that could break out of an HTML attribute. Returns '' for anything else.
+ */
+function safe_gif_url(?string $url): string
+{
+    $url = trim((string)$url);
+    if ($url === '' || strlen($url) > 600 || preg_match('/[\s"\'<>\\\\`]/', $url)) {
+        return '';
+    }
+    $parts = parse_url($url);
+    if (($parts['scheme'] ?? '') !== 'https' || empty($parts['host'])) {
+        return '';
+    }
+    $host = strtolower($parts['host']);
+    $allowed = ['upload.wikimedia.org', 'commons.wikimedia.org', 'media.giphy.com', 'i.giphy.com', 'media.tenor.com', 'c.tenor.com'];
+    foreach ($allowed as $ok) {
+        if ($host === $ok || substr($host, -strlen('.' . $ok)) === '.' . $ok) {
+            return $url;
+        }
+    }
+    return '';
+}

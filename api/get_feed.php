@@ -9,6 +9,7 @@ include_once __DIR__ . '/_feed_schema.php';
 include_once __DIR__ . '/_content_store.php';
 include_once __DIR__ . '/_profile_media.php';
 include_once __DIR__ . '/_community_schema.php';
+include_once __DIR__ . '/_privacy.php';
 
 $database = new Database();
 $db = $database->getConnection();
@@ -65,6 +66,19 @@ try {
 
     $connectionsTableExists = db_table_exists($db, 'connections');
 
+    // Search: post text (content store), title, and author name. All visibility rules still apply.
+    $q = trim((string)($_GET['q'] ?? ''));
+    if ($q !== '') {
+        $q = mb_substr($q, 0, 100);
+        $where .= " AND (
+            p.title ILIKE :q_like
+            OR EXISTS (SELECT 1 FROM profiles sq_p WHERE sq_p.user_id = p.user_id AND sq_p.full_name ILIKE :q_like)
+            OR EXISTS (SELECT 1 FROM content_payloads sq_c
+                       WHERE p.content_file_path = 'dbjson:' || sq_c.public_token AND (sq_c.payload->>'content') ILIKE :q_like)
+        )";
+        $params['q_like'] = '%' . addcslashes($q, '%_\\') . '%';
+    }
+
     if ($filter === 'announcements') {
         $where .= " AND p.post_type = 'announcement'";
     } elseif ($filter === 'reposts') {
@@ -81,11 +95,7 @@ try {
                 SELECT 1
                 FROM connections c
                 WHERE c.status = 'accepted'
-                  AND (
-                    (c.requester_user_id = :uid AND c.addressee_user_id = p.user_id)
-                    OR
-                    (c.addressee_user_id = :uid AND c.requester_user_id = p.user_id)
-                  )
+                  AND c.requester_user_id = :uid AND c.addressee_user_id = p.user_id
             )";
             $params['uid'] = $user_id;
         } else {
@@ -97,21 +107,10 @@ try {
         $where .= " AND (COALESCE(p.moderation_status, 'approved') = 'approved' OR p.user_id = :viewer_uid)";
     }
 
-    $where .= " AND (
-        p.user_id = :viewer_uid
-        OR :viewer_role = 'admin'
-        OR COALESCE(p.visibility_scope, 'all') = 'all'
-        OR (COALESCE(p.visibility_scope, 'all') = 'alumni' AND :viewer_role = 'alumni')
-        OR (COALESCE(p.visibility_scope, 'all') = 'faculty' AND :viewer_role = 'faculty')
-        OR (COALESCE(p.visibility_scope, 'all') = 'students' AND :viewer_role = 'student')
-        OR (COALESCE(p.visibility_scope, 'all') = 'faculty_alumni' AND :viewer_role IN ('faculty', 'alumni'))
-        OR (COALESCE(p.visibility_scope, 'all') = 'students_alumni' AND :viewer_role IN ('student', 'alumni'))
-        OR (COALESCE(p.visibility_scope, 'all') = 'faculty_students' AND :viewer_role IN ('faculty', 'student'))
-    )";
-
-    // Hide content from people you blocked or who blocked you
-    $where .= " AND NOT EXISTS (SELECT 1 FROM blocks b WHERE (b.blocker_user_id = :viewer_uid AND b.blocked_user_id = p.user_id)
-                                                          OR (b.blocked_user_id = :viewer_uid AND b.blocker_user_id = p.user_id))";
+    // Audience, blocks and private accounts — shared rules in api/_privacy.php
+    $where .= " AND " . privacy_scope_sql('p');
+    $where .= " AND " . privacy_not_blocked_sql('p.user_id');
+    $where .= " AND " . privacy_author_visible_sql('p.user_id');
 
     // Server-side "hype": engagement with time decay (Hacker-News style). Fresh, active posts rise; old ones fade.
     $hype = "((p.reaction_count + 2 * p.comment_count + 3 * COALESCE(p.repost_count, 0) + 2 * COALESCE(p.share_count, 0)
@@ -187,7 +186,8 @@ try {
                 (activity_rp.post_id IS NOT NULL) AS activity_user_has_reposted,
                 p.created_at,
                 u.role AS author_role,
-                u.email AS author_email,
+                CASE WHEN :viewer_role = 'admin' OR p.user_id = :viewer_uid OR COALESCE(pr.show_email, TRUE) THEN u.email ELSE NULL END AS author_email,
+                u.username AS author_username,
                 pr.full_name AS author_name,
                 pr.profile_picture_url AS author_avatar,
                 pr.branch,

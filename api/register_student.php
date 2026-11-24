@@ -55,6 +55,7 @@ if (!$data || empty($data->email) || empty($data->password) || empty($data->name
 
 try {
     // 1. Domain Validation
+    $data->email = strtolower(trim((string)$data->email));
     if (!str_ends_with($data->email, '@rjit.ac.in')) {
         http_response_code(400);
         echo json_encode([

@@ -5,7 +5,7 @@
 <h3>The campus hub where RJIT students, alumni and faculty meet, mentor, hire and grow together.</h3>
 
 [![CI](https://github.com/shiroonigami23-ui/Alumni-Portal/actions/workflows/ci.yml/badge.svg)](https://github.com/shiroonigami23-ui/Alumni-Portal/actions/workflows/ci.yml)
-![Tests](https://img.shields.io/badge/tests-185%20API%20%7C%2068%20UI%20%7C%2063%20routes-22c55e)
+![Tests](https://img.shields.io/badge/tests-230%20API%20%7C%2078%20UI%20%7C%2064%20authz%20%7C%202744%20SQLi%20%7C%2037%20XSS-22c55e)
 [![License: MIT](https://img.shields.io/badge/License-MIT-22c55e.svg)](LICENSE)
 ![PHP](https://img.shields.io/badge/PHP-8.2+-777BB4?logo=php&logoColor=white)
 ![PostgreSQL](https://img.shields.io/badge/PostgreSQL-13%2B-4169E1?logo=postgresql&logoColor=white)
@@ -18,7 +18,7 @@
 
 [**Live demo**](http://alumni-portal-alb-616743364.us-east-1.elb.amazonaws.com/) ·
 [Features](#-features) ·
-[What's new](#-whats-new-in-21) ·
+[What's new](#-whats-new-in-23) ·
 [Screenshots](#-screenshots) ·
 [Quick start](#-quick-start) ·
 [Routing](#-routing--urls) ·
@@ -34,6 +34,28 @@
 <img src="assets/readme/tour.gif" alt="Animated tour of the portal: landing, login, register, help centre, friendly 404 and privacy policy" width="92%">
 <br><sub>A quick tour — landing page, sign-in, registration, help centre, the friendly 404 and legal pages.</sub>
 </div>
+
+## 🆕 What's new in 2.3
+
+| | |
+|:---:|:---:|
+| <img src="assets/readme/locked-profile.jpg" alt="A private profile seen by a non-follower: locked card with Request to follow, Message, Block and Report buttons" width="100%"> | <img src="assets/readme/profile-owner.jpg" alt="Your own profile: @handle with copy link, pronouns and Open to mentoring badges, profile strength meter and profile views" width="100%"> |
+| **Private profiles that are actually private** — non-followers get a locked card and a *Request to follow* button | **@handles, profile strength and profile views** — your unique handle, badges, what to fill in next, who looked |
+
+- 🔒 **Real privacy.** Private accounts were only private on paper: their posts showed up in feeds, search and the timeline API. Now everything follows one rule set (`api/_privacy.php`): followers only, follow **requests** you approve, email/phone visibility you control, roll numbers hidden from other members.
+- 🏷️ **Twitter-style @handles**, separate from your display name: unique regardless of case (enforced by the database), auto-created for every account, `/@handle` links, `@mentions` that link in posts, a live availability check with suggestions, and old handles redirect for 30 days.
+- 🚫 **Block** people (they disappear from your feed, search, chats and profile), plus **Download my data** as one JSON file.
+- 🛡️ **Security sweep.** Fixed a **ban-anyone endpoint** any signed-in member could call, **stored XSS** on 7 pages (including the public landing page and the notification bell), a reflected XSS via `profile.php?id=`, and an upload that locked active accounts out. All of it is now covered by tests: an authorization sweep, a 2,744-request SQL-injection fuzz and a browser XSS sweep run in CI.
+- 📷 **Uploads strip photo location (EXIF/GPS) losslessly**, refuse "image bombs", and say *"too large (max 2 MB)"* instead of a confusing error. Animated GIF avatars work.
+- ✅ **Friendly validation everywhere.** Profile fields have length/format checks (no more 500s), links get `https://` added, and bad IDs get a clear 400.
+
+<details><summary>Settings: handle checker and privacy controls</summary>
+
+| | |
+|:---:|:---:|
+| <img src="assets/readme/settings-handle.png" alt="Handle field showing 'That handle is taken' with four suggested free handles" width="100%"> | <img src="assets/readme/settings-privacy.png" alt="Privacy settings: profile visibility, what others can see toggles, follow requests, blocked accounts and data download" width="100%"> |
+
+</details>
 
 ## 🆕 What's new in 2.1 & 2.2
 
@@ -112,12 +134,16 @@ It runs on plain **PHP 8 + PostgreSQL** (with an optional Redis cache), works on
 
 ### 👥 Community & profiles
 - Role-aware accounts: **student, alumni, faculty, admin, moderator**
-- Rich profiles: avatar, cover, bio, company, role, skills, socials
-- Profile privacy controls and blocking
+- Rich profiles: avatar, cover, bio, company, role, skills, socials, **pronouns**, *open to mentoring / referrals / opportunities* badges
+- **@handles** (unique, case-insensitive, changeable every 14 days) separate from your display name; `/@handle` links and `@mentions`
+- **Private profiles** with follow requests; choose whether your email and phone are shown; students are always public (institute policy)
+- **Block** anyone except staff; blocked people vanish from each other's feeds, search, chats and profiles
+- **Profile strength** meter and **who viewed your profile** (last 30 days)
+- Students edit everything except identity fields (name, branch, batch come from institute records)
 - Activity timeline with posts **and** reposts
 - Automatic **student → alumni** promotion at graduation (cron)
 - Verified-alumni document flow with admin approval
-- GDPR-style **data export** (streamed privately to the owner)
+- **Download my data**: posts, comments, messages, follows, jobs, referrals and more as one JSON file (Settings → Privacy)
 
 ### 📰 Feed
 - **✨ For you** (personalised: people you follow, your branch, company and batch) and **🔥 Trending** (time-decayed engagement) sorts, plus Newest / Popular / Following
@@ -404,6 +430,7 @@ flowchart LR
 | `/privacy`, `/directory`, `/careers`, `/inbox`, `/admin` … | 301 → the right page |
 | `/map`, `/batches`, `/refer`, `/insights` | 301 → Atlas, Referral board, admin Insights |
 | `/stream`, `/resources`, `/stories` | 301 → Live, Library |
+| `/@aarav_sharma`, `/u/aarav_sharma` | 302 → that person's profile (old handles keep working for 30 days) |
 | `/pages/feed.php` *(internal path)* | 301 → `/feed.php` |
 | `/feed/` *(trailing slash)* | 301 → `/feed` |
 | `/config/Database.php`, `/api/_feed_schema.php`, `/storage/verification/…` | 404 — never served |
@@ -426,7 +453,13 @@ Security is centralised in `bootstrap/security.php`, which runs **before every p
 | **Brute-force protection** | Sliding-window rate limits per IP for all APIs, stricter limits for login, registration and password-reset, plus a **per-account lockout** after repeated wrong passwords ("try again in 12 minutes, or use Forgot password"). |
 | **Real client IP** | `X-Forwarded-For` is trusted **only** from configured proxies (e.g. the ALB), so bans and rate limits can't be bypassed by spoofing a header. |
 | **Private files** | Résumés and identity documents live in the database or private storage behind unguessable tokens — never at guessable public paths. |
-| **Uploads** | Every file is checked platform-wide: dangerous and double extensions (`shell.php.jpg`) refused, real MIME sniffed with `finfo` and matched to the extension, images must decode, and files with embedded `<?php` / `<script>` (polyglots) are blocked. |
+| **Uploads** | Every file is checked platform-wide: dangerous and double extensions (`shell.php.jpg`) refused, real MIME sniffed with `finfo` and matched to the extension, images must decode, and files with embedded `<?php` / `<script>` (polyglots) are blocked. Images over 12,000 px a side or 50 MP ("image bombs") are refused. **Camera and GPS metadata is stripped losslessly** from JPEG/PNG/WebP (JPEG keeps its orientation). Oversized uploads get a clear "too large" message. |
+| **Stored files** | Every upload gets a random 192-bit token under a UNIQUE key, so names can never collide. The user's file name is only a cleaned display label (no folders, control characters or header tricks; Unicode names download correctly). |
+| **Output escaping** | All user text is escaped before it touches the page (`assets/js/safe.js`: `escapeHtml`, `safeUrl`, `linkifyText`). Links are limited to http(s)/mailto/tel, including against `java\tscript:`-style tricks, and GIF URLs must be https from known GIF hosts. Checked by a browser XSS sweep that plants payloads in every field, including raw legacy rows. |
+| **Authorization** | Every staff endpoint checks the role; an automated sweep tries all 33 as a student and as an alumnus and verifies the database is unchanged. Legacy endpoints that skipped checks return `410 Gone` with the replacement. |
+| **SQL** | 100% parameterised queries; identifiers are whitelisted. Every `id`/`*_id` parameter must be a whole number (checked centrally). A fuzz sends 2,744 injection payloads to 98 endpoints on every CI run. |
+| **Privacy** | One rule set (`api/_privacy.php`) for feeds, search, profiles, comments, likes, shares and polls: private accounts are visible to followers only, blocks are mutual and total, and email, phone and roll number are shown only where allowed. |
+| **Identity** | Emails are lower-cased by a database trigger and unique regardless of case; @handles are unique regardless of case (DB index), with reserved and staff-lookalike names refused. |
 | **Storage** | `storage/` can never execute PHP, serves media/documents only, and private areas (verification documents, exports, logs, caches) are never web-visible. Uploaded files are served with a sandbox CSP. |
 | **Data exports** | Personal data archives are streamed to the authenticated owner and deleted immediately — never left at a guessable public URL. |
 | **Sessions** | `HttpOnly`, `SameSite=Lax`, `Secure` on HTTPS, strict mode, longer IDs, custom cookie name. Bearer tokens are 256-bit random and expire after 7 days. CSRF tokens are checked for cookie-based requests. |
@@ -465,11 +498,14 @@ Three automated suites; the latest results are committed in [`tests/results/`](t
 | Suite | What it checks | Run |
 |---|---|---|
 | **Routes & security** | 63 checks: every old and clean URL, redirects, hidden internals, assets, CORS, CSP | `bash tests/smoke/routes.sh` (no DB needed) |
-| **End-to-end API** — [results](tests/results/integration-latest.md) | 185 checks as admin, alumnus and student: sign-up and invite codes, profile, settings, password change, uploads, feed create/edit/delete, comments, reactions, reposts, pins, messages send/edit/delete, connections, jobs, events, mentorship, notifications, referrals, atlas, admin tools, upload/permission security, likes/comment reactions, For-you/Trending/Following feeds, reports, 1:1 calls, mentor approval → mentor group → group chat → group voice space → leave, polls, scheduled posts (incl. a real cron publish), live sessions, success stories, resources, every cron job | `php tests/integration/run.php http://127.0.0.1:8099` |
-| **Real browser** — [results](tests/results/ui-latest.md) | 68 checks: every page for every role in Chrome (fails on any JS error, failed request or blank page) **plus click-through flows** — drafts survive reload, create a poll from the composer, vote, schedule a post, Ctrl+K navigation | `python3 tests/ui/browser_smoke.py --base http://127.0.0.1:8099` |
+| **End-to-end API** — [results](tests/results/integration-latest.md) | 230 checks as admin, alumnus and student: sign-up and invite codes, profile, settings, password change, uploads, feed create/edit/delete, comments, reactions, reposts, pins, messages send/edit/delete, connections, jobs, events, mentorship, notifications, referrals, atlas, admin tools, upload/permission security, likes/comment reactions, For-you/Trending/Following feeds, reports, 1:1 calls, mentor approval → mentor group → group chat → group voice space → leave, polls, scheduled posts (incl. a real cron publish), live sessions, success stories, resources, every cron job, **private profiles and follow requests, blocking, @handles, profile validation, EXIF stripping, image bombs, data export, case-insensitive sign-in** | `php tests/integration/run.php http://127.0.0.1:8099` |
+| **Real browser** — [results](tests/results/ui-latest.md) | 78 checks: every page for every role in Chrome (fails on any JS error, failed request or blank page) **plus click-through flows** — drafts survive reload, create a poll from the composer, vote, schedule a post, Ctrl+K navigation, the live handle checker, `/@handle` links, the private-profile locked card, request → approve from Settings | `python3 tests/ui/browser_smoke.py --base http://127.0.0.1:8099` |
 | **Brute-force lockout** | Wrong passwords lock the account with a friendly message | `php tests/integration/security_limits.php` |
+| **Authorization sweep** — [results](tests/results/authz-latest.json) | 64 attempts: a student and an alumnus call every admin/faculty endpoint; each must be refused **and** a DB fingerprint must be unchanged | `php tests/integration/authz.php` |
+| **SQL-injection fuzz** — [results](tests/results/sqli-latest.json) | 2,744 requests: 7 classic payloads (quote-breaking, UNION, time-based `pg_sleep`) × 35 parameters × 98 endpoints × 2 roles; fails on any 500, leaked DB error, SQL syntax error in the server log or injected delay | `SERVER_LOG=/tmp/srv.log php tests/integration/sqli_fuzz.php` |
+| **Stored-XSS sweep** — [results](tests/results/xss-latest.json) | Plants a payload in every user-writable field (and raw legacy DB rows), then opens 37 pages as admin and student in Chrome and checks nothing ran | `DB_NAME=… python3 tests/ui/xss_sweep.py` |
 
-CI runs lint, routes, the full PostgreSQL end-to-end suite and the lockout test on every push. For a local run against a test database:
+CI runs lint, routes, the full PostgreSQL end-to-end suite, the authorization sweep, the SQL-injection fuzz and the lockout test, plus a Chrome job with the UI suite and the XSS sweep, on every push. For a local run against a test database:
 
 ```bash
 createdb alumni_test && DB_NAME=alumni_test php scripts/install_db.php --demo --admin-password='Admin@12345'
@@ -507,8 +543,10 @@ All endpoints live in `api/` and return JSON. Authenticate with `Authorization: 
 | Area | Endpoints (selection) |
 |---|---|
 | Auth | `login`, `register_student`, `register_alumni`, `register_faculty`, `request_reset`, `reset_password`, `change_password`, `me`, `csrf_token` |
-| Feed | `get_feed`, `create_post`, `edit_post`, `delete_post`, `react_to_post`, `create_comment`, `add_reply`, `toggle_repost`, `share_post`, `create_poll`, `vote_poll`, `schedule_post`, `pin_post`, `search_gifs` |
-| People | `search_directory`, `search_alumni`, `get_user_profile`, `update_profile`, `upload_avatar`, `upload_cover`, `connect_user`, `block_user`, `update_privacy`, `export_data` |
+| Feed | `get_feed`, `create_post`, `edit_post`, `delete_post`, `react_to_post`, `create_comment` (also replies), `toggle_repost`, `share_post`, `create_poll`, `vote_poll`, `schedule_post`, `pin_post`, `search_gifs` |
+| People | `search_directory`, `get_user_profile` (`?user_id=` or `?username=`), `update_profile` (validated; 422 with per-field errors), `upload_avatar`, `upload_cover`, `export_data` |
+| Privacy & follows | `update_privacy` (GET / POST `is_private`, `show_email`, `show_contact`, `open_to_mentor`, `open_to_refer`, `open_to_work`); `connect_user` (toggle follow, or `action=approve\|decline\|remove_follower\|requests\|state`); `block_user` (`block`, `unblock`, `list`) |
+| Handles | `username` (GET current, `?check=name` live availability + suggestions, `?resolve=name`; POST `{username}` to change) |
 | Mentorship | `mentorship?action=…` (list mentors, request, accept, groups, moderation) |
 | Messages | `get_conversations`, `get_messages`, `send_message`, `edit_message`, `delete_message`, `start_call` |
 | Careers & events | `get_jobs`, `post_job`, `apply_job`, `get_applicants`, `get_events`, `create_event`, `rsvp_event`, `get_event_attendees` |
@@ -519,6 +557,7 @@ All endpoints live in `api/` and return JSON. Authenticate with `Authorization: 
 | Search | `master_search` (people, jobs, events, referral offers — used by Ctrl+K) |
 | Admin | `admin_insights` (GET + `set_banner`, `clear_banner`, `broadcast`), `admin_export_users` (CSV), `admin_stats`, `admin_users`, `admin_user_actions`, `admin_report_action`, `moderation_queue`, `approve_user`, `generate_token` |
 | Public | `site_banner`, `public_feed`, `healthz` |
+| Retired (410 + replacement) | `add_comment`, `add_reply`, `manage-post`, `join_event`, `search_alumni`, `upload`, `admin_moderation`, `create_announcement`, `approve_announcement` |
 
 Clean forms like `/api/get_feed` work too.
 
@@ -533,6 +572,8 @@ Clean forms like `/api/get_feed` work too.
 - [x] Alumni map by city and company, batches view *(2.1 — Alumni Atlas)*
 - [x] Referral board *(2.1)*
 - [x] Live sessions, polls, scheduled posts, Library, Trending/For-you *(2.2)*
+- [x] Real privacy, follow requests, blocking, @handles, data export, security test suites *(2.3)*
+- [ ] Notify people when they're @mentioned
 - [ ] Batch reunion pages with RSVP + photo wall
 - [ ] Give-back: scholarships and donation pledges
 - [ ] Real-time chat over WebSockets (currently polling)

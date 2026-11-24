@@ -1,4 +1,5 @@
 <?php
+require_once __DIR__ . '/_privacy.php';
 /** POST {poll_id, option_id} — one vote per person; returns fresh results. */
 header("Content-Type: application/json; charset=UTF-8");
 include_once '../config/Database.php';
@@ -28,6 +29,7 @@ $row = $poll->fetch(PDO::FETCH_ASSOC);
 if (!$row) {
     $out(['success' => false, 'message' => 'Poll not found.'], 404);
 }
+privacy_require_post($db, $userId, (int)$row['post_id']);
 if (!$row['option_id']) {
     $out(['success' => false, 'message' => "That option doesn't belong to this poll."], 400);
 }

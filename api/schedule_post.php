@@ -28,7 +28,7 @@ moderation_assert_posting_allowed($db, $userId, 'Posting is currently restricted
 
 $data = json_decode((string)file_get_contents('php://input'), true) ?: $_POST;
 $content = trim(mb_substr((string)($data['content'] ?? ''), 0, 5000));
-$gif = trim((string)($data['gif_url'] ?? ''));
+$gif = safe_gif_url((string)($data['gif_url'] ?? ''));
 if ($content === '' && $gif === '') {
     $out(['success' => false, 'message' => 'Write something to schedule.'], 400);
 }
@@ -46,7 +46,7 @@ $allowedScopes = ['all', 'alumni', 'faculty', 'students', 'faculty_alumni', 'stu
 $scope = (string)($data['visibility_scope'] ?? 'all');
 $scope = in_array($scope, $allowedScopes, true) ? $scope : 'all';
 $attachments = [];
-if ($gif !== '' && preg_match('#^https://#i', $gif)) {
+if ($gif !== '') {
     $attachments[] = ['type' => 'gif', 'url' => $gif, 'name' => 'GIF'];
 }
 $pollJson = null;

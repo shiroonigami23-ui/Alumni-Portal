@@ -98,6 +98,8 @@ try {
         LEFT JOIN profiles p ON p.user_id = r.partner_id
         LEFT JOIN unread u ON u.partner_id = r.partner_id
         WHERE r.rn = 1
+          AND NOT EXISTS (SELECT 1 FROM blocks bk WHERE (bk.blocker_user_id = :uid AND bk.blocked_user_id = r.partner_id)
+                                                   OR (bk.blocked_user_id = :uid AND bk.blocker_user_id = r.partner_id))
         ORDER BY r.created_at DESC
     ";
 

@@ -57,6 +57,9 @@ bash tests/smoke/routes.sh
 createdb alumni_test && DB_NAME=alumni_test php scripts/install_db.php --demo --admin-password='Admin@12345'
 DB_NAME=alumni_test RATE_LIMIT_DISABLED=true php -S 127.0.0.1:8099 router.php &
 php tests/integration/run.php
+DB_NAME=alumni_test php tests/integration/authz.php            # staff endpoints refuse members
+SERVER_LOG=/tmp/srv.log php tests/integration/sqli_fuzz.php    # start the server with 2>/tmp/srv.log
+python3 tests/ui/browser_smoke.py && DB_NAME=alumni_test python3 tests/ui/xss_sweep.py   # needs: pip install playwright
 
 # 4. If you added Tailwind classes, rebuild the CSS
 npm --prefix tools/tailwind install && npm --prefix tools/tailwind run build
@@ -108,7 +111,9 @@ You get rate limiting, CORS rules, upload inspection and security headers automa
 ### Security checklist for contributors
 
 - Use **prepared statements** for every query — never concatenate user input into SQL.
-- Escape output in HTML with `htmlspecialchars(..., ENT_QUOTES, 'UTF-8')` (or `Security::e()`), and use `textContent` instead of `innerHTML` in JS for user content.
+- Escape output in HTML with `htmlspecialchars(..., ENT_QUOTES, 'UTF-8')` (or `Security::e()`). In JS, use `textContent`, or wrap every user value in `escapeHtml()` (and `safeUrl()` for `href`/`src`) inside template strings. Never put user text inside an `onclick="…('${…}')"` string; use a `data-` attribute instead.
+- Anything that shows a person or a post goes through `api/_privacy.php` (`privacy_post_visible_sql()`, `privacy_can_view()`, `privacy_require_post()`), so private accounts and blocks are respected.
+- New staff-only endpoint? Add it to the list in `tests/integration/authz.php`.
 - Check **authorisation**, not just authentication: "is this user allowed to edit *this* post?"
 - Don't echo exception messages to users; log them with `error_log()`.
 - Store uploads through the asset store / S3 helpers, never under a user-chosen filename.

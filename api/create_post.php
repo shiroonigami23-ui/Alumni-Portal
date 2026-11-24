@@ -69,7 +69,7 @@ if (is_array($_POST) && !empty($_POST)) {
     if (isset($_POST['allow_comments'])) {
         $comments_enabled = ($_POST['allow_comments'] === '1' || $_POST['allow_comments'] === 'true');
     }
-    $gif_url = trim((string)($_POST['gif_url'] ?? ''));
+    $gif_url = safe_gif_url(trim((string)($_POST['gif_url'] ?? '')));
     $visibility_scope = trim((string)($_POST['visibility_scope'] ?? 'all'));
 } else {
     $content = trim((string)($data->content ?? ''));
@@ -79,7 +79,7 @@ if (is_array($_POST) && !empty($_POST)) {
     if (isset($data->comments_enabled)) {
         $comments_enabled = (bool)$data->comments_enabled;
     }
-    $gif_url = trim((string)($data->gif_url ?? ''));
+    $gif_url = safe_gif_url(trim((string)($data->gif_url ?? '')));
     $visibility_scope = trim((string)($data->visibility_scope ?? 'all'));
 }
 

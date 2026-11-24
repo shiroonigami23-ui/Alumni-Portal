@@ -655,6 +655,132 @@ check('library', "Can't delete someone else's resource", $r['code'] === 403, $r)
 $r = http('POST', 'api/resources.php?action=delete', $A, ['resource_id' => $res]);
 check('library', 'Owner deletes the resource', ok($r), $r);
 
+/* ------------------------------------------------- privacy, follows, blocks */
+$dem = login('ananya.verma.1@demo.rjit.local', 'Demo@12345');
+$D = $dem['token'];
+$did = $dem['id'] ?? 0;
+if ($D) {
+    $r = http('POST', 'api/update_privacy.php', $A, ['is_private' => 'false']);
+    check('privacy', '"false" as a string keeps the profile public', ok($r) && ($r['json']['data']['is_private'] ?? true) === false, $r);
+    http('POST', 'api/connect_user.php', $S, ['user_id' => $aid, 'action' => 'unfollow']);   // start as a non-follower
+    $r = http('POST', 'api/update_privacy.php', $A, ['is_private' => true, 'show_email' => false]);
+    check('privacy', 'Alumnus switches to a private profile', ok($r) && $r['json']['data']['is_private'] === true, $r);
+    $r = http('GET', "api/get_user_profile.php?user_id=$aid", $S);
+    $p = $r['json']['data'] ?? [];
+    check('privacy', 'Non-follower sees only a locked card', ok($r) && !empty($p['is_locked']) && ($p['bio'] ?? '') === '' && !isset($p['email']) && !isset($p['location_city']), $r);
+    $r = http('GET', "api/get_feed.php?user_id=$aid&filter=all", $S);
+    check('privacy', "Private timeline isn't readable by non-followers", ok($r) && !str_contains($r['text'], "From someone you follow $RUN"), $r);
+    $r = http('GET', 'api/get_feed.php?sort=newest', $S);
+    check('privacy', "Private author's posts leave non-followers' feeds", ok($r) && !str_contains($r['text'], "From someone you follow $RUN"), $r);
+    $r = http('POST', 'api/react_to_post.php', $S, ['post_id' => $fp]);
+    check('privacy', "Can't like a post you aren't allowed to see", $r['code'] === 404, $r);
+    $r = http('GET', "api/get_comments.php?post_id=$fp", $S);
+    check('privacy', "Can't read comments on a hidden post", $r['code'] === 404, $r);
+    $r = http('GET', 'api/search_directory.php?search=Infosys', $S);
+    check('privacy', "Private profiles can't be found by employer", ok($r) && !str_contains($r['text'], "Test Alumnus $RUN"), $r);
+    $r = http('GET', 'api/search_directory.php?search=' . urlencode("Test Alumnus $RUN"), $S);
+    $row = array_values(array_filter($r['json']['data'] ?? [], fn ($x) => (int)($x['id'] ?? 0) === $aid))[0] ?? null;
+    check('privacy', 'Private profiles are findable by name (details hidden)', ok($r) && $row && !empty($row['is_locked']) && empty($row['current_company']) && empty($row['bio']), $r);
+    $r = http('POST', 'api/connect_user.php', $S, ['user_id' => $aid]);
+    check('follow', 'Following a private account sends a request', ok($r) && ($r['json']['follow_state'] ?? '') === 'requested', $r);
+    $r = http('GET', 'api/connect_user.php?action=requests', $A);
+    check('follow', 'Owner sees the pending request', ok($r) && in_array($sid, array_column($r['json']['data'] ?? [], 'user_id'), true), $r);
+    $r = http('POST', 'api/connect_user.php', $A, ['action' => 'approve', 'user_id' => $sid]);
+    check('follow', 'Owner approves the request', ok($r), $r);
+    $r = http('GET', "api/get_user_profile.php?user_id=$aid", $S);
+    check('follow', 'Approved follower sees the full profile', ok($r) && empty($r['json']['data']['is_locked']) && str_contains($r['text'], 'Infosys'), $r);
+    check('privacy', 'Hidden email stays hidden even from followers', ok($r) && !isset($r['json']['data']['email']), $r);
+    $r = http('GET', "api/get_feed.php?user_id=$aid&filter=all", $S);
+    check('follow', "Follower can read the private timeline", ok($r) && str_contains($r['text'], "From someone you follow $RUN"), $r);
+    $r = http('POST', 'api/connect_user.php', $D, ['user_id' => $aid]);
+    $r = http('POST', 'api/update_privacy.php', $A, ['is_private' => false, 'show_email' => true]);
+    check('follow', 'Going public auto-approves pending requests', ok($r) && ($r['json']['data']['auto_approved'] ?? 0) >= 1, $r);
+    $r = http('POST', 'api/update_privacy.php', $S, ['is_private' => true]);
+    check('privacy', 'Students stay public (policy)', ok($r) && $r['json']['data']['is_private'] === false, $r);
+    $r = http('GET', "api/get_user_profile.php?user_id=$sid", $D);
+    check('privacy', "Roll numbers aren't shown to other members", ok($r) && empty($r['json']['data']['roll_number']), $r);
+
+    $r = http('POST', 'api/block_user.php', $D, ['user_id' => $sid, 'action' => 'block']);
+    check('block', 'Block someone', ok($r) && !empty($r['json']['blocked']), $r);
+    $r = http('GET', "api/get_user_profile.php?user_id=$did", $S);
+    check('block', 'Blocked person sees "not found"', $r['code'] === 404, $r);
+    $r = http('POST', 'api/create_conversation.php', $S, ['other_user_id' => $did]);
+    check('block', "Blocked person can't start a chat", $r['code'] === 403, $r);
+    $r = http('POST', 'api/connect_user.php', $S, ['user_id' => $did]);
+    check('block', "Blocked person can't follow", $r['code'] === 403, $r);
+    $r = http('GET', 'api/block_user.php?action=list', $D);
+    check('block', 'Blocked list shows them', ok($r) && in_array($sid, array_column($r['json']['data'] ?? [], 'user_id'), true), $r);
+    $r = http('POST', 'api/block_user.php', $D, ['user_id' => $sid, 'action' => 'unblock']);
+    $r2 = http('GET', "api/get_user_profile.php?user_id=$did", $S);
+    check('block', 'Unblock restores access', ok($r) && ok($r2), $r2);
+    $r = http('POST', 'api/block_user.php', $S, ['user_id' => $admin['id'], 'action' => 'block']);
+    check('block', "Staff can't be blocked (use Report)", $r['code'] === 403, $r);
+}
+
+/* -------------------------------------------------------------- @handles */
+$r = http('GET', 'api/username.php', $S);
+check('handle', 'Every account has an @handle', ok($r) && preg_match('/^[a-z][a-z0-9_]{2,29}$/', (string)($r['json']['data']['username'] ?? '')), $r);
+$r = http('GET', 'api/username.php?check=admin', $A);
+check('handle', 'Reserved handles are refused', ok($r) && $r['json']['data']['available'] === false, $r);
+$h = "it_$RUN";
+$r = http('POST', 'api/username.php', $A, ['username' => strtoupper($h)]);
+check('handle', 'Change handle (stored lower-case)', ok($r) && $r['json']['data']['username'] === $h, $r);
+$r = http('GET', "api/get_user_profile.php?username=@$h", $S);
+check('handle', 'Open a profile by @handle', ok($r) && (int)$r['json']['data']['user_id'] === $aid, $r);
+if ($D) {
+    $r = http('POST', 'api/username.php', $D, ['username' => strtoupper($h)]);
+    check('handle', 'Handles are unique regardless of case', $r['code'] === 409, $r);
+}
+$r = http('POST', 'api/username.php', $A, ['username' => "it2_$RUN"]);
+check('handle', 'Cool-down between handle changes', $r['code'] === 429, $r);
+$r = http('GET', 'api/master_search.php?q=' . urlencode("@$h"), $S);
+check('handle', 'Search finds people by @handle', ok($r) && str_contains($r['text'], $h), $r);
+$r = http('GET', "@$h");
+check('handle', '/@handle links redirect to the profile', $r['code'] === 302, $r);
+
+/* ------------------------------------------------- profile input validation */
+$r = http('POST', 'api/update_profile.php', $A, ['location_city' => str_repeat('a', 300)]);
+check('validation', 'Too-long city gets a friendly 422 (not a 500)', $r['code'] === 422 && isset($r['json']['errors']['location_city']), $r);
+$r = http('POST', 'api/update_profile.php', $A, ['linkedin_url' => 'javascript:alert(1)']);
+check('validation', 'javascript: links are refused', $r['code'] === 422, $r);
+$r = http('POST', 'api/update_profile.php', $A, ['linkedin_url' => 'linkedin.com/in/test', 'full_name' => "<b>Test</b> Alumnus $RUN"]);
+$r2 = http('GET', "api/get_user_profile.php?user_id=$aid", $A);
+check('validation', 'Links get https:// and names lose HTML', ok($r) && ($r2['json']['data']['linkedin_url'] ?? '') === 'https://linkedin.com/in/test'
+    && ($r2['json']['data']['full_name'] ?? '') === "Test Alumnus $RUN", $r2);
+$r = http('POST', 'api/update_profile.php', $S, ['bio' => 'Final-year CSE', 'full_name' => 'Someone Else']);
+check('validation', 'Students edit their bio; name stays locked', ok($r) && in_array('full_name', $r['json']['locked_fields'] ?? [], true), $r);
+$r = http('POST', 'api/react_to_post.php', $S, ['post_id' => "1' OR '1'='1"]);
+check('validation', 'Non-numeric ids get a 400', $r['code'] === 400, $r);
+
+/* -------------------------------------------------------------- uploads */
+$jpgPath = "$tmp/gps.jpg";
+$im = imagecreatetruecolor(32, 32);
+imagejpeg($im, $jpgPath);
+$raw = file_get_contents($jpgPath);
+$app1 = "Exif\x00\x00II*\x00GPSSECRET-22.8N-84.1E";
+file_put_contents($jpgPath, substr($raw, 0, 2) . "\xFF\xE1" . pack('n', strlen($app1) + 2) . $app1 . substr($raw, 2));
+$r = http('POST', 'api/upload_avatar.php', $S, [], ['avatar' => [$jpgPath, 'image/jpeg', 'me.jpg']]);
+$url = $r['json']['url'] ?? $r['json']['avatar_url'] ?? $r['json']['data']['url'] ?? '';
+$img = $url ? http('GET', ltrim($url, '/')) : ['text' => ''];
+check('uploads', 'Photo location (EXIF/GPS) is stripped on upload', ok($r) && $url && !str_contains($img['text'], 'GPSSECRET'), $r);
+$bomb = "$tmp/bomb.png";
+$bi = imagecreatetruecolor(13000, 10);
+imagepng($bi, $bomb);
+$r = http('POST', 'api/upload_avatar.php', $S, [], ['avatar' => [$bomb, 'image/png', 'big.png']]);
+check('uploads', 'Gigapixel "image bombs" are refused', $r['code'] === 415, $r);
+$r = http('POST', 'api/upload_verification.php', $S, [], ['document' => [$png, 'image/png', 'x.png']]);
+check('uploads', "Verification upload can't lock out an active account", $r['code'] === 409, $r);
+$r = http('POST', 'api/admin_moderation.php', $S, ['target_id' => $aid, 'action' => 'ban']);
+check('security', 'Old unguarded ban endpoint is retired', $r['code'] === 410, $r);
+
+/* --------------------------------------------------------------- export */
+$r = http('GET', 'api/export_data.php', $A);
+check('export', 'Download my data', ok($r) && isset($r['json']['posts'], $r['json']['profile'], $r['json']['counts']), $r);
+$r = http('GET', 'api/export_data.php', $A);
+check('export', 'Export is rate-limited', $r['code'] === 429, $r);
+$r = http('POST', 'api/login.php', null, ['email' => strtoupper($stuEmail), 'password' => $newPass ?? $pass]);
+check('auth', 'Sign-in email is case-insensitive', ok($r), $r);
+
 /* --------------------------------------------------------------- clean-up */
 $r = http('POST', 'api/delete_post.php', $A, ['post_id' => $postId]);
 check('feed', 'Author deletes the post', ok($r), $r);

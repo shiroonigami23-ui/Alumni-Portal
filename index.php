@@ -129,7 +129,7 @@ if (($landingStats['total_posts'] ?? 0) <= 0) {
     <title>Welcome to RJIT Alumni Portal</title>
 
     <!-- Tailwind CSS CDN -->
-    <link rel="stylesheet" href="assets/css/tailwind.css?v=2">
+    <link rel="stylesheet" href="assets/css/tailwind.css?v=3">
 
     <!-- Lucide Icons CDN -->
     <script src="https://unpkg.com/lucide@0.460.0/dist/umd/lucide.min.js"></script>
@@ -178,6 +178,7 @@ if (($landingStats['total_posts'] ?? 0) <= 0) {
             font-feature-settings: "tnum";
         }
     </style>
+    <script src="assets/js/safe.js?v=1"></script>
 </head>
 
 <body class="bg-gray-50">
@@ -474,23 +475,23 @@ if (($landingStats['total_posts'] ?? 0) <= 0) {
                         alumniCard.innerHTML = `
                             <div class="aspect-[4/3] bg-gray-100">
                                 ${primaryImage ?
-                                    `<img src="${primaryImage}" alt="${alumni.name}" class="w-full h-full object-cover">` :
+                                    `<img src="${escapeHtml(safeUrl(primaryImage))}" alt="${escapeHtml(alumni.name)}" class="w-full h-full object-cover">` :
                                     `<div class="w-full h-full flex items-center justify-center">
                                         <i data-lucide="image-off" class="h-10 w-10 text-gray-400"></i>
                                     </div>`}
                             </div>
                             <div class="p-5 text-left">
-                                <h3 class="font-semibold text-gray-900 mb-1">${alumni.name}</h3>
-                                <p class="text-gray-600 text-sm mb-2">${alumni.position || 'Alumni'}</p>
+                                <h3 class="font-semibold text-gray-900 mb-1">${escapeHtml(alumni.name)}</h3>
+                                <p class="text-gray-600 text-sm mb-2">${escapeHtml(alumni.position || 'Alumni')}</p>
                                 <p class="text-gray-500 text-xs">
                                     ${alumni.branch ? `${alumni.branch} &bull; ` : ''}Class of ${alumni.graduation_year || 'N/A'}
                                 </p>
-                                ${alumni.summary ? `<p class="text-sm text-gray-600 mt-3 line-clamp-2">${alumni.summary}</p>` : ''}
+                                ${alumni.summary ? `<p class="text-sm text-gray-600 mt-3 line-clamp-2">${escapeHtml(alumni.summary)}</p>` : ''}
                                 <div class="mt-4 flex items-center justify-between gap-2">
                                     <span class="inline-block px-3 py-1 bg-blue-100 text-blue-800 text-xs rounded-full">
                                         ${alumni.company || 'RJIT Alumni'}
                                     </span>
-                                    ${photosCount > 1 ? `<span class="text-xs text-gray-500">${photosCount} photos</span>` : ''}
+                                    ${photosCount > 1 ? `<span class="text-xs text-gray-500">${escapeHtml(photosCount)} photos</span>` : ''}
                                 </div>
                             </div>
                         `;
@@ -545,17 +546,17 @@ if (($landingStats['total_posts'] ?? 0) <= 0) {
                             <div class="flex items-start mb-4">
                                 <div class="h-10 w-10 bg-blue-100 rounded-full flex items-center justify-center mr-3">
                                     ${post.author_avatar ? 
-                                        `<img src="${post.author_avatar}" alt="${post.author_name}" class="h-10 w-10 rounded-full object-cover">` : 
+                                        `<img src="${escapeHtml(safeUrl(post.author_avatar))}" alt="${escapeHtml(post.author_name)}" class="h-10 w-10 rounded-full object-cover">` : 
                                         `<i data-lucide="user" class="h-5 w-5 text-blue-600"></i>`}
                                 </div>
                                 <div>
-                                    <h4 class="font-semibold">${post.author_name || 'Alumni'}</h4>
+                                    <h4 class="font-semibold">${escapeHtml(post.author_name || 'Alumni')}</h4>
                                     <p class="text-sm text-gray-500">
                                         ${post.branch || 'RJIT'} â€¢ Class of ${post.graduation_year || '20XX'}
                                     </p>
                                 </div>
                             </div>
-                            <p class="text-gray-700 mb-4 line-clamp-3">${content}</p>
+                            <p class="text-gray-700 mb-4 line-clamp-3">${escapeHtml(content)}</p>
                             <div class="flex items-center text-sm text-gray-500">
                                 <i data-lucide="heart" class="h-4 w-4 mr-1"></i>
                                 <span class="mr-4">${post.likes_count || 0}</span>
@@ -605,21 +606,21 @@ if (($landingStats['total_posts'] ?? 0) <= 0) {
                         <div class="flex items-start mb-4">
                             <div class="h-10 w-10 bg-blue-100 rounded-full flex items-center justify-center mr-3">
                                 ${post.author_profile_picture_url ? 
-                                    `<img src="${post.author_profile_picture_url}" alt="${post.author_name}" class="h-10 w-10 rounded-full object-cover">` : 
+                                    `<img src="${escapeHtml(safeUrl(post.author_profile_picture_url))}" alt="${escapeHtml(post.author_name)}" class="h-10 w-10 rounded-full object-cover">` : 
                                     `<i data-lucide="user" class="h-5 w-5 text-blue-600"></i>`}
                             </div>
                             <div>
-                                <h4 class="font-semibold">${post.author_name}</h4>
-                                <p class="text-sm text-gray-500">${post.author_role}${post.author_email ? ` | ${post.author_email}` : ``}</p>
+                                <h4 class="font-semibold">${escapeHtml(post.author_name)}</h4>
+                                <p class="text-sm text-gray-500">${escapeHtml(post.author_role)}${post.author_email ? ` | ${escapeHtml(post.author_email)}` : ``}</p>
                             </div>
                         </div>
-                        ${post.image_url ? `<img src="${post.image_url}" alt="Post image" class="w-full rounded-lg mb-4 object-cover" style="max-height: 200px;">` : ''}
+                        ${post.image_url ? `<img src="${escapeHtml(safeUrl(post.image_url))}" alt="Post image" class="w-full rounded-lg mb-4 object-cover" style="max-height: 200px;">` : ''}
                         <p class="text-gray-700 mb-4 whitespace-pre-line">${post.content.length > 200 ? post.content.substring(0, 200) + '...' : post.content}</p>
                         <div class="flex items-center text-sm text-gray-500">
                             <i data-lucide="heart" class="h-4 w-4 mr-1"></i>
-                            <span class="mr-4">${post.likes_count}</span>
+                            <span class="mr-4">${escapeHtml(post.likes_count)}</span>
                             <i data-lucide="message-square" class="h-4 w-4 mr-1"></i>
-                            <span>${post.comments_count}</span>
+                            <span>${escapeHtml(post.comments_count)}</span>
                             <span class="ml-auto text-xs">${formatDate(post.created_at)}</span>
                         </div>
                     `;

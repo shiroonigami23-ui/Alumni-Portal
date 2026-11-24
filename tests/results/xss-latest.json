@@ -1,0 +1,311 @@
+{
+  "generated": "2026-11-24T10:04:38+0530",
+  "passed": 37,
+  "total": 37,
+  "seeded": [
+    [
+      "profile",
+      200
+    ],
+    [
+      "profile-links",
+      422
+    ],
+    [
+      "post",
+      200
+    ],
+    [
+      "approve",
+      200
+    ],
+    [
+      "comment",
+      200
+    ],
+    [
+      "post-file",
+      200
+    ],
+    [
+      "approve2",
+      200
+    ],
+    [
+      "message",
+      200
+    ],
+    [
+      "message-admin",
+      403
+    ],
+    [
+      "job",
+      201
+    ],
+    [
+      "event",
+      201
+    ],
+    [
+      "referral",
+      201
+    ],
+    [
+      "story",
+      201
+    ],
+    [
+      "resource",
+      201
+    ],
+    [
+      "live",
+      200
+    ],
+    [
+      "report",
+      200
+    ],
+    [
+      "follow-notif",
+      200
+    ],
+    [
+      "follow-notif-admin",
+      200
+    ],
+    [
+      "mentor",
+      200
+    ],
+    [
+      "legacy-profile-rows",
+      200
+    ]
+  ],
+  "results": [
+    {
+      "role": "admin",
+      "page": "/dashboard.php",
+      "pass": true,
+      "fired": []
+    },
+    {
+      "role": "admin",
+      "page": "/feed.php",
+      "pass": true,
+      "fired": []
+    },
+    {
+      "role": "admin",
+      "page": "/profile.php?id=11",
+      "pass": true,
+      "fired": []
+    },
+    {
+      "role": "admin",
+      "page": "/messages.php",
+      "pass": true,
+      "fired": []
+    },
+    {
+      "role": "admin",
+      "page": "/discovery.php",
+      "pass": true,
+      "fired": []
+    },
+    {
+      "role": "admin",
+      "page": "/discovery.php?search=Meera",
+      "pass": true,
+      "fired": []
+    },
+    {
+      "role": "admin",
+      "page": "/atlas.php",
+      "pass": true,
+      "fired": []
+    },
+    {
+      "role": "admin",
+      "page": "/referrals.php",
+      "pass": true,
+      "fired": []
+    },
+    {
+      "role": "admin",
+      "page": "/jobs.php",
+      "pass": true,
+      "fired": []
+    },
+    {
+      "role": "admin",
+      "page": "/events.php",
+      "pass": true,
+      "fired": []
+    },
+    {
+      "role": "admin",
+      "page": "/mentorship.php",
+      "pass": true,
+      "fired": []
+    },
+    {
+      "role": "admin",
+      "page": "/live.php",
+      "pass": true,
+      "fired": []
+    },
+    {
+      "role": "admin",
+      "page": "/library.php",
+      "pass": true,
+      "fired": []
+    },
+    {
+      "role": "admin",
+      "page": "/help.php",
+      "pass": true,
+      "fired": []
+    },
+    {
+      "role": "admin",
+      "page": "/profile.php?id=%27%3B(window.__xss%3Dwindow.__xss||[]).push(%27reflected-id%27)%3B%2F%2F",
+      "pass": true,
+      "fired": []
+    },
+    {
+      "role": "admin",
+      "page": "/admin/insights.php",
+      "pass": true,
+      "fired": []
+    },
+    {
+      "role": "admin",
+      "page": "/admin/dashboard.php",
+      "pass": true,
+      "fired": []
+    },
+    {
+      "role": "admin",
+      "page": "/admin/users.php",
+      "pass": true,
+      "fired": []
+    },
+    {
+      "role": "admin",
+      "page": "/admin/reports.php",
+      "pass": true,
+      "fired": []
+    },
+    {
+      "role": "admin",
+      "page": "/admin/tokens.php",
+      "pass": true,
+      "fired": []
+    },
+    {
+      "role": "admin",
+      "page": "/moderation.php",
+      "pass": true,
+      "fired": []
+    },
+    {
+      "role": "admin",
+      "page": "/library.php#review",
+      "pass": true,
+      "fired": []
+    },
+    {
+      "role": "student",
+      "page": "/dashboard.php",
+      "pass": true,
+      "fired": []
+    },
+    {
+      "role": "student",
+      "page": "/feed.php",
+      "pass": true,
+      "fired": []
+    },
+    {
+      "role": "student",
+      "page": "/profile.php?id=11",
+      "pass": true,
+      "fired": []
+    },
+    {
+      "role": "student",
+      "page": "/messages.php",
+      "pass": true,
+      "fired": []
+    },
+    {
+      "role": "student",
+      "page": "/discovery.php",
+      "pass": true,
+      "fired": []
+    },
+    {
+      "role": "student",
+      "page": "/discovery.php?search=Meera",
+      "pass": true,
+      "fired": []
+    },
+    {
+      "role": "student",
+      "page": "/atlas.php",
+      "pass": true,
+      "fired": []
+    },
+    {
+      "role": "student",
+      "page": "/referrals.php",
+      "pass": true,
+      "fired": []
+    },
+    {
+      "role": "student",
+      "page": "/jobs.php",
+      "pass": true,
+      "fired": []
+    },
+    {
+      "role": "student",
+      "page": "/events.php",
+      "pass": true,
+      "fired": []
+    },
+    {
+      "role": "student",
+      "page": "/mentorship.php",
+      "pass": true,
+      "fired": []
+    },
+    {
+      "role": "student",
+      "page": "/live.php",
+      "pass": true,
+      "fired": []
+    },
+    {
+      "role": "student",
+      "page": "/library.php",
+      "pass": true,
+      "fired": []
+    },
+    {
+      "role": "student",
+      "page": "/help.php",
+      "pass": true,
+      "fired": []
+    },
+    {
+      "role": "student",
+      "page": "/profile.php?id=%27%3B(window.__xss%3Dwindow.__xss||[]).push(%27reflected-id%27)%3B%2F%2F",
+      "pass": true,
+      "fired": []
+    }
+  ]
+}

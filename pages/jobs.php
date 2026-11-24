@@ -236,13 +236,13 @@ include 'includes/sidebar.php';
         const closed = job.status !== 'open';
         let actions = '';
         if (job.is_mine || currentRole === 'admin') {
-            actions += `<button class="job-applicants-btn px-3 py-2 rounded-lg border border-gray-300 text-sm" data-job-id="${job.job_id}" data-title="${jobEsc(job.title)}">Applicants${job.applicant_count !== null ? ` (${job.applicant_count})` : ''}</button>
-                <button class="job-manage-btn px-3 py-2 rounded-lg border border-gray-300 text-sm" data-job-id="${job.job_id}" data-action="${closed ? 'reopen' : 'close'}">${closed ? 'Reopen' : 'Close'}</button>
-                <button class="job-manage-btn px-3 py-2 rounded-lg border border-red-200 text-red-600 text-sm" data-job-id="${job.job_id}" data-action="delete">Delete</button>`;
+            actions += `<button class="job-applicants-btn px-3 py-2 rounded-lg border border-gray-300 text-sm" data-job-id="${escapeHtml(job.job_id)}" data-title="${jobEsc(job.title)}">Applicants${job.applicant_count !== null ? ` (${escapeHtml(job.applicant_count)})` : ''}</button>
+                <button class="job-manage-btn px-3 py-2 rounded-lg border border-gray-300 text-sm" data-job-id="${escapeHtml(job.job_id)}" data-action="${closed ? 'reopen' : 'close'}">${closed ? 'Reopen' : 'Close'}</button>
+                <button class="job-manage-btn px-3 py-2 rounded-lg border border-red-200 text-red-600 text-sm" data-job-id="${escapeHtml(job.job_id)}" data-action="delete">Delete</button>`;
         } else if (job.applied) {
             actions += `<span class="inline-flex items-center gap-1 px-3 py-2 rounded-lg bg-green-100 text-green-700 text-sm font-medium">✓ Applied</span>`;
         } else if (canApplyJobs && !closed) {
-            actions += `<button class="join-job-btn bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 text-sm font-medium" data-job-id="${job.job_id}" data-title="${jobEsc(job.title)}" data-company="${jobEsc(job.company)}">Apply with résumé</button>`;
+            actions += `<button class="join-job-btn bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 text-sm font-medium" data-job-id="${escapeHtml(job.job_id)}" data-title="${jobEsc(job.title)}" data-company="${jobEsc(job.company)}">Apply with résumé</button>`;
         }
         if (jobUrl(job.application_url)) {
             actions += `<a href="${jobUrl(job.application_url)}" target="_blank" rel="noopener noreferrer" class="inline-flex items-center px-3 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 text-sm">Company page ↗</a>`;
@@ -261,7 +261,7 @@ include 'includes/sidebar.php';
                 ${job.salary && job.salary !== 'Not disclosed' ? `<span class="px-2.5 py-1 rounded-full bg-green-100 text-green-700 font-medium">₹ ${jobEsc(job.salary)}</span>` : ''}
             </div>
             <p class="text-sm text-gray-700 mt-3 whitespace-pre-line line-clamp-4">${jobEsc(job.description || '')}</p>
-            <p class="text-xs text-gray-500 mt-3">Posted by <a href="profile.php?id=${job.poster_id}" class="font-medium hover:text-blue-600">${jobEsc(job.posted_by)}</a>${when ? ' · ' + jobEsc(when) : ''}</p>
+            <p class="text-xs text-gray-500 mt-3">Posted by <a href="profile.php?id=${escapeHtml(job.poster_id)}" class="font-medium hover:text-blue-600">${jobEsc(job.posted_by)}</a>${when ? ' · ' + jobEsc(when) : ''}</p>
             <div class="mt-4 pt-4 border-t border-gray-100 flex flex-wrap gap-2">${actions}</div>
         </article>`;
     }

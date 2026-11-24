@@ -1,7 +1,8 @@
 <?php
 session_start();
 $pageTitle = 'Profile - RJIT Alumni Portal';
-$userId = isset($_GET['id']) ? $_GET['id'] : null;
+$userId = isset($_GET['id']) ? max(0, (int)$_GET['id']) : null;
+$handle = isset($_GET['u']) ? substr(preg_replace('/[^a-z0-9_]/', '', strtolower((string)$_GET['u'])), 0, 30) : '';
 include 'includes/header.php';
 include 'includes/sidebar.php';
 ?>
@@ -63,7 +64,7 @@ include 'includes/sidebar.php';
                     <!-- Profile Avatar -->
                     <div class="relative">
                         <img id="profileAvatar" 
-                             src="https://via.placeholder.com/150?text=%20" 
+                             src="data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 width=%27150%27 height=%27150%27%3E%3Crect width=%27150%27 height=%27150%27 rx=%2775%27 fill=%27%23dbeafe%27/%3E%3C/svg%3E" 
                              alt="Profile" 
                              class="profile-avatar h-32 w-32 rounded-full">
                         
@@ -86,6 +87,8 @@ include 'includes/sidebar.php';
                                 Private
                             </span>
                         </div>
+                        <p class="text-sm mt-0.5 hidden" id="profileHandle"></p>
+                        <div class="mt-2 flex flex-wrap gap-2 text-xs font-medium hidden" id="profileChips"></div>
                         <p class="text-gray-600 mt-1" id="profileHeadline">Member of RJIT Community</p>
                         <div class="flex items-center space-x-4 mt-3 text-sm text-gray-500">
                             <span id="connectionCount">0 followers</span>
@@ -101,8 +104,13 @@ include 'includes/sidebar.php';
                 </div>
             </div>
 
+            <!-- Owner-only: profile strength, viewers, follow requests -->
+            <div id="ownerInsights" class="hidden mb-6"></div>
+            <!-- Shown instead of the tabs when a private account is locked for this viewer -->
+            <div id="lockedPanel" class="hidden"></div>
+
             <!-- Profile Tabs -->
-            <div class="border-b border-gray-200 mb-8">
+            <div id="profileTabsNav" class="border-b border-gray-200 mb-8">
                 <nav class="flex space-x-8">
                     <button data-tab="timeline" 
                             class="tab-button py-3 px-1 text-sm font-medium text-gray-500 hover:text-gray-700 tab-active">
@@ -142,7 +150,7 @@ include 'includes/sidebar.php';
                         <div class="bg-white rounded-xl shadow-sm p-6">
                             <div class="flex items-start">
                                 <img id="timelineAvatar" 
-                                     src="https://via.placeholder.com/48?text=%20" 
+                                     src="data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 width=%2748%27 height=%2748%27%3E%3Crect width=%2748%27 height=%2748%27 rx=%2724%27 fill=%27%23dbeafe%27/%3E%3C/svg%3E" 
                                      alt="Profile" 
                                      class="h-12 w-12 rounded-full mr-4">
                                 <div class="flex-1">
@@ -396,7 +404,8 @@ include 'includes/sidebar.php';
         let currentUserId = null;
         let currentUserRole = '';
         let currentUserIsModerator = false;
-        let profileUserId = <?php echo $userId ? "'$userId'" : 'null'; ?>;
+        let profileUserId = <?php echo $userId ? "'" . (int)$userId . "'" : 'null'; ?>;
+        const profileHandle = <?php echo json_encode($handle); ?>;
         let isOwnProfile = false;
         let profileData = null;
         let timelinePostsData = [];
@@ -435,7 +444,9 @@ include 'includes/sidebar.php';
                     currentUserIsModerator = !!user.is_moderator;
                 }
 
-                if (!profileUserId && currentUserId) {
+                if (!profileUserId && profileHandle) {
+                    // /@handle — resolved by loadProfileData
+                } else if (!profileUserId && currentUserId) {
                     profileUserId = currentUserId;
                     isOwnProfile = true;
                 } else if (profileUserId && currentUserId) {
@@ -448,15 +459,32 @@ include 'includes/sidebar.php';
         
         async function loadProfileData() {
             try {
-                if (!profileUserId) {
+                if (!profileUserId && !profileHandle) {
                     showProfileError();
                     return;
                 }
-                const response = await makeApiCall(`get_user_profile.php?user_id=${profileUserId}`);
+                const response = await makeApiCall(profileUserId
+                    ? `get_user_profile.php?user_id=${encodeURIComponent(profileUserId)}`
+                    : `get_user_profile.php?username=${encodeURIComponent(profileHandle)}`);
+                if (response && response.data && response.data.user_id && !profileUserId) {
+                    profileUserId = String(response.data.user_id);
+                    isOwnProfile = currentUserId === parseInt(profileUserId, 10);
+                    // Show the canonical handle in the address bar (old handles redirect here for 30 days).
+                    if (response.data.username && history.replaceState) {
+                        history.replaceState(null, '', `profile.php?u=${encodeURIComponent(response.data.username)}`);
+                    }
+                }
                 
                 if (response && (response.success || response.status === 'success')) {
                     profileData = normalizeProfileData(response.data || {});
                     renderProfile(profileData);
+                    if (profileData.is_locked) {
+                        renderLockedProfile(profileData);
+                        return;
+                    }
+                    if (isOwnProfile) {
+                        renderOwnerInsights(profileData);
+                    }
                     await loadProfilePosts();
                     await loadProfileReplies();
                     renderTimelineSubtab();
@@ -527,6 +555,8 @@ include 'includes/sidebar.php';
             document.getElementById('profileName').textContent = data.name || 'User';
             document.getElementById('profileDisplayName').textContent = data.name || 'User';
             document.getElementById('profileTitle').textContent = getProfileTitle(data);
+            renderHandle(data);
+            renderProfileChips(data);
             document.getElementById('profileHeadline').textContent = data.headline || 'Member of RJIT Community';
             
             // Update avatar
@@ -650,35 +680,28 @@ include 'includes/sidebar.php';
                     </button>
                 `;
             } else {
-                if (data.is_private) {
-                    actionsContainer.innerHTML = `
-                        <button disabled
-                                class="px-4 py-2 border border-gray-300 rounded-lg text-gray-400 font-medium opacity-50 cursor-not-allowed">
-                            <i data-lucide="lock" class="h-4 w-4 inline mr-2"></i>
-                            Private Profile
-                        </button>
-                    `;
-                } else {
-                    const canReportUser = ['student', 'alumni'].includes(currentUserRole);
-                    actionsContainer.innerHTML = `
-                        <button onclick="sendMessage(${data.id})" 
-                                class="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 font-medium">
-                            <i data-lucide="message-square" class="h-4 w-4 inline mr-2"></i>
-                            Message
-                        </button>
-                        <button id="connectBtn" onclick="connect(${data.id})" 
-                                class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium">
-                            <i data-lucide="user-plus" class="h-4 w-4 inline mr-2"></i>
-                            ${data.is_connected ? 'Following' : 'Follow'}
-                        </button>
-                        ${canReportUser ? `
-                        <button onclick="reportUser(${data.id})"
-                                class="px-4 py-2 border border-amber-300 text-amber-700 rounded-lg hover:bg-amber-50 font-medium">
-                            <i data-lucide="shield-alert" class="h-4 w-4 inline mr-2"></i>
-                            Report
-                        </button>` : ''}
-                    `;
-                }
+                const canReportUser = ['student', 'alumni'].includes(currentUserRole);
+                actionsContainer.innerHTML = `
+                    ${data.can_message ? `
+                    <button onclick="sendMessage(${Number(data.id)})"
+                            class="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 font-medium">
+                        <i data-lucide="message-square" class="h-4 w-4 inline mr-2"></i>
+                        Message
+                    </button>` : ''}
+                    <button id="connectBtn" onclick="connect(${Number(data.id)})"></button>
+                    ${!['admin', 'faculty'].includes(String(data.role || '').toLowerCase()) ? `
+                    <button onclick="toggleBlock(${Number(data.id)}, ${data.is_blocked ? 'true' : 'false'})" title="${data.is_blocked ? 'Unblock' : 'Block'}"
+                            class="px-3 py-2 border border-gray-300 text-gray-600 rounded-lg hover:bg-gray-50 hover:text-red-600 font-medium">
+                        <i data-lucide="ban" class="h-4 w-4 inline"></i><span class="sr-only">${data.is_blocked ? 'Unblock' : 'Block'}</span>
+                    </button>` : ''}
+                    ${canReportUser ? `
+                    <button onclick="reportUser(${Number(data.id)})"
+                            class="px-4 py-2 border border-amber-300 text-amber-700 rounded-lg hover:bg-amber-50 font-medium">
+                        <i data-lucide="shield-alert" class="h-4 w-4 inline mr-2"></i>
+                        Report
+                    </button>` : ''}
+                `;
+                setFollowButton(data.follow_state || (data.is_connected ? 'following' : 'none'), !!data.is_private);
             }
             
             lucide.createIcons();
@@ -712,9 +735,9 @@ include 'includes/sidebar.php';
             if (data.current_company || data.job_role) {
                 workExpList.innerHTML = `
                     <div class="pl-7">
-                        <p class="font-medium text-gray-900">${data.job_role || 'Professional'}</p>
-                        <p class="text-gray-600">${data.current_company || 'Independent'}</p>
-                        ${data.work_experience ? `<p class="text-gray-500 text-sm mt-1">${data.work_experience}</p>` : ''}
+                        <p class="font-medium text-gray-900">${escapeHtml(data.job_role || 'Professional')}</p>
+                        <p class="text-gray-600">${escapeHtml(data.current_company || 'Independent')}</p>
+                        ${data.work_experience ? `<p class="text-gray-500 text-sm mt-1">${escapeHtml(data.work_experience)}</p>` : ''}
                     </div>
                 `;
             } else {
@@ -752,11 +775,14 @@ include 'includes/sidebar.php';
                 const container = socialLinks.querySelector('.space-y-2');
                 
                 Object.entries(data.social_links).forEach(([platform, url]) => {
+                    const href = safeUrl(url);
+                    if (!href || href === '#') return;   // skip empty or unsafe (javascript:) links
                     const link = document.createElement('a');
-                    link.href = url;
+                    link.href = href;
                     link.target = '_blank';
+                    link.rel = 'noopener noreferrer';
                     link.className = 'flex items-center text-blue-600 hover:text-blue-800';
-                    link.innerHTML = `<i data-lucide="external-link" class="h-4 w-4 mr-2"></i>${platform}`;
+                    link.innerHTML = `<i data-lucide="external-link" class="h-4 w-4 mr-2"></i>${escapeHtml(platform)}`;
                     container.appendChild(link);
                 });
                 
@@ -911,7 +937,7 @@ include 'includes/sidebar.php';
                 </div>` : ''}
                 <div class="flex items-start justify-between mb-4">
                     <div>
-                        <h4 class="font-semibold text-gray-900">${post.title || 'Post'}</h4>
+                        <h4 class="font-semibold text-gray-900">${escapeHtml(post.title || 'Post')}</h4>
                         <p class="text-sm text-gray-500 mt-1">${formatDate(post.created_at)}</p>
                     </div>
                     <div class="flex items-center gap-3">
@@ -923,16 +949,16 @@ include 'includes/sidebar.php';
                         </div>` : ''}
                     </div>
                 </div>
-                <p class="profile-post-content text-gray-700 mb-4 whitespace-pre-line">${content}</p>
+                <p class="profile-post-content text-gray-700 mb-4 whitespace-pre-line">${linkifyText(escapeHtml(content))}</p>
                 ${Array.isArray(post.attachments) && post.attachments.length > 0 ? `
                 <div class="mb-4">
                     <div class="grid grid-cols-2 md:grid-cols-3 gap-2">
                         ${post.attachments.map((attachment) => `
                             ${(attachment.type === 'image' || attachment.type === 'gif')
-                                ? `<img src="${attachment.url}" alt="Attachment" class="w-full h-32 object-cover rounded-lg cursor-pointer hover:opacity-90" onerror="this.style.display='none'" onclick="window.open('${attachment.url}', '_blank')">`
-                                : `<a href="${attachment.url}" target="_blank" class="flex items-center p-3 border border-gray-200 rounded-lg hover:bg-gray-50">
+                                ? `<img src="${escapeHtml(safeUrl(attachment.url))}" alt="Attachment" class="w-full h-32 object-cover rounded-lg cursor-pointer hover:opacity-90" onerror="this.style.display='none'" data-view-image="${escapeHtml(safeUrl(attachment.url))}" onclick="const u = safeUrl(this.dataset.viewImage); if (u && u !== '#') window.open(u, '_blank', 'noopener')">`
+                                : `<a href="${escapeHtml(safeUrl(attachment.url))}" target="_blank" class="flex items-center p-3 border border-gray-200 rounded-lg hover:bg-gray-50">
                                         <i data-lucide="file" class="h-5 w-5 text-gray-400 mr-3"></i>
-                                        <span class="text-sm text-gray-700 truncate">${attachment.name || 'Attachment'}</span>
+                                        <span class="text-sm text-gray-700 truncate">${escapeHtml(attachment.name || 'Attachment')}</span>
                                    </a>`}
                         `).join('')}
                     </div>
@@ -942,7 +968,7 @@ include 'includes/sidebar.php';
                         <i data-lucide="heart" class="h-4 w-4 mr-1"></i>
                         <span class="profile-like-count">${post.likes_count || 0}</span>
                     </button>
-                    <a href="feed.php?open_comments=${post.id}#post-${post.id}" class="flex items-center mr-4 hover:text-blue-600">
+                    <a href="feed.php?open_comments=${escapeHtml(post.id)}#post-${escapeHtml(post.id)}" class="flex items-center mr-4 hover:text-blue-600">
                         <i data-lucide="message-square" class="h-4 w-4 mr-1"></i>
                         <span>${post.comments_count || 0}</span>
                     </a>
@@ -1148,7 +1174,7 @@ include 'includes/sidebar.php';
                 const emptyLabel = currentTimelineSubtab === 'posts' && String(profileData?.role || '').toLowerCase() === 'student'
                     ? 'activity'
                     : currentTimelineSubtab;
-                postsContainer.innerHTML = `<div class="text-center py-10 text-gray-500">No ${emptyLabel} yet.</div>`;
+                postsContainer.innerHTML = `<div class="text-center py-10 text-gray-500">No ${escapeHtml(emptyLabel)} yet.</div>`;
                 return;
             }
             postsContainer.innerHTML = '';
@@ -1197,9 +1223,9 @@ include 'includes/sidebar.php';
             }
             repliesContainer.innerHTML = timelineRepliesData.map((r) => `
                 <div class="bg-white rounded-xl shadow-sm p-5">
-                    <p class="text-sm text-gray-500 mb-1">${formatDate(r.created_at)} - on post #${r.post_id}</p>
-                    <p class="text-gray-800 whitespace-pre-line">${r.content || ''}</p>
-                    <a href="feed.php?open_comments=${r.post_id}#post-${r.post_id}" class="inline-flex mt-3 text-blue-600 hover:text-blue-800 text-sm">Open Thread</a>
+                    <p class="text-sm text-gray-500 mb-1">${formatDate(r.created_at)} - on post #${escapeHtml(r.post_id)}</p>
+                    <p class="text-gray-800 whitespace-pre-line">${escapeHtml(r.content || '')}</p>
+                    <a href="feed.php?open_comments=${escapeHtml(r.post_id)}#post-${escapeHtml(r.post_id)}" class="inline-flex mt-3 text-blue-600 hover:text-blue-800 text-sm">Open Thread</a>
                 </div>
             `).join('');
         }
@@ -1212,11 +1238,11 @@ include 'includes/sidebar.php';
                 if (response && (response.success || response.status === 'success') && response.data) {
                     badgesList.innerHTML = response.data.map(badge => `
                         <div class="text-center">
-                            <div class="inline-flex items-center justify-center w-16 h-16 ${badge.color || 'bg-blue-100'} rounded-full mb-3">
-                                <i data-lucide="${badge.icon || 'award'}" class="h-8 w-8 ${badge.text_color || 'text-blue-600'}"></i>
+                            <div class="inline-flex items-center justify-center w-16 h-16 ${escapeHtml(badge.color || 'bg-blue-100')} rounded-full mb-3">
+                                <i data-lucide="${escapeHtml(badge.icon || 'award')}" class="h-8 w-8 ${escapeHtml(badge.text_color || 'text-blue-600')}"></i>
                             </div>
-                            <h4 class="font-medium text-gray-900">${badge.name}</h4>
-                            <p class="text-sm text-gray-500 mt-1">${badge.description}</p>
+                            <h4 class="font-medium text-gray-900">${escapeHtml(badge.name)}</h4>
+                            <p class="text-sm text-gray-500 mt-1">${escapeHtml(badge.description)}</p>
                             <p class="text-xs text-gray-400 mt-2">Earned ${formatDate(badge.earned_at)}</p>
                         </div>
                     `).join('');
@@ -1559,18 +1585,44 @@ include 'includes/sidebar.php';
             window.location.href = `messages.php?user_id=${userId}`;
         }
         
+        function setFollowButton(state, isPrivate) {
+            const btn = document.getElementById('connectBtn');
+            if (!btn) return;
+            const looks = {
+                following: ['user-check', 'Following', 'px-4 py-2 border border-blue-300 text-blue-700 rounded-lg hover:bg-red-50 hover:text-red-600 hover:border-red-300 font-medium', 'Unfollow'],
+                requested: ['clock', 'Requested', 'px-4 py-2 border border-amber-300 text-amber-700 rounded-lg hover:bg-amber-50 font-medium', 'Cancel request'],
+                none: [isPrivate ? 'lock' : 'user-plus', isPrivate ? 'Request to follow' : 'Follow', 'px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium', '']
+            }[state] || null;
+            const [icon, label, cls, hoverLabel] = looks || ['user-plus', 'Follow', 'px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium', ''];
+            btn.className = cls;
+            btn.dataset.state = state;
+            btn.dataset.private = isPrivate ? '1' : '0';
+            btn.innerHTML = `<i data-lucide="${icon}" class="h-4 w-4 inline mr-2"></i><span>${label}</span>`;
+            btn.onmouseenter = hoverLabel ? () => { btn.querySelector('span').textContent = hoverLabel; } : null;
+            btn.onmouseleave = hoverLabel ? () => { btn.querySelector('span').textContent = label; } : null;
+            if (window.lucide) lucide.createIcons();
+        }
+
         async function connect(userId) {
+            const btn = document.getElementById('connectBtn');
+            const state = btn ? btn.dataset.state : 'none';
+            const isPrivate = btn && btn.dataset.private === '1';
+            if (state === 'following' && isPrivate) {
+                const ok = await window.appConfirm('This account is private. If you unfollow, you will need to send a new request to see their posts again.', {
+                    title: 'Unfollow?', confirmText: 'Unfollow', icon: 'user-minus', iconTone: 'danger'
+                });
+                if (!ok) return;
+            }
+            if (btn) btn.disabled = true;
             try {
                 const response = await makeApiCall('connect_user.php', 'POST', { user_id: userId });
                 if (response && (response.success || response.status === 'success')) {
-                    const btn = document.getElementById('connectBtn');
-                    if (btn) {
-                        const connected = !!response.connected;
-                        btn.innerHTML = `<i data-lucide="user-plus" class="h-4 w-4 inline mr-2"></i>${connected ? 'Following' : 'Follow'}`;
-                        btn.className = connected
-                            ? 'px-4 py-2 border border-blue-300 text-blue-700 rounded-lg hover:bg-blue-50 font-medium'
-                            : 'px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium';
-                        lucide.createIcons();
+                    const next = response.follow_state || (response.connected ? 'following' : 'none');
+                    setFollowButton(next, isPrivate);
+                    if (window.toast) window.toast(response.message || 'Updated');
+                    // Gaining or losing access to a private profile changes what we can show.
+                    if (isPrivate && (state === 'following' || next === 'following')) {
+                        loadProfileData();
                     }
                 } else {
                     await window.appAlert((response && response.message) || 'Failed to update follow state', {
@@ -1580,8 +1632,119 @@ include 'includes/sidebar.php';
                     });
                 }
             } catch (error) {
-                console.error('Error sending connection request:', error);
+                console.error('Error updating follow state:', error);
+            } finally {
+                if (btn) btn.disabled = false;
             }
+        }
+
+        function renderHandle(data) {
+            const el = document.getElementById('profileHandle');
+            if (!el) return;
+            if (!data.username) { el.classList.add('hidden'); return; }
+            const url = `${location.origin}${location.pathname.replace(/profile\.php$/, '')}@${data.username}`;
+            el.innerHTML = `<span class="font-medium text-gray-500">@${escapeHtml(data.username)}</span>
+                <button type="button" id="copyHandleBtn" class="ml-2 text-xs text-blue-600 hover:underline" title="Copy profile link">Copy link</button>
+                ${isOwnProfile ? '<a href="settings.php?scope=basic#settingsUsername" class="ml-2 text-xs text-gray-500 hover:underline">Change</a>' : ''}`;
+            el.classList.remove('hidden');
+            document.getElementById('copyHandleBtn')?.addEventListener('click', async () => {
+                try { await navigator.clipboard.writeText(url); window.toast ? window.toast('Profile link copied') : null; }
+                catch (e) { window.prompt('Copy this link', url); }
+            });
+        }
+
+        async function toggleBlock(userId, isBlocked) {
+            if (!isBlocked) {
+                const ok = await window.appConfirm('They won\'t be able to see your profile, posts or message you, and you won\'t see theirs. They aren\'t notified. You can unblock any time in Settings → Privacy.', {
+                    title: 'Block this person?', confirmText: 'Block', icon: 'ban', iconTone: 'danger'
+                });
+                if (!ok) return;
+            }
+            const r = await makeApiCall('block_user.php', 'POST', { user_id: userId, action: isBlocked ? 'unblock' : 'block' });
+            if (r && r.success) {
+                if (window.toast) window.toast(r.message);
+                if (!isBlocked) { window.location.href = 'feed.php'; } else { loadProfileData(); }
+            } else {
+                await window.appAlert((r && r.message) || 'Could not update block status.', { title: 'Block', icon: 'triangle-alert', iconTone: 'danger' });
+            }
+        }
+
+        function renderProfileChips(data) {
+            const el = document.getElementById('profileChips');
+            if (!el) return;
+            const chips = [];
+            if (data.pronouns) chips.push(`<span class="px-2.5 py-1 rounded-full bg-gray-100 text-gray-700">${escapeHtml(data.pronouns)}</span>`);
+            if (data.open_to_mentor) chips.push('<span class="px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-700">🎓 Open to mentoring</span>');
+            if (data.open_to_refer) chips.push('<span class="px-2.5 py-1 rounded-full bg-violet-50 text-violet-700">🤝 Gives referrals</span>');
+            if (data.open_to_work) chips.push('<span class="px-2.5 py-1 rounded-full bg-sky-50 text-sky-700">💼 Open to opportunities</span>');
+            if (data.redirected_from) chips.push(`<span class="px-2.5 py-1 rounded-full bg-amber-50 text-amber-700">Formerly @${escapeHtml(data.redirected_from)}</span>`);
+            el.innerHTML = chips.join('');
+            el.classList.toggle('hidden', chips.length === 0);
+        }
+
+        function renderLockedProfile(data) {
+            ['profileTabsNav', 'tabContent', 'ownerInsights'].forEach((id) => document.getElementById(id)?.classList.add('hidden'));
+            const panel = document.getElementById('lockedPanel');
+            if (!panel) return;
+            const requested = data.follow_state === 'requested';
+            panel.innerHTML = `
+                <div class="bg-white rounded-2xl shadow-sm p-10 text-center vu-fade-up">
+                    <div class="mx-auto mb-4 h-16 w-16 rounded-full bg-amber-50 flex items-center justify-center">
+                        <i data-lucide="lock" class="h-8 w-8 text-amber-600"></i>
+                    </div>
+                    <h3 class="text-xl font-semibold text-gray-900">This account is private</h3>
+                    <p class="text-gray-600 mt-2 max-w-md mx-auto">
+                        ${requested
+                            ? `Your follow request is waiting for ${escapeHtml(data.name)} to approve it.`
+                            : `Follow ${escapeHtml(data.name)} to see their posts, about section and activity.`}
+                    </p>
+                    <div class="mt-4 text-sm text-gray-500">${Number(data.posts_count || 0)} posts · ${Number(data.followers_count || 0)} followers · ${Number(data.following_count || 0)} following</div>
+                </div>`;
+            panel.classList.remove('hidden');
+            if (window.lucide) lucide.createIcons();
+        }
+
+        function renderOwnerInsights(data) {
+            const box = document.getElementById('ownerInsights');
+            if (!box) return;
+            const strength = data.profile_strength || { percent: 0, missing: [] };
+            const labels = { photo: 'Add a photo', cover: 'Add a cover', headline: 'Write a headline', branch: 'Add your branch', skills: 'List your skills',
+                             location: 'Add your city', links: 'Link LinkedIn/GitHub', work: 'Add where you work' };
+            const scopes = { photo: 'basic', cover: 'basic', headline: 'basic', branch: 'work', skills: 'skills', location: 'contact', links: 'contact', work: 'work' };
+            const viewers = (data.recent_viewers || []).slice(0, 6);
+            const pct = Math.max(0, Math.min(100, Number(strength.percent) || 0));
+            const tone = pct >= 85 ? 'bg-emerald-500' : pct >= 50 ? 'bg-blue-500' : 'bg-amber-500';
+            box.innerHTML = `
+                <div class="grid gap-4 md:grid-cols-3">
+                    <div class="bg-white rounded-xl shadow-sm p-5 md:col-span-2">
+                        <div class="flex items-center justify-between">
+                            <h3 class="font-semibold text-gray-900">Profile strength</h3>
+                            <span class="text-sm font-semibold text-gray-700" data-countup>${pct}%</span>
+                        </div>
+                        <div class="mt-3 h-2 rounded-full bg-gray-100 overflow-hidden"><div class="h-2 ${tone} rounded-full transition-all duration-700" style="width:0%" data-width="${pct}%"></div></div>
+                        ${(strength.missing || []).length ? `
+                        <div class="mt-3 flex flex-wrap gap-2">
+                            ${(strength.missing || []).map(k => `<a href="settings.php?scope=${scopes[k] || 'basic'}#profile" class="text-xs px-2.5 py-1 rounded-full bg-blue-50 text-blue-700 hover:bg-blue-100">+ ${escapeHtml(labels[k] || k)}</a>`).join('')}
+                        </div>` : '<p class="mt-3 text-sm text-emerald-700">All set — your profile is complete. 🎉</p>'}
+                    </div>
+                    <div class="bg-white rounded-xl shadow-sm p-5">
+                        <h3 class="font-semibold text-gray-900">Profile views</h3>
+                        <p class="text-3xl font-bold text-gray-900 mt-1" data-countup>${Number(data.profile_views_30d || 0)}</p>
+                        <p class="text-xs text-gray-500">people in the last 30 days</p>
+                        <div class="mt-3 flex -space-x-2">
+                            ${viewers.map(v => `<a href="profile.php?id=${Number(v.user_id)}" title="${escapeHtml(v.full_name)}${v.current_company ? ' · ' + escapeHtml(v.current_company) : ''}">
+                                <img src="${escapeHtml(safeUrl(v.profile_picture_url) || getDefaultProfileAvatar(v.full_name))}" alt="${escapeHtml(v.full_name)}" class="h-8 w-8 rounded-full ring-2 ring-white object-cover"
+                                     data-initial="${escapeHtml(String(v.full_name || 'U').charAt(0))}" onerror="this.onerror=null;this.src=getDefaultProfileAvatar(this.dataset.initial)"></a>`).join('')}
+                        </div>
+                        ${Number(data.follow_requests_count || 0) > 0 ? `
+                        <a href="settings.php?scope=privacy#privacy" class="mt-4 inline-flex items-center gap-2 text-sm font-medium text-amber-700 hover:underline">
+                            <i data-lucide="user-plus" class="h-4 w-4"></i>${Number(data.follow_requests_count)} follow request${Number(data.follow_requests_count) === 1 ? '' : 's'}
+                        </a>` : ''}
+                    </div>
+                </div>`;
+            box.classList.remove('hidden');
+            requestAnimationFrame(() => box.querySelectorAll('[data-width]').forEach(el => { el.style.width = el.dataset.width; }));
+            if (window.lucide) lucide.createIcons();
         }
         
         function editProfile() {
@@ -1589,12 +1752,18 @@ include 'includes/sidebar.php';
         }
         
         async function exportData() {
-            // Implement data export
-            await window.appAlert('Data export feature coming soon!', {
-                title: 'Coming soon',
-                icon: 'download',
-                iconTone: 'info'
-            });
+            try {
+                const res = await makeApiCall('export_data.php');
+                if (!res || res.success === false) throw new Error((res && res.message) || 'Export failed');
+                const blob = new Blob([JSON.stringify(res, null, 2)], { type: 'application/json' });
+                const a = document.createElement('a');
+                a.href = URL.createObjectURL(blob);
+                a.download = `rjit-portal-my-data-${new Date().toISOString().slice(0, 10)}.json`;
+                document.body.appendChild(a); a.click(); a.remove();
+                setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+            } catch (e) {
+                await window.appAlert(e.message || 'Could not export your data.', { title: 'Export failed', icon: 'triangle-alert', iconTone: 'danger' });
+            }
         }
         
         async function deactivateAccount() {

@@ -6,7 +6,8 @@ The RJIT Alumni Portal holds personal information about students, alumni and fac
 
 | Version | Supported |
 |---|---|
-| `main` (2.x) | ✅ Security fixes |
+| `main` (2.3+) | ✅ Security fixes |
+| 2.0 – 2.2 | ⚠️ Please upgrade: 2.3 fixes an unguarded ban endpoint and stored XSS |
 | 1.x (before the router/security rework) | ❌ Please upgrade |
 
 ## Reporting a vulnerability
@@ -63,6 +64,21 @@ A summary of the controls is in the [README Security section](README.md#-securit
 - `router.php` — only routed pages, `api/*.php` and `admin/*.php` can execute
 - `bootstrap/security.php` — headers & CSP, CORS allowlist, rate limiting, login lockout, upload inspection, error scrubbing
 - `bootstrap/static_policy.php` + `.htaccess` + `storage/.htaccess` — what may be served, and that uploads can never execute
+- `bootstrap/security.php` also: numeric-id check on every API parameter, oversized-upload messages, image-bomb refusal, lossless EXIF/GPS stripping
+- `api/_privacy.php` — who may see which profile, post, comment and contact detail (private accounts, follow requests, blocks)
+- `api/_usernames.php` — case-insensitive unique @handles and e-mails, enforced by the database
+- `assets/js/safe.js` — `escapeHtml`, `safeUrl`, `linkifyText`: the only way user text reaches the page
+
+### Automated attack tests (run in CI on every push)
+
+| Suite | What it attacks |
+|---|---|
+| `tests/integration/authz.php` | A student and an alumnus call every staff endpoint; refused **and** database unchanged |
+| `tests/integration/sqli_fuzz.php` | 2,744 SQL-injection requests across 98 endpoints, including time-based blind payloads |
+| `tests/ui/xss_sweep.py` | Payloads in every writable field (plus raw legacy rows), 37 pages opened in Chrome |
+| `tests/integration/security_limits.php` | Brute-force login lockout |
+
+If you add an endpoint, it's covered by the fuzz automatically. If it's staff-only, add it to the list in `authz.php`.
 
 ## For maintainers
 

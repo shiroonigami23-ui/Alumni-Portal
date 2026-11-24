@@ -30,6 +30,7 @@ try {
               AND COALESCE(p.moderation_status, 'approved') = 'approved'
               AND COALESCE(p.visibility_scope, 'all') IN ('all', 'public', 'everyone')
               AND u.status = 'active'
+              AND NOT (u.role <> 'student' AND COALESCE(prof.is_private, FALSE) = TRUE)
             ORDER BY p.created_at DESC
             LIMIT :lim
         ");

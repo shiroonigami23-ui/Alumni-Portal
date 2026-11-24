@@ -10,7 +10,7 @@
     <title>Privacy Policy - RJIT Alumni Portal</title>
 
     <!-- Tailwind CSS CDN -->
-    <link rel="stylesheet" href="assets/css/tailwind.css?v=2">
+    <link rel="stylesheet" href="assets/css/tailwind.css?v=3">
 
     <!-- Lucide Icons CDN -->
     <script src="https://unpkg.com/lucide@0.460.0/dist/umd/lucide.min.js"></script>

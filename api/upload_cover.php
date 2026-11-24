@@ -21,10 +21,10 @@ if (!isset($_FILES['cover'])) {
 
 $file = $_FILES['cover'];
 $extension = strtolower(pathinfo((string)$file['name'], PATHINFO_EXTENSION));
-$allowed = ['jpg', 'jpeg', 'png', 'webp'];
+$allowed = ['jpg', 'jpeg', 'png', 'webp', 'gif'];
 if (!in_array($extension, $allowed, true)) {
     http_response_code(400);
-    echo json_encode(["success" => false, "message" => "Invalid format."]);
+    echo json_encode(["success" => false, "message" => "Please choose a JPG, PNG, WebP or GIF image."]);
     exit;
 }
 

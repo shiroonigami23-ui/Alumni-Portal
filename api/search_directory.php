@@ -184,20 +184,33 @@ try {
         $params[':tech'] = '%' . $tech . '%';
     }
 
+    // Private accounts still show up (so people can find them and ask to follow), but only by name —
+    // their company, city, bio and skills can't be searched or seen until the viewer follows them.
+    $lockedExpr = "(:lk_role <> 'admin' AND u.role <> 'student' AND COALESCE(p.is_private, FALSE) = TRUE AND u.user_id <> :lk_uid
+                    AND NOT EXISTS (SELECT 1 FROM connections lk_c WHERE lk_c.status = 'accepted'
+                                    AND lk_c.requester_user_id = :lk_uid AND lk_c.addressee_user_id = u.user_id))";
+    $params[':lk_role'] = (string)$currentUserRole;
+    $params[':lk_uid'] = (int)$user_id;
+    if ($company || $location || $tech) {
+        $where .= " AND NOT $lockedExpr";
+    }
     if ($search) {
         $where .= " AND (
             LOWER(COALESCE(p.full_name, '')) LIKE LOWER(:search)
-            OR LOWER(COALESCE(p.bio, '')) LIKE LOWER(:search)
-            OR LOWER(COALESCE(p.current_company, '')) LIKE LOWER(:search)
-            OR LOWER(COALESCE(p.location_city, '')) LIKE LOWER(:search)
-            OR LOWER(COALESCE(p.department, '')) LIKE LOWER(:search)
+            OR LOWER(COALESCE(u.username, '')) LIKE LOWER(:search_handle)
+            OR (NOT $lockedExpr AND (
+                LOWER(COALESCE(p.bio, '')) LIKE LOWER(:search)
+                OR LOWER(COALESCE(p.current_company, '')) LIKE LOWER(:search)
+                OR LOWER(COALESCE(p.location_city, '')) LIKE LOWER(:search)
+                OR LOWER(COALESCE(p.department, '')) LIKE LOWER(:search)
+            ))
         )";
         $params[':search'] = '%' . $search . '%';
+        $params[':search_handle'] = ltrim(strtolower($search), '@') . '%';
     }
-
-    if ($currentUserRole !== 'admin') {
-        $where .= " AND COALESCE(p.is_private, false) = FALSE";
-    }
+    // People who blocked you (or whom you blocked) don't appear.
+    $where .= " AND NOT EXISTS (SELECT 1 FROM blocks bk WHERE (bk.blocker_user_id = :lk_uid AND bk.blocked_user_id = u.user_id)
+                                                        OR (bk.blocked_user_id = :lk_uid AND bk.blocker_user_id = u.user_id))";
 
     $orderBy = " ORDER BY p.full_name ASC";
     if ($sort === 'name_desc') {
@@ -212,6 +225,7 @@ try {
         SELECT DISTINCT
             u.user_id,
             u.role,
+            u.username,
             p.full_name,
             p.graduation_year,
             p.current_company,
@@ -226,6 +240,7 @@ try {
             p.bio,
             p.linkedin_url,
             p.personal_website,
+            $lockedExpr AS is_locked,
             COALESCE(
                 (
                     SELECT STRING_AGG(ts.skill_name, ', ')
@@ -242,8 +257,9 @@ try {
     ";
 
     $stmt = $pdo->prepare($query);
-    $countStmt = $pdo->prepare("SELECT COUNT(DISTINCT u.user_id) $baseQuery $where");
-    $countStmt->execute($params);
+    $countSql = "SELECT COUNT(DISTINCT u.user_id) $baseQuery $where";
+    $countStmt = $pdo->prepare($countSql);
+    $countStmt->execute(array_filter($params, fn ($k) => preg_match('/' . preg_quote($k, '/') . '(?![A-Za-z0-9_])/', $countSql), ARRAY_FILTER_USE_KEY));
     $total = (int)$countStmt->fetchColumn();
 
     foreach ($params as $key => $value) {
@@ -254,7 +270,17 @@ try {
     $stmt->execute();
 
     $results = $stmt->fetchAll(PDO::FETCH_ASSOC);
-    $mapped = array_map(static function (array $row) use ($db): array {
+    $seesRoll = in_array((string)$currentUserRole, ['admin', 'faculty'], true);
+    $mapped = array_map(static function (array $row) use ($db, $seesRoll): array {
+        $locked = filter_var($row['is_locked'] ?? false, FILTER_VALIDATE_BOOLEAN);
+        if ($locked) {
+            foreach (['current_company', 'job_role', 'designation', 'location_city', 'location_country', 'bio', 'tech_stack', 'linkedin_url', 'personal_website'] as $hide) {
+                $row[$hide] = null;
+            }
+        }
+        if (!$seesRoll) {
+            $row['roll_number'] = null;
+        }
         $location = trim(implode(', ', array_filter([$row['location_city'] ?? '', $row['location_country'] ?? ''])));
         $skills = array_values(array_filter(array_map('trim', explode(',', (string)($row['tech_stack'] ?? '')))));
         $role = (string)($row['role'] ?? '');
@@ -277,6 +303,7 @@ try {
         return [
             'id' => (int)$row['user_id'],
             'role' => $role,
+            'username' => $row['username'] ?? null,
             'name' => (string)($row['full_name'] ?: 'RJIT Member'),
             'graduation_year' => $graduationYear,
             'joined_year' => $joinedYear,
@@ -290,7 +317,8 @@ try {
             'avatar' => resolve_profile_media_url($db, (int)$row['user_id'], $row['profile_picture_url'] ? str_replace('\\', '/', (string)$row['profile_picture_url']) : null, 'profile_picture_url', 'profile_avatar') ?: null,
             'bio' => $row['bio'] ?? null,
             'skills' => $skills,
-            'is_private' => false
+            'is_private' => $locked,
+            'is_locked' => $locked
         ];
     }, $results);
 

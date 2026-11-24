@@ -1,4 +1,5 @@
 <?php
+require_once __DIR__ . '/_privacy.php';
 header("Access-Control-Allow-Origin: *");
 header("Content-Type: application/json; charset=UTF-8");
 header("Access-Control-Allow-Methods: POST");
@@ -25,7 +26,7 @@ try {
     if ($isMultipart) {
         $post_id = isset($_POST['post_id']) ? (int)$_POST['post_id'] : null;
         $content = trim((string)($_POST['content'] ?? ''));
-        $gif_url = trim((string)($_POST['gif_url'] ?? ''));
+        $gif_url = safe_gif_url(trim((string)($_POST['gif_url'] ?? '')));
         $parent_comment_id = isset($_POST['parent_comment_id']) && $_POST['parent_comment_id'] !== ''
             ? (int)$_POST['parent_comment_id']
             : null;
@@ -33,7 +34,7 @@ try {
         $data = json_decode(file_get_contents("php://input"), true) ?: [];
         $post_id = isset($data['post_id']) ? (int)$data['post_id'] : null;
         $content = trim((string)($data['content'] ?? ''));
-        $gif_url = trim((string)($data['gif_url'] ?? ''));
+        $gif_url = safe_gif_url(trim((string)($data['gif_url'] ?? '')));
         $parent_comment_id = isset($data['parent_comment_id']) && $data['parent_comment_id'] !== ''
             ? (int)$data['parent_comment_id']
             : null;
@@ -44,6 +45,7 @@ try {
         echo json_encode(["success" => false, "status" => "error", "message" => "post_id and any of content/image/file/gif are required."]);
         exit;
     }
+    privacy_require_post($db, (int)$user_id, (int)$post_id);
 
     $permStmt = $db->prepare("SELECT role, can_post FROM users WHERE user_id = :uid LIMIT 1");
     $permStmt->execute([':uid' => $user_id]);

@@ -455,16 +455,16 @@ include 'includes/sidebar.php';
                             <div class="flex-shrink-0">
                                 <div class="h-10 w-10 bg-blue-100 rounded-full flex items-center justify-center overflow-hidden">
                                     ${post.author_avatar ? 
-                                        `<img src="${post.author_avatar}" alt="${post.author_name}" class="h-10 w-10 rounded-full" onerror="this.onerror=null;this.parentElement.innerHTML='&lt;i data-lucide=&quot;user&quot; class=&quot;h-5 w-5 text-blue-600&quot;&gt;&lt;/i&gt;'; lucide.createIcons();">` : 
+                                        `<img src="${escapeHtml(safeUrl(post.author_avatar))}" alt="${escapeHtml(post.author_name)}" class="h-10 w-10 rounded-full" onerror="this.onerror=null;this.parentElement.innerHTML='&lt;i data-lucide=&quot;user&quot; class=&quot;h-5 w-5 text-blue-600&quot;&gt;&lt;/i&gt;'; lucide.createIcons();">` : 
                                         `<i data-lucide="user" class="h-5 w-5 text-blue-600"></i>`}
                                 </div>
                             </div>
                             <div class="ml-4 flex-1">
                                 <div class="flex items-center justify-between">
-                                    <p class="font-medium text-gray-900">${post.author_name || 'User'}</p>
+                                    <p class="font-medium text-gray-900">${escapeHtml(post.author_name || 'User')}</p>
                                     <span class="text-xs text-gray-500">${formatDate(post.created_at)}</span>
                                 </div>
-                                <p class="text-sm text-gray-600 mt-1">${content}</p>
+                                <p class="text-sm text-gray-600 mt-1">${escapeHtml(content)}</p>
                                 <div class="flex items-center mt-2 space-x-4 text-sm text-gray-500">
                                     <span class="flex items-center">
                                         <i data-lucide="heart" class="h-4 w-4 mr-1"></i>
@@ -523,13 +523,13 @@ include 'includes/sidebar.php';
                                     </div>
                                 </div>
                                 <div class="ml-3 flex-1">
-                                    <h4 class="font-medium text-gray-900 text-sm">${event.title || 'Event'}</h4>
+                                    <h4 class="font-medium text-gray-900 text-sm">${escapeHtml(event.title || 'Event')}</h4>
                                     <p class="text-xs text-gray-500 mt-1">
                                         <i data-lucide="clock" class="h-3 w-3 inline mr-1"></i>
                                         ${formatDate(event.event_date || event.start_date)}
                                     </p>
                                     <div class="mt-2">
-                                        <a href="events.php?id=${event.event_id || event.id}" 
+                                        <a href="events.php?id=${Number(event.event_id || event.id || 0)}" 
                                            class="text-xs text-blue-600 hover:text-blue-800 font-medium">
                                             View Details
                                         </a>
@@ -572,11 +572,11 @@ include 'includes/sidebar.php';
                         notifElement.innerHTML = `
                             <div class="flex-shrink-0">
                                 <div class="h-8 w-8 bg-blue-100 rounded-full flex items-center justify-center">
-                                    <i data-lucide="${notif.icon || 'bell'}" class="h-4 w-4 text-blue-600"></i>
+                                    <i data-lucide="${escapeHtml(notif.icon || 'bell')}" class="h-4 w-4 text-blue-600"></i>
                                 </div>
                             </div>
                             <div class="ml-3">
-                                <p class="text-sm text-gray-800">${notif.message || 'Notification'}</p>
+                                <p class="text-sm text-gray-800">${escapeHtml(notif.message || 'Notification')}</p>
                                 <p class="text-xs text-gray-500 mt-1">${formatDate(notif.created_at)}</p>
                             </div>
                         `;

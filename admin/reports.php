@@ -9,7 +9,7 @@ if (session_status() === PHP_SESSION_NONE) {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Reported Content - Admin</title>
-    <link rel="stylesheet" href="../assets/css/tailwind.css?v=2">
+    <link rel="stylesheet" href="../assets/css/tailwind.css?v=3">
     <script src="https://unpkg.com/lucide@0.460.0/dist/umd/lucide.min.js"></script>
     <link rel="stylesheet" href="../assets/css/variety-ui.css">
     <script src="../includes/auth-check.js"></script>
@@ -184,7 +184,7 @@ if (session_status() === PHP_SESSION_NONE) {
             return 'bg-red-100 text-red-800';
         }
         function badge(text, cls) {
-            return `<span class="px-2 py-1 rounded-full text-xs ${cls}">${escapeHtml(text)}</span>`;
+            return `<span class="px-2 py-1 rounded-full text-xs ${escapeHtml(cls)}">${escapeHtml(text)}</span>`;
         }
         function escapeHtml(s) {
             return String(s || '').replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m]));

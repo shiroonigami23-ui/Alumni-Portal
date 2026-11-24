@@ -7,6 +7,7 @@ require_once __DIR__ . '/../config/Database.php';
 require_once __DIR__ . '/../middleware/Auth.php';
 require_once __DIR__ . '/_message_schema.php';
 require_once __DIR__ . '/_moderation_schema.php';
+require_once __DIR__ . '/_privacy.php';
 
 function build_room_code(int $a, int $b, string $type): string
 {
@@ -40,6 +41,11 @@ try {
     }
 
     moderation_assert_messaging_allowed($db, $initiatorId, 'You are restricted from starting calls right now.');
+    if ($receiverId > 0 && privacy_is_blocked($db, $initiatorId, $receiverId)) {
+        http_response_code(403);
+        echo json_encode(['success' => false, 'message' => 'You can\'t call this person.']);
+        exit;
+    }
 
     $initiatorRole = moderation_get_user_role($db, $initiatorId);
 

@@ -37,6 +37,7 @@ try {
     $query = "SELECT 
                 u.user_id,
                 u.email,
+                u.username,
                 u.role,
                 u.is_moderator,
                 u.status,

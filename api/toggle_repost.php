@@ -1,4 +1,5 @@
 <?php
+require_once __DIR__ . '/_privacy.php';
 header("Access-Control-Allow-Origin: *");
 header("Content-Type: application/json; charset=UTF-8");
 header("Access-Control-Allow-Methods: POST");
@@ -21,6 +22,7 @@ try {
         echo json_encode(["success" => false, "status" => "error", "message" => "post_id is required"]);
         exit;
     }
+    privacy_require_post($db, (int)$user_id, (int)$post_id);
 
     $db->beginTransaction();
     $ins = $db->prepare("

@@ -5,6 +5,7 @@ header("Content-Type: application/json; charset=UTF-8");
 require_once __DIR__ . '/../config/Database.php';
 require_once __DIR__ . '/../middleware/Auth.php';
 require_once __DIR__ . '/_profile_media.php';
+require_once __DIR__ . '/_privacy.php';
 
 try {
     $database = new Database();
@@ -26,6 +27,7 @@ try {
             u.role,
             p.branch,
             p.is_private,
+            COALESCE(p.show_email, TRUE) AS show_email,
             COALESCE(NULLIF(TRIM(p.full_name), ''), split_part(u.email, '@', 1)) AS full_name,
             p.profile_picture_url
         FROM users u
@@ -42,19 +44,22 @@ try {
         exit;
     }
 
-    $isPrivate = (bool)($row['is_private'] ?? false);
-    if ($isPrivate && $currentUserId !== $userId) {
-        http_response_code(403);
-        echo json_encode(['success' => false, 'message' => 'This profile is private']);
+    $viewerRole = privacy_role($db, $currentUserId);
+    if ($currentUserId !== $userId && $viewerRole !== 'admin' && privacy_is_blocked($db, $currentUserId, $userId)) {
+        http_response_code(404);
+        echo json_encode(['success' => false, 'message' => 'User not found']);
         exit;
     }
+    // Chat headers need name/photo/role even for private accounts; email only if the owner shares it.
+    $showEmail = $currentUserId === $userId || $viewerRole === 'admin'
+        || (filter_var($row['show_email'], FILTER_VALIDATE_BOOLEAN) && privacy_can_view($db, $currentUserId, $viewerRole, $userId));
 
     echo json_encode([
         'success' => true,
         'data' => [
             'user_id' => (int)$row['user_id'],
             'full_name' => (string)$row['full_name'],
-            'email' => (string)$row['email'],
+            'email' => $showEmail ? (string)$row['email'] : null,
             'role' => (string)$row['role'],
             'branch' => $row['branch'] ?? null,
             'profile_picture_url' => resolve_profile_media_url($db, (int)$row['user_id'], $row['profile_picture_url'] ? str_replace('\\', '/', (string)$row['profile_picture_url']) : null, 'profile_picture_url', 'profile_avatar')
@@ -64,7 +69,6 @@ try {
     http_response_code(500);
     echo json_encode([
         'success' => false,
-        'message' => 'Failed to fetch user',
-        'error' => $e->getMessage()
+        'message' => 'Failed to fetch user'
     ]);
 }

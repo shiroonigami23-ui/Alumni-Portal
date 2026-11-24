@@ -23,6 +23,8 @@ foreach (glob($root . '/api/_*schema*.php') as $f) {
 require_once $root . '/api/_asset_store.php';
 require_once $root . '/api/_content_store.php';
 require_once $root . '/api/_portal_settings.php';
+require_once $root . '/api/_privacy.php';
+require_once $root . '/api/_usernames.php';
 
 $opts = getopt('', ['demo', 'admin-password:']);
 $t0 = microtime(true);
@@ -54,7 +56,7 @@ $say('Base schema (deployment/schema_pg.sql)');
 $helpers = [
     'ensure_community_schema', 'ensure_content_store_schema', 'ensure_asset_store_schema', 'ensure_feed_metrics_schema',
     'ensure_password_reset_schema', 'ensure_user_moderation_schema', 'ensureMentorshipSchema', 'ensure_message_columns',
-    'ensure_calls_table', 'ensure_group_message_schema', 'ensure_group_call_schema', 'ensure_referral_schema', 'ensure_portal_settings',
+    'ensure_calls_table', 'ensure_group_message_schema', 'ensure_group_call_schema', 'ensure_referral_schema', 'ensure_portal_settings', 'privacy_ensure_schema', 'ensure_username_schema',
 ];
 foreach ($helpers as $fn) {
     if (function_exists($fn)) {

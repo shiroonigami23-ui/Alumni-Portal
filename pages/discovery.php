@@ -609,16 +609,16 @@
                     <div class="flex items-center mb-4">
                         <div class="relative">
                             ${user.avatar ? 
-                                `<img src="${user.avatar}" alt="${user.name}" class="h-16 w-16 rounded-full object-cover">` : 
+                                `<img src="${escapeHtml(safeUrl(user.avatar))}" alt="${escapeHtml(user.name)}" class="h-16 w-16 rounded-full object-cover">` : 
                                 `<div class="h-16 w-16 bg-blue-100 rounded-full flex items-center justify-center">
                                     <i data-lucide="user" class="h-8 w-8 text-blue-600"></i>
                                 </div>`}
-                            <span class="absolute -bottom-1 -right-1 ${roleColor} text-xs px-2 py-0.5 rounded-full">
+                            <span class="absolute -bottom-1 -right-1 ${escapeHtml(roleColor)} text-xs px-2 py-0.5 rounded-full">
                                 ${roleText}
                             </span>
                         </div>
                         <div class="ml-4">
-                            <h3 class="font-semibold text-gray-900">${user.name}</h3>
+                            <h3 class="font-semibold text-gray-900">${escapeHtml(user.name)}</h3>
                             <p class="text-sm text-gray-600">
                                 ${user.branch || user.department || 'RJIT'}
                                 ${yearDisplay ? `&bull; ${yearDisplay}` : ''}
@@ -629,10 +629,10 @@
                     <!-- Current Info -->
                     <div class="mb-4">
                         ${user.current_position ? `
-                            <p class="font-medium text-gray-900 text-sm">${user.current_position}</p>
+                            <p class="font-medium text-gray-900 text-sm">${escapeHtml(user.current_position)}</p>
                         ` : ''}
                         ${user.current_company ? `
-                            <p class="text-gray-600 text-sm">${user.current_company}</p>
+                            <p class="text-gray-600 text-sm">${escapeHtml(user.current_company)}</p>
                         ` : ''}
                         ${user.location ? `
                             <p class="text-gray-500 text-sm mt-1">
@@ -647,7 +647,7 @@
                         <div class="mb-4">
                             <div class="flex flex-wrap gap-1">
                                 ${user.skills.slice(0, 3).map(skill => `
-                                    <span class="px-2 py-1 bg-blue-50 text-blue-700 text-xs rounded">${skill}</span>
+                                    <span class="px-2 py-1 bg-blue-50 text-blue-700 text-xs rounded">${escapeHtml(skill)}</span>
                                 `).join('')}
                                 ${user.skills.length > 3 ? `
                                     <span class="px-2 py-1 bg-gray-100 text-gray-600 text-xs rounded">+${user.skills.length - 3}</span>
@@ -658,13 +658,13 @@
                     
                     <!-- Actions -->
                     <div class="flex space-x-2 pt-4 border-t border-gray-100">
-                        <button onclick="viewProfile(${user.id})" 
+                        <button onclick="viewProfile(${escapeHtml(user.id)})" 
                                 class="flex-1 px-3 py-2 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 font-medium">
                             View Profile
                         </button>
                         
                         ${canMessage ? `
-                            <button onclick="openMessageModal(${user.id}, '${user.name}')" 
+                            <button data-name="${escapeHtml(user.name)}" onclick="openMessageModal(${Number(user.id)}, this.dataset.name)" 
                                     class="flex-1 px-3 py-2 border border-gray-300 text-gray-700 text-sm rounded-lg hover:bg-gray-50 font-medium">
                                 Message
                             </button>
@@ -707,7 +707,7 @@
             const isPrivate = user.is_private && user.role !== 'student';
             const canMessage = !isPrivate && user.role !== 'student';
             const yearDisplay = getUserYearDisplay(user);
-            const roleBadge = `<span class="inline-flex items-center rounded-full ${roleColor} px-2 py-0.5 text-xs font-medium">${roleText}</span>`;
+            const roleBadge = `<span class="inline-flex items-center rounded-full ${escapeHtml(roleColor)} px-2 py-0.5 text-xs font-medium">${escapeHtml(roleText)}</span>`;
             const summaryParts = [user.current_position, user.current_company].filter(Boolean);
             const summaryLine = summaryParts.join(' at ');
 
@@ -716,14 +716,14 @@
                     <div class="flex items-start gap-3 md:items-center">
                         <div class="relative">
                             ${user.avatar ? 
-                                `<img src="${user.avatar}" alt="${user.name}" class="h-12 w-12 rounded-full object-cover">` : 
+                                `<img src="${escapeHtml(safeUrl(user.avatar))}" alt="${escapeHtml(user.name)}" class="h-12 w-12 rounded-full object-cover">` : 
                                 `<div class="h-12 w-12 bg-blue-100 rounded-full flex items-center justify-center">
                                     <i data-lucide="user" class="h-6 w-6 text-blue-600"></i>
                                 </div>`}
                         </div>
                         <div class="min-w-0 flex-1">
                             <div class="flex flex-wrap items-center gap-2">
-                                <h3 class="font-semibold text-gray-900">${user.name}</h3>
+                                <h3 class="font-semibold text-gray-900">${escapeHtml(user.name)}</h3>
                                 ${roleBadge}
                             </div>
                             <p class="text-sm text-gray-600">
@@ -731,7 +731,7 @@
                                 ${yearDisplay ? `&bull; ${yearDisplay}` : ''}
                             </p>
                             ${summaryLine ? `
-                                <p class="mt-1 text-sm text-gray-800">${summaryLine}</p>
+                                <p class="mt-1 text-sm text-gray-800">${escapeHtml(summaryLine)}</p>
                             ` : ''}
                             ${user.location ? `
                                 <p class="mt-1 hidden text-xs text-gray-500 md:block">
@@ -742,7 +742,7 @@
                             ${user.skills && user.skills.length > 0 ? `
                                 <div class="mt-2 hidden flex-wrap gap-1 md:flex">
                                     ${user.skills.slice(0, 3).map(skill => `
-                                        <span class="px-2 py-1 bg-blue-50 text-blue-700 text-xs rounded">${skill}</span>
+                                        <span class="px-2 py-1 bg-blue-50 text-blue-700 text-xs rounded">${escapeHtml(skill)}</span>
                                     `).join('')}
                                     ${user.skills.length > 3 ? `
                                         <span class="px-2 py-1 bg-gray-100 text-gray-600 text-xs rounded">+${user.skills.length - 3}</span>
@@ -753,13 +753,13 @@
                     </div>
 
                     <div class="flex items-center gap-2">
-                            <button onclick="viewProfile(${user.id})" 
+                            <button onclick="viewProfile(${escapeHtml(user.id)})" 
                                     class="flex-1 px-4 py-2 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 font-medium md:flex-none">
                                 View
                             </button>
                             
                             ${canMessage ? `
-                                <button onclick="openMessageModal(${user.id}, '${user.name}')" 
+                                <button data-name="${escapeHtml(user.name)}" onclick="openMessageModal(${Number(user.id)}, this.dataset.name)" 
                                         class="flex-1 px-4 py-2 border border-gray-300 text-gray-700 text-sm rounded-lg hover:bg-gray-50 font-medium md:flex-none">
                                     Message
                                 </button>
@@ -915,8 +915,8 @@
                     <div class="h-16 w-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-2">
                         <i data-lucide="building" class="h-8 w-8 text-blue-600"></i>
                     </div>
-                    <p class="font-medium text-gray-900">${company.name}</p>
-                    <p class="text-sm text-gray-600">${company.count} alumni</p>
+                    <p class="font-medium text-gray-900">${escapeHtml(company.name)}</p>
+                    <p class="text-sm text-gray-600">${escapeHtml(company.count)} alumni</p>
                 `;
                 container.appendChild(companyEl);
             });

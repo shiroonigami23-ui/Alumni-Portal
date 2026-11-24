@@ -16,11 +16,11 @@ $user_id = $auth->validateRequest();
 if (isset($_FILES['avatar'])) {
     $file = $_FILES['avatar'];
     $extension = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));
-    $allowed = ['jpg', 'jpeg', 'png', 'webp'];
+    $allowed = ['jpg', 'jpeg', 'png', 'webp', 'gif'];
 
     if (!in_array($extension, $allowed)) {
         http_response_code(400);
-        echo json_encode(["success" => false, "status" => "error", "message" => "Invalid format."]);
+        echo json_encode(["success" => false, "status" => "error", "message" => "Please choose a JPG, PNG, WebP or GIF image."]);
         exit();
     }
 

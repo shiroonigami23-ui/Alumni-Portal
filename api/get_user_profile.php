@@ -10,6 +10,8 @@ require_once '../middleware/Auth.php';
 require_once '../helpers/TechStackHelper.php';
 require_once __DIR__ . '/_content_store.php';
 require_once __DIR__ . '/_profile_media.php';
+require_once __DIR__ . '/_privacy.php';
+require_once __DIR__ . '/_usernames.php';
 
 header('Content-Type: application/json');
 
@@ -43,7 +45,8 @@ if (!$db) {
     exit;
 }
 $auth = new Auth($db);
-$current_user = $auth->validateRequest();
+$current_user = (int)$auth->validateRequest();
+privacy_ensure_schema($db);
 $current_user_role = null;
 if ($current_user) {
     $currentRoleStmt = $db->prepare("SELECT role FROM users WHERE user_id = :uid LIMIT 1");
@@ -52,22 +55,33 @@ if ($current_user) {
 }
 
 // Get user_id from query parameter
-$user_id = $_GET['user_id'] ?? null;
+$user_id = (int)($_GET['user_id'] ?? 0);
+// Profiles can also be opened by @handle (current, or one changed in the last 30 days).
+$redirectedFrom = null;
+if ($user_id <= 0 && isset($_GET['username'])) {
+    ensure_username_schema($db);
+    $hit = username_resolve($db, (string)$_GET['username']);
+    if ($hit) {
+        $user_id = $hit['user_id'];
+        $redirectedFrom = $hit['redirected'] ? username_normalise((string)$_GET['username']) : null;
+    } else {
+        http_response_code(404);
+        echo json_encode(['success' => false, 'message' => 'No one has that handle.']);
+        exit;
+    }
+}
 
-if (!$user_id) {
+if ($user_id <= 0) {
     http_response_code(400);
     echo json_encode(['message' => 'user_id parameter required']);
     exit;
 }
 
-// Connect to database
-$database = new Database();
-$db = $database->getConnection();
 $techHelper = new TechStackHelper($db);
 
 try {
     // Get user profile
-    $query = "SELECT u.user_id, u.email, u.role, u.status, u.created_at,
+    $query = "SELECT u.user_id, u.username, u.email, u.role, u.status, u.created_at,
                      u.total_posts, u.total_likes_received, u.login_streak,
                      p.full_name, p.bio, p.profile_picture_url, p.cover_photo_url,
                      p.graduation_year, p.joining_year, p.course, p.branch,
@@ -78,7 +92,9 @@ try {
                      p.linkedin_url, p.github_url, p.twitter_url,
                      p.help_alumni_mates,
                      CASE WHEN u.role = 'student' THEN false ELSE COALESCE(p.is_private, false) END AS is_private,
-                     p.show_email, p.show_contact,
+                     COALESCE(p.show_email, TRUE) AS show_email, COALESCE(p.show_contact, FALSE) AS show_contact,
+                     COALESCE(p.open_to_mentor, FALSE) AS open_to_mentor, COALESCE(p.open_to_refer, FALSE) AS open_to_refer,
+                     COALESCE(p.open_to_work, FALSE) AS open_to_work, p.pronouns,
                      p.roll_number, p.year_of_study
               FROM users u
               LEFT JOIN profiles p ON u.user_id = p.user_id
@@ -88,6 +104,13 @@ try {
     $stmt->execute(['user_id' => $user_id]);
     $profile = $stmt->fetch(PDO::FETCH_ASSOC);
     
+    $viewerRole = strtolower((string)$current_user_role);
+    $isSelf = $current_user === $user_id;
+    $isAdmin = $viewerRole === 'admin';
+    // Blocked either way: behave as if the profile doesn't exist.
+    if ($profile && !$isSelf && !$isAdmin && privacy_is_blocked($db, $current_user, $user_id)) {
+        $profile = false;
+    }
     if (!$profile) {
         http_response_code(404);
         echo json_encode(['message' => 'User not found']);
@@ -145,13 +168,44 @@ try {
         }
     }
     
-    // Check if profile is private: allow only self for now.
-    if ($profile['is_private'] && $current_user_role !== 'admin' && (!$current_user || (int)$current_user !== (int)$user_id)) {
-        http_response_code(403);
-        echo json_encode(['success' => false, 'message' => 'This profile is private']);
+    foreach (['is_private', 'show_email', 'show_contact', 'open_to_mentor', 'open_to_refer', 'open_to_work', 'help_alumni_mates'] as $flag) {
+        $profile[$flag] = filter_var($profile[$flag] ?? false, FILTER_VALIDATE_BOOLEAN);
+    }
+    $profile['user_id'] = (int)$profile['user_id'];
+    $profile['follow_state'] = $current_user ? privacy_follow_state($db, $current_user, $user_id) : 'none';
+    $canView = privacy_can_view($db, $current_user, $viewerRole, $user_id);
+    $profile['is_locked'] = !$canView;
+    $profile['can_message'] = !$isSelf;  // anyone may DM (blocked pairs never reach here)
+
+    // Who viewed your profile: one row per viewer per day (admins browsing don't count).
+    if ($current_user && !$isSelf && !$isAdmin) {
+        try {
+            $db->prepare("INSERT INTO profile_views (viewer_user_id, viewed_user_id) VALUES (:v, :o)
+                          ON CONFLICT (viewer_user_id, viewed_user_id, view_day) DO UPDATE SET viewed_at = NOW()")
+               ->execute([':v' => $current_user, ':o' => $user_id]);
+        } catch (Throwable $e) {
+        }
+    }
+
+    if (!$canView) {
+        // Locked card: enough to recognise the person and ask to follow — nothing else.
+        $keep = ['user_id', 'username', 'role', 'full_name', 'profile_picture_url', 'branch', 'course', 'graduation_year', 'joining_year',
+                 'current_company', 'designation', 'department', 'is_private', 'pronouns', 'created_at',
+                 'posts_count', 'followers_count', 'following_count', 'connections_count', 'is_connected', 'follow_state', 'is_locked', 'can_message'];
+        $locked = array_intersect_key($profile, array_flip($keep));
+        if (empty($locked['full_name'])) {
+            $locked['full_name'] = 'RJIT member';
+        }
+        $locked['profile_picture_url'] = resolve_profile_media_url($db, (int)$user_id, $locked['profile_picture_url'] ?? '', 'profile_picture_url', 'profile_avatar');
+        $locked['bio'] = '';
+        $locked['badges'] = [];
+        $locked['pinned_posts'] = [];
+        $locked['tech_skills'] = [];
+        $locked['is_blocked'] = false;
+        echo json_encode(['success' => true, 'status' => 'success', 'data' => $locked]);
         exit;
     }
-    
+
     // Ensure core fields exist even when profile row is missing
     if (empty($profile['full_name'])) {
         $profile['full_name'] = explode('@', (string)$profile['email'])[0];
@@ -233,13 +287,64 @@ try {
         return $post;
     }, $pinned_stmt->fetchAll(PDO::FETCH_ASSOC));
     
-    // Privacy: Hide sensitive info if needed
-    if (!$profile['show_email']) {
-        unset($profile['email']);
+    // Contact details: owner decides; self and admins always see them.
+    if (!$isSelf && !$isAdmin) {
+        if (!$profile['show_email']) {
+            unset($profile['email']);
+        }
+        if (!$profile['show_contact']) {
+            unset($profile['contact_number']);
+        }
+        if ($viewerRole !== 'faculty') {
+            unset($profile['roll_number']);
+        }
     }
-    
-    if (!$profile['show_contact']) {
-        unset($profile['contact_number']);
+
+    if ($isSelf) {
+        // Owner-only extras: profile strength, follow requests, recent viewers.
+        $checks = [
+            'photo' => !empty($profile['profile_picture_url']) && stripos((string)$profile['profile_picture_url'], 'data:image/svg') !== 0,
+            'cover' => !empty($profile['cover_photo_url']),
+            'headline' => trim((string)($profile['bio'] ?? '')) !== '',
+            'branch' => trim((string)($profile['branch'] ?? '')) !== '',
+            'skills' => !empty($profile['tech_skills']),
+            'location' => trim((string)($profile['location_city'] ?? '')) !== '',
+            'links' => trim((string)($profile['linkedin_url'] ?? '') . ($profile['github_url'] ?? '') . ($profile['personal_website'] ?? '')) !== '',
+        ];
+        if (($profile['role'] ?? '') === 'alumni') {
+            $checks['work'] = trim((string)($profile['current_company'] ?? '')) !== '';
+        }
+        $done = count(array_filter($checks));
+        $profile['profile_strength'] = [
+            'percent' => (int)round(100 * $done / max(1, count($checks))),
+            'missing' => array_keys(array_filter($checks, fn ($v) => !$v)),
+        ];
+        $rq = $db->prepare("SELECT COUNT(*) FROM connections WHERE addressee_user_id = :u AND status = 'pending'");
+        $rq->execute([':u' => $user_id]);
+        $profile['follow_requests_count'] = (int)$rq->fetchColumn();
+        $pv = $db->prepare("
+            SELECT v.viewer_user_id AS user_id, MAX(v.viewed_at) AS viewed_at,
+                   COALESCE(NULLIF(TRIM(MAX(p.full_name)), ''), 'RJIT member') AS full_name, MAX(u.role) AS role,
+                   MAX(p.current_company) AS current_company, MAX(p.profile_picture_url) AS profile_picture_url
+            FROM profile_views v
+            JOIN users u ON u.user_id = v.viewer_user_id
+            LEFT JOIN profiles p ON p.user_id = v.viewer_user_id
+            WHERE v.viewed_user_id = :u AND v.viewed_at > NOW() - INTERVAL '30 days'
+            GROUP BY v.viewer_user_id
+            ORDER BY MAX(v.viewed_at) DESC
+            LIMIT 8
+        ");
+        $pv->execute([':u' => $user_id]);
+        $viewers = $pv->fetchAll(PDO::FETCH_ASSOC);
+        foreach ($viewers as &$v) {
+            $v['user_id'] = (int)$v['user_id'];
+            $v['profile_picture_url'] = resolve_profile_media_url($db, $v['user_id'], $v['profile_picture_url'] ?? '', 'profile_picture_url', 'profile_avatar');
+        }
+        unset($v);
+        $pc = $db->prepare("SELECT COUNT(DISTINCT viewer_user_id) FROM profile_views WHERE viewed_user_id = :u AND viewed_at > NOW() - INTERVAL '30 days'");
+        $pc->execute([':u' => $user_id]);
+        $profile['profile_views_30d'] = (int)$pc->fetchColumn();
+        $profile['recent_viewers'] = $viewers;
     }
     
     // Check if current user has blocked this user or vice versa
@@ -257,17 +362,19 @@ try {
         $profile['is_blocked'] = false;
     }
     
+    $profile['redirected_from'] = $redirectedFrom;
     echo json_encode([
         'success' => true,
         'status' => 'success',
         'data' => $profile
     ]);
     
-} catch (PDOException $e) {
+} catch (Throwable $e) {
+    error_log('get_user_profile: ' . $e->getMessage());
     http_response_code(500);
     echo json_encode([
         'success' => false,
         'status' => 'error',
-        'message' => 'Database error: ' . $e->getMessage()
+        'message' => 'Could not load this profile.'
     ]);
 }

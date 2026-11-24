@@ -9,7 +9,7 @@ if (session_status() === PHP_SESSION_NONE) {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Admin Users - RJIT Alumni Portal</title>
-    <link rel="stylesheet" href="../assets/css/tailwind.css?v=2">
+    <link rel="stylesheet" href="../assets/css/tailwind.css?v=3">
     <script src="https://unpkg.com/lucide@0.460.0/dist/umd/lucide.min.js"></script>
     <link rel="stylesheet" href="../assets/css/variety-ui.css">
     <script src="../includes/auth-check.js"></script>
@@ -136,18 +136,18 @@ if (session_status() === PHP_SESSION_NONE) {
                         <td class="py-3 px-3 text-sm text-gray-700">${fmt(user.created_at)}</td>
                         <td class="py-3 px-3 text-sm">
                             <div class="flex flex-wrap gap-2">
-                                <a class="px-2 py-1 border rounded hover:bg-gray-100" href="../profile.php?id=${user.id}" target="_blank">View</a>
-                                ${user.status === 'pending' ? `<button class="px-2 py-1 bg-green-600 text-white rounded hover:bg-green-700" onclick="updateUser(${user.id},'approve')">Approve</button>` : ''}
-                                ${user.status === 'pending' ? `<button class="px-2 py-1 bg-red-600 text-white rounded hover:bg-red-700" onclick="updateUser(${user.id},'reject')">Reject</button>` : ''}
-                                ${!user.is_banned ? `<button class="px-2 py-1 bg-red-600 text-white rounded hover:bg-red-700" onclick="adminUserAction(${user.id}, 'ban_user')">Ban</button>` : ''}
-                                ${user.is_banned ? `<button class="px-2 py-1 bg-green-600 text-white rounded hover:bg-green-700" onclick="adminUserAction(${user.id}, 'unban_user')">Unban</button>` : ''}
-                                ${!user.is_banned && !user.shadow_banned ? `<button class="px-2 py-1 bg-gray-800 text-white rounded hover:bg-gray-900" onclick="adminUserAction(${user.id}, 'shadow_ban')">Shadow 7d</button>` : ''}
-                                ${!user.is_banned && user.shadow_banned ? `<button class="px-2 py-1 border rounded hover:bg-gray-100" onclick="adminUserAction(${user.id}, 'lift_shadow_ban')">Lift Shadow</button>` : ''}
-                                ${!user.is_banned && !user.shadow_banned && !user.messaging_restricted ? `<button class="px-2 py-1 bg-slate-700 text-white rounded hover:bg-slate-800" onclick="adminUserAction(${user.id}, 'restrict_messaging')">Mute DM 7d</button>` : ''}
-                                ${!user.is_banned && !user.shadow_banned && user.messaging_restricted ? `<button class="px-2 py-1 border rounded hover:bg-gray-100" onclick="adminUserAction(${user.id}, 'lift_messaging_restriction')">Unmute DM</button>` : ''}
-                                ${user.role !== 'admin' && !user.is_moderator ? `<button class="px-2 py-1 bg-indigo-600 text-white rounded hover:bg-indigo-700" onclick="adminUserAction(${user.id}, 'promote_moderator')">Make Moderator</button>` : ''}
-                                ${user.role !== 'admin' && user.is_moderator ? `<button class="px-2 py-1 border rounded hover:bg-gray-100" onclick="adminUserAction(${user.id}, 'revoke_moderator')">Remove Moderator</button>` : ''}
-                                <button class="px-2 py-1 bg-blue-600 text-white rounded hover:bg-blue-700" onclick="resetUserPassword(${user.id}, '${escapeJs(user.email)}')">Reset Password</button>
+                                <a class="px-2 py-1 border rounded hover:bg-gray-100" href="../profile.php?id=${escapeHtml(user.id)}" target="_blank">View</a>
+                                ${user.status === 'pending' ? `<button class="px-2 py-1 bg-green-600 text-white rounded hover:bg-green-700" onclick="updateUser(${escapeHtml(user.id)},'approve')">Approve</button>` : ''}
+                                ${user.status === 'pending' ? `<button class="px-2 py-1 bg-red-600 text-white rounded hover:bg-red-700" onclick="updateUser(${escapeHtml(user.id)},'reject')">Reject</button>` : ''}
+                                ${!user.is_banned ? `<button class="px-2 py-1 bg-red-600 text-white rounded hover:bg-red-700" onclick="adminUserAction(${escapeHtml(user.id)}, 'ban_user')">Ban</button>` : ''}
+                                ${user.is_banned ? `<button class="px-2 py-1 bg-green-600 text-white rounded hover:bg-green-700" onclick="adminUserAction(${escapeHtml(user.id)}, 'unban_user')">Unban</button>` : ''}
+                                ${!user.is_banned && !user.shadow_banned ? `<button class="px-2 py-1 bg-gray-800 text-white rounded hover:bg-gray-900" onclick="adminUserAction(${escapeHtml(user.id)}, 'shadow_ban')">Shadow 7d</button>` : ''}
+                                ${!user.is_banned && user.shadow_banned ? `<button class="px-2 py-1 border rounded hover:bg-gray-100" onclick="adminUserAction(${escapeHtml(user.id)}, 'lift_shadow_ban')">Lift Shadow</button>` : ''}
+                                ${!user.is_banned && !user.shadow_banned && !user.messaging_restricted ? `<button class="px-2 py-1 bg-slate-700 text-white rounded hover:bg-slate-800" onclick="adminUserAction(${escapeHtml(user.id)}, 'restrict_messaging')">Mute DM 7d</button>` : ''}
+                                ${!user.is_banned && !user.shadow_banned && user.messaging_restricted ? `<button class="px-2 py-1 border rounded hover:bg-gray-100" onclick="adminUserAction(${escapeHtml(user.id)}, 'lift_messaging_restriction')">Unmute DM</button>` : ''}
+                                ${user.role !== 'admin' && !user.is_moderator ? `<button class="px-2 py-1 bg-indigo-600 text-white rounded hover:bg-indigo-700" onclick="adminUserAction(${escapeHtml(user.id)}, 'promote_moderator')">Make Moderator</button>` : ''}
+                                ${user.role !== 'admin' && user.is_moderator ? `<button class="px-2 py-1 border rounded hover:bg-gray-100" onclick="adminUserAction(${escapeHtml(user.id)}, 'revoke_moderator')">Remove Moderator</button>` : ''}
+                                <button class="px-2 py-1 bg-blue-600 text-white rounded hover:bg-blue-700" onclick="resetUserPassword(${escapeHtml(user.id)}, '${escapeHtml(escapeJs(user.email))}')">Reset Password</button>
                             </div>
                         </td>
                     </tr>
@@ -246,7 +246,7 @@ if (session_status() === PHP_SESSION_NONE) {
             return 'bg-gray-100 text-gray-800';
         }
         function badge(text, cls) {
-            return `<span class="px-2 py-1 rounded-full text-xs ${cls}">${escapeHtml(text || '-')}</span>`;
+            return `<span class="px-2 py-1 rounded-full text-xs ${escapeHtml(cls)}">${escapeHtml(text || '-')}</span>`;
         }
         function escapeHtml(s) {
             return String(s).replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m]));

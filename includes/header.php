@@ -18,7 +18,7 @@ $basePrefix = $isAdminPath ? '../' : '';
     <title>RJIT Alumni Portal</title>
 
     <!-- Tailwind (pre-built: npm --prefix tools/tailwind run build) -->
-    <link rel="stylesheet" href="<?php echo $basePrefix; ?>assets/css/tailwind.css?v=2">
+    <link rel="stylesheet" href="<?php echo $basePrefix; ?>assets/css/tailwind.css?v=3">
 
     <!-- Lucide Icons CDN -->
     <script src="https://unpkg.com/lucide@0.460.0/dist/umd/lucide.min.js"></script>
@@ -28,6 +28,7 @@ $basePrefix = $isAdminPath ? '../' : '';
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Roboto+Slab:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="<?php echo $basePrefix; ?>assets/css/variety-ui.css">
+    <script src="<?php echo $basePrefix; ?>assets/js/safe.js?v=1"></script>
     <script src="<?php echo $basePrefix; ?>assets/js/variety-ui.js" defer></script>
     <script src="<?php echo $basePrefix; ?>assets/js/motion.js" defer></script>
 
@@ -638,14 +639,14 @@ $basePrefix = $isAdminPath ? '../' : '';
                         notificationList.innerHTML = notifications.map(notif => `
                             <div
                                 class="p-3 ${(notif.read_at ? 'bg-gray-50' : 'bg-blue-50/70')} rounded-lg notification-item cursor-pointer"
-                                data-notification-id="${notif.notification_id || ''}"
-                                data-action-type="${notif.action_type || ''}"
-                                data-call-type="${notif.call_type || ''}"
+                                data-notification-id="${escapeHtml(notif.notification_id || '')}"
+                                data-action-type="${escapeHtml(notif.action_type || '')}"
+                                data-call-type="${escapeHtml(notif.call_type || '')}"
                                 data-target-url="${encodeURIComponent(notif.target_url || '')}">
                                 <div class="flex items-start">
-                                    <i data-lucide="${notif.icon || 'bell'}" class="h-4 w-4 mt-1 mr-3 text-blue-600"></i>
+                                    <i data-lucide="${escapeHtml(notif.icon || 'bell')}" class="h-4 w-4 mt-1 mr-3 text-blue-600"></i>
                                     <div>
-                                        <p class="text-sm text-gray-800">${notif.message}</p>
+                                        <p class="text-sm text-gray-800">${escapeHtml(notif.message)}</p>
                                         ${notif.action_type === 'join-call' ? `<span class="mt-2 inline-flex items-center rounded-full bg-white px-2 py-1 text-[11px] font-semibold text-blue-700 ring-1 ring-blue-100">Join ${(notif.call_type === 'video' ? 'video' : 'audio')} call</span>` : ''}
                                         <p class="text-xs text-gray-500 mt-1">${formatDate(notif.created_at)}</p>
                                     </div>
@@ -678,7 +679,8 @@ $basePrefix = $isAdminPath ? '../' : '';
                     const id = Number(item.getAttribute('data-notification-id') || 0);
                     const actionType = String(item.getAttribute('data-action-type') || '');
                     const encodedTarget = String(item.getAttribute('data-target-url') || '');
-                    const targetUrl = encodedTarget ? decodeURIComponent(encodedTarget) : '';
+                    const rawTarget = encodedTarget ? decodeURIComponent(encodedTarget) : '';
+                    const targetUrl = (safeUrl(rawTarget) === '#') ? '' : safeUrl(rawTarget);
                     if (id) {
                         await makeApiCall('mark_notif_read.php', 'POST', { notification_id: id });
                     }

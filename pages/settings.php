@@ -104,6 +104,30 @@ include 'includes/header.php';
                                 </div>
                             </div>
                             
+                            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                                <div class="md:col-span-2">
+                                    <label for="settingsUsername" class="block text-sm font-medium text-gray-700 mb-2">Handle</label>
+                                    <div class="flex gap-2">
+                                        <div class="flex flex-1 items-stretch rounded-lg border border-gray-300 focus-within:ring-2 focus-within:ring-blue-500 overflow-hidden">
+                                            <span class="flex items-center px-3 bg-gray-50 text-gray-500 font-semibold border-r border-gray-300 select-none">@</span>
+                                            <input id="settingsUsername" type="text" autocomplete="off" spellcheck="false" maxlength="20"
+                                                   class="flex-1 min-w-0 px-3 py-3 border-0 outline-none focus:outline-none bg-transparent" style="border:0;box-shadow:none;border-radius:0"
+                                                   placeholder="your_handle" aria-describedby="settingsUsernameHelp">
+                                            <span id="settingsUsernameIcon" class="flex items-center px-3 text-sm"></span>
+                                        </div>
+                                        <button id="settingsUsernameSave" type="button" class="px-4 py-3 rounded-lg bg-gray-900 text-white text-sm font-medium disabled:opacity-40" disabled>Save handle</button>
+                                    </div>
+                                    <p id="settingsUsernameHelp" class="mt-2 text-xs text-gray-500">Your unique @handle — people can find and mention you with it. Your display name can be anything.</p>
+                                    <div id="settingsUsernameSuggest" class="mt-2 flex flex-wrap gap-2"></div>
+                                </div>
+                                <div>
+                                    <label for="settingsPronouns" class="block text-sm font-medium text-gray-700 mb-2">Pronouns <span class="text-gray-400 font-normal">(optional)</span></label>
+                                    <input id="settingsPronouns" type="text" maxlength="40" list="settingsPronounList"
+                                           class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="she/her">
+                                    <datalist id="settingsPronounList"><option value="he/him"><option value="she/her"><option value="they/them"></datalist>
+                                </div>
+                            </div>
+
                             <div>
                                 <label class="block text-sm font-medium text-gray-700 mb-2">Login Email</label>
                                 <input id="settingsEmailInput" type="email" 
@@ -265,6 +289,34 @@ include 'includes/header.php';
                                 </div>
                             </div>
                         </div>
+
+                        <div class="pt-2 border-t border-gray-100">
+                            <h3 class="font-semibold text-gray-900 mb-1">What others can see</h3>
+                            <p class="text-sm text-gray-500 mb-4">Changes save instantly. Admins can always see your contact details.</p>
+                            <div id="settingsVisibilityToggles" class="divide-y divide-gray-100 rounded-lg border border-gray-200"></div>
+                        </div>
+
+                        <div id="settingsFollowRequestsBlock" class="pt-2 border-t border-gray-100">
+                            <div class="flex items-center justify-between mb-3">
+                                <h3 class="font-semibold text-gray-900">Follow requests</h3>
+                                <span id="settingsFollowRequestsCount" class="text-xs font-semibold px-2 py-0.5 rounded-full bg-gray-100 text-gray-600">0</span>
+                            </div>
+                            <div id="settingsFollowRequests" class="space-y-2 text-sm text-gray-500">Loading…</div>
+                        </div>
+
+                        <div class="pt-2 border-t border-gray-100">
+                            <h3 class="font-semibold text-gray-900 mb-1">Blocked accounts</h3>
+                            <p class="text-sm text-gray-500 mb-3">Blocked people can't see your profile, posts or messages, and you won't see theirs. They aren't notified.</p>
+                            <div id="settingsBlockedList" class="space-y-2 text-sm text-gray-500">Loading…</div>
+                        </div>
+
+                        <div class="pt-2 border-t border-gray-100 flex items-center justify-between gap-4">
+                            <div>
+                                <h3 class="font-semibold text-gray-900">Download your data</h3>
+                                <p class="text-sm text-gray-500">Everything you've posted, sent and set up here, as one JSON file.</p>
+                            </div>
+                            <button id="settingsExportBtn" type="button" class="px-4 py-2 rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-50 text-sm font-medium">Download</button>
+                        </div>
                         <!-- Password Change -->
                         <div>
                             <h3 class="font-semibold text-gray-900 mb-4">Change Password</h3>
@@ -311,20 +363,18 @@ include 'includes/header.php';
         if (String(role || '').toLowerCase() !== 'student') return;
         const form = document.getElementById('settingsProfileForm');
         if (!form) return;
-        form.querySelectorAll('input, textarea, select, button').forEach((el) => {
-            if (el.id === 'settingsEmailInput') return;
-            if (el.id === 'settingsSaveBtn' || el.id === 'settingsUploadPhotoBtn' || el.id === 'settingsRemovePhotoBtn') {
-                el.disabled = true;
-                el.classList.add('hidden');
-                return;
-            }
-            if (el.tagName === 'BUTTON') return;
+        // Identity comes from institute records; everything else (bio, skills, links, city, photo…) is editable.
+        ['settingsFirstName', 'settingsLastName', 'settingsDepartmentInput', 'settingsDesignationInput',
+         'settingsJoiningYearInput', 'settingsGraduationYearInput'].forEach((id) => {
+            const el = document.getElementById(id);
+            if (!el) return;
             el.disabled = true;
+            el.title = 'Set from institute records';
             el.classList.add('bg-gray-50', 'cursor-not-allowed');
         });
         const notice = document.createElement('div');
-        notice.className = 'mb-4 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800';
-        notice.textContent = 'Student profile editing is disabled by institute policy.';
+        notice.className = 'mb-4 rounded-lg border border-blue-200 bg-blue-50 px-4 py-3 text-sm text-blue-800';
+        notice.textContent = 'Your name, branch and batch come from institute records. Everything else — photo, headline, skills, links — is yours to edit.';
         form.prepend(notice);
     }
 
@@ -487,8 +537,10 @@ include 'includes/header.php';
                 try {
                     btn.disabled = true;
                     btn.textContent = 'Saving...';
-                    const res = await makeApiCall('update_profile.php', 'POST', {
+                    const isStudentRole = window.settingsCurrentUserRole === 'student';
+                    const payload = {
                         full_name,
+                        pronouns: (document.getElementById('settingsPronouns')?.value || '').trim(),
                         bio,
                         skills: document.getElementById('settingsSkillsInput').value.trim(),
                         tech_stack: document.getElementById('settingsTechStackInput').value.trim(),
@@ -507,8 +559,12 @@ include 'includes/header.php';
                         github_url: document.getElementById('settingsGithubInput').value.trim(),
                         twitter_url: document.getElementById('settingsTwitterInput').value.trim(),
                         help_alumni_mates: document.getElementById('settingsHelpAlumniInput').value.trim()
-                    });
-                    if (!res || res.message === 'Failed to update profile.') {
+                    };
+                    if (isStudentRole) {
+                        ['full_name', 'department', 'branch', 'designation', 'joining_year', 'graduation_year'].forEach((k) => delete payload[k]);
+                    }
+                    const res = await makeApiCall('update_profile.php', 'POST', payload);
+                    if (!res || res.success === false || res.status === 'error') {
                         throw new Error((res && res.message) || 'Failed to save settings');
                     }
                     const userData = JSON.parse(localStorage.getItem('user_data') || '{}');
@@ -772,7 +828,7 @@ include 'includes/header.php';
             const btn = document.createElement('button');
             btn.type = 'button';
             btn.className = 'settings-collapsible-btn';
-            btn.innerHTML = `<span>${cfg.label}</span><i data-lucide="chevron-down" class="h-4 w-4"></i>`;
+            btn.innerHTML = `<span>${escapeHtml(cfg.label)}</span><i data-lucide="chevron-down" class="h-4 w-4"></i>`;
             btn.addEventListener('click', () => {
                 const isHidden = content.classList.contains('hidden');
                 content.classList.toggle('hidden', !isHidden);
@@ -813,5 +869,189 @@ include 'includes/header.php';
     });
 </script>
 
+
+<script>
+/* Handle, visibility toggles, follow requests, blocked accounts, data export. */
+(function () {
+    const $ = (id) => document.getElementById(id);
+    const toast = (m, t) => window.toast ? window.toast(m, t) : window.appAlert?.(m);
+    const avatarOf = (u) => escapeHtml(safeUrl(u.profile_picture_url || '') || '');
+
+    /* ---------- @handle ---------- */
+    let current = '', timer = null, lastCheck = 0;
+    function setStatus(kind, text, suggestions) {
+        const icon = $('settingsUsernameIcon'), help = $('settingsUsernameHelp'), save = $('settingsUsernameSave');
+        icon.textContent = kind === 'ok' ? '✓' : kind === 'bad' ? '✕' : kind === 'wait' ? '…' : '';
+        icon.className = 'flex items-center px-3 text-sm ' + (kind === 'ok' ? 'text-emerald-600' : kind === 'bad' ? 'text-red-500' : 'text-gray-400');
+        help.textContent = text;
+        help.className = 'mt-2 text-xs ' + (kind === 'bad' ? 'text-red-600' : kind === 'ok' ? 'text-emerald-700' : 'text-gray-500');
+        save.disabled = kind !== 'ok';
+        $('settingsUsernameSuggest').innerHTML = (suggestions || []).map(sg =>
+            `<button type="button" data-handle="${escapeHtml(sg)}" class="text-xs px-2.5 py-1 rounded-full bg-blue-50 text-blue-700 hover:bg-blue-100">@${escapeHtml(sg)}</button>`).join('');
+    }
+    async function check(value) {
+        const v = value.replace(/^@/, '').trim().toLowerCase();
+        if (!v || v === current) { setStatus('', v ? 'This is your current handle.' : 'Your unique @handle — people can find and mention you with it.'); return; }
+        const n = ++lastCheck;
+        setStatus('wait', 'Checking…');
+        const res = await makeApiCall('username.php?check=' + encodeURIComponent(v));
+        if (n !== lastCheck) return;                        // a newer keystroke won
+        const d = (res && res.data) || {};
+        if (d.available) setStatus('ok', `@${d.username} is available.`);
+        else setStatus('bad', d.reason || 'Not available.', d.suggestions);
+    }
+    async function initHandle() {
+        const input = $('settingsUsername');
+        if (!input) return;
+        const res = await makeApiCall('username.php');
+        const d = (res && res.data) || {};
+        current = String(d.username || '');
+        input.value = current;
+        if (!d.can_change_now && d.next_change_at) {
+            input.disabled = true;
+            input.classList.add('bg-gray-50', 'cursor-not-allowed');
+            setStatus('', `You changed your handle recently — you can change it again on ${new Date(String(d.next_change_at).replace(' ', 'T') + 'Z').toLocaleDateString()}.`);
+        }
+        input.addEventListener('input', () => {
+            input.value = input.value.replace(/[^A-Za-z0-9_@]/g, '').slice(0, 21);
+            clearTimeout(timer);
+            timer = setTimeout(() => check(input.value), 350);
+        });
+        $('settingsUsernameSuggest').addEventListener('click', (e) => {
+            const b = e.target.closest('[data-handle]');
+            if (!b) return;
+            input.value = b.dataset.handle;
+            check(input.value);
+        });
+        $('settingsUsernameSave').addEventListener('click', async () => {
+            const v = input.value.replace(/^@/, '').trim().toLowerCase();
+            const ok = await window.appConfirm(`Change your handle to @${v}? Your old handle will keep redirecting for 30 days, and you can change it again after 14 days.`,
+                { title: 'Change handle', confirmText: 'Change', icon: 'at-sign' });
+            if (!ok) return;
+            const r = await makeApiCall('username.php', 'POST', { username: v });
+            if (r && r.success) {
+                current = v;
+                toast(r.message || 'Handle updated');
+                setStatus('', 'This is your current handle.');
+                const u = JSON.parse(localStorage.getItem('user_data') || '{}'); u.username = v; localStorage.setItem('user_data', JSON.stringify(u));
+                initHandle();
+            } else {
+                setStatus('bad', (r && r.message) || 'Could not change handle.', r && r.suggestions);
+            }
+        });
+    }
+
+    /* ---------- visibility toggles ---------- */
+    const TOGGLES = [
+        ['show_email', 'Show my email on my profile', 'Others see your login email.'],
+        ['show_contact', 'Show my phone number', 'Only if you added one.'],
+        ['open_to_mentor', 'Open to mentoring', 'Adds a badge so students know they can reach out.', ['alumni', 'faculty', 'admin']],
+        ['open_to_refer', 'Open to giving referrals', 'Adds a badge on your profile.', ['alumni', 'faculty', 'admin']],
+        ['open_to_work', 'Open to opportunities', 'Lets recruiters and alumni know you’re looking.'],
+    ];
+    async function initVisibility() {
+        const box = $('settingsVisibilityToggles');
+        if (!box) return;
+        const res = await makeApiCall('update_privacy.php');
+        const d = (res && res.data) || {};
+        const role = String(window.settingsCurrentUserRole || JSON.parse(localStorage.getItem('user_data') || '{}').role || '').toLowerCase();
+        box.innerHTML = TOGGLES.filter(t => !t[3] || t[3].includes(role)).map(([key, label, help]) => `
+            <label class="flex items-center justify-between gap-4 p-4 cursor-pointer hover:bg-gray-50">
+                <span><span class="block font-medium text-gray-900 text-sm">${label}</span><span class="block text-xs text-gray-500">${help}</span></span>
+                <input type="checkbox" data-key="${key}" class="h-5 w-5 rounded accent-blue-600" ${d[key] ? 'checked' : ''}>
+            </label>`).join('');
+        box.addEventListener('change', async (e) => {
+            const cb = e.target.closest('input[data-key]');
+            if (!cb) return;
+            cb.disabled = true;
+            const r = await makeApiCall('update_privacy.php', 'POST', { [cb.dataset.key]: cb.checked });
+            cb.disabled = false;
+            if (r && r.success) toast('Saved');
+            else { cb.checked = !cb.checked; toast((r && r.message) || 'Could not save', 'error'); }
+        });
+    }
+
+    /* ---------- follow requests ---------- */
+    async function loadRequests() {
+        const box = $('settingsFollowRequests');
+        if (!box) return;
+        const res = await makeApiCall('connect_user.php?action=requests');
+        const rows = (res && res.data) || [];
+        $('settingsFollowRequestsCount').textContent = rows.length;
+        $('settingsFollowRequestsCount').className = 'text-xs font-semibold px-2 py-0.5 rounded-full ' + (rows.length ? 'bg-amber-100 text-amber-800' : 'bg-gray-100 text-gray-600');
+        box.innerHTML = rows.length ? rows.map(u => `
+            <div class="flex items-center gap-3 p-3 rounded-lg border border-gray-200" data-uid="${Number(u.user_id)}">
+                <img src="${avatarOf(u)}" alt="" class="h-9 w-9 rounded-full object-cover bg-blue-100" onerror="this.style.visibility='hidden'">
+                <a href="profile.php?id=${Number(u.user_id)}" class="flex-1 min-w-0">
+                    <span class="block font-medium text-gray-900 truncate">${escapeHtml(u.full_name)}</span>
+                    <span class="block text-xs text-gray-500 truncate">${escapeHtml([u.role, u.branch, u.current_company].filter(Boolean).join(' · '))}</span>
+                </a>
+                <button type="button" data-act="approve" class="px-3 py-1.5 rounded-lg bg-blue-600 text-white text-xs font-medium">Approve</button>
+                <button type="button" data-act="decline" class="px-3 py-1.5 rounded-lg border border-gray-300 text-gray-700 text-xs">Decline</button>
+            </div>`).join('') : '<p class="text-sm text-gray-500">No pending requests. People only need to ask when your profile is private.</p>';
+    }
+    $('settingsFollowRequests')?.addEventListener('click', async (e) => {
+        const b = e.target.closest('[data-act]');
+        if (!b) return;
+        const row = b.closest('[data-uid]');
+        b.disabled = true;
+        const r = await makeApiCall('connect_user.php', 'POST', { action: b.dataset.act, user_id: Number(row.dataset.uid) });
+        toast((r && r.message) || 'Done');
+        loadRequests();
+    });
+
+    /* ---------- blocked ---------- */
+    async function loadBlocked() {
+        const box = $('settingsBlockedList');
+        if (!box) return;
+        const res = await makeApiCall('block_user.php?action=list');
+        const rows = (res && res.data) || [];
+        box.innerHTML = rows.length ? rows.map(u => `
+            <div class="flex items-center gap-3 p-3 rounded-lg border border-gray-200" data-uid="${Number(u.user_id)}">
+                <img src="${avatarOf(u)}" alt="" class="h-9 w-9 rounded-full object-cover bg-gray-100" onerror="this.style.visibility='hidden'">
+                <span class="flex-1 font-medium text-gray-900 truncate">${escapeHtml(u.full_name)}</span>
+                <button type="button" data-unblock class="px-3 py-1.5 rounded-lg border border-gray-300 text-gray-700 text-xs">Unblock</button>
+            </div>`).join('') : '<p class="text-sm text-gray-500">You haven’t blocked anyone.</p>';
+    }
+    $('settingsBlockedList')?.addEventListener('click', async (e) => {
+        const b = e.target.closest('[data-unblock]');
+        if (!b) return;
+        const r = await makeApiCall('block_user.php', 'POST', { action: 'unblock', user_id: Number(b.closest('[data-uid]').dataset.uid) });
+        toast((r && r.message) || 'Unblocked');
+        loadBlocked();
+    });
+
+    /* ---------- export ---------- */
+    $('settingsExportBtn')?.addEventListener('click', async (e) => {
+        const btn = e.currentTarget;
+        btn.disabled = true; btn.textContent = 'Preparing…';
+        try {
+            const res = await makeApiCall('export_data.php');
+            if (!res || res.success === false) throw new Error((res && res.message) || 'Export failed');
+            const a = document.createElement('a');
+            a.href = URL.createObjectURL(new Blob([JSON.stringify(res, null, 2)], { type: 'application/json' }));
+            a.download = `rjit-portal-my-data-${new Date().toISOString().slice(0, 10)}.json`;
+            document.body.appendChild(a); a.click(); a.remove();
+            toast('Your data is downloading');
+        } catch (err) {
+            toast(err.message, 'error');
+        } finally {
+            btn.disabled = false; btn.textContent = 'Download';
+        }
+    });
+
+    async function initPronouns() {
+        const u = JSON.parse(localStorage.getItem('user_data') || '{}');
+        const uid = u.user_id || u.id;
+        if (!uid || !$('settingsPronouns')) return;
+        const res = await makeApiCall(`get_user_profile.php?user_id=${Number(uid)}`);
+        if (res && res.data) $('settingsPronouns').value = res.data.pronouns || '';
+    }
+
+    const start = () => { initHandle(); initVisibility(); loadRequests(); loadBlocked(); initPronouns(); };
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', () => setTimeout(start, 50));
+    else setTimeout(start, 50);
+})();
+</script>
 <?php include 'includes/footer.php'; ?>
 

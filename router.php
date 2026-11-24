@@ -109,6 +109,13 @@ if (array_key_exists($__r['slug'], $__r['routes']['pages'])) {
     $__r['virtual'] = $__r['key'] === '' ? 'index.php' : $__r['slug'] . '.php';
 }
 
+// ---- 1b) Profile by handle: /@aarav_sharma or /u/aarav_sharma -> profile.php?u=aarav_sharma
+// (302, not 301: handles can change, and old ones keep redirecting for 30 days via the API)
+if ($__r['target'] === null && preg_match('#^(?:@|u/)([A-Za-z0-9_]{1,30})$#', $__r['key'], $__m)) {
+    header('Location: ' . ap_url('profile.php?u=' . strtolower($__m[1])), true, 302);
+    exit;
+}
+
 // ---- 2) Redirects for old / alternate URLs ---------------------------------
 if ($__r['target'] === null && isset($__r['routes']['redirects'][$__r['slug']])) {
     ap_redirect($__r['routes']['redirects'][$__r['slug']]);

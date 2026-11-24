@@ -50,7 +50,9 @@ header('Content-Length: ' . ($size > 0 ? $size : strlen((string)$binary)));
 header('Cache-Control: public, max-age=31536000, immutable');
 
 $disposition = (in_array($kind, ['image', 'gif'], true) && in_array($mimeType, $inlineSafe, true)) ? 'inline' : 'attachment';
-$safeName = str_replace(["\r", "\n", '"'], ['', '', ''], $originalName);
-header('Content-Disposition: ' . $disposition . '; filename="' . $safeName . '"');
+$safeName = str_replace(["\r", "\n", '"', '\\'], '', $originalName);
+$asciiName = preg_replace('/[^\x20-\x7E]/', '_', $safeName) ?: 'download';
+// ASCII fallback + UTF-8 name (RFC 5987) so "रिज़्यूमे.pdf" downloads with its real name.
+header('Content-Disposition: ' . $disposition . '; filename="' . $asciiName . '"; filename*=UTF-8\'\'' . rawurlencode($safeName));
 
 echo is_resource($binary) ? stream_get_contents($binary) : $binary;

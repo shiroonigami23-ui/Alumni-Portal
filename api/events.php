@@ -84,6 +84,7 @@ switch ($action) {
         break;
 
     default:
-        echo json_encode(["message" => "Invalid action."]);
+        http_response_code(400);
+        echo json_encode(["success" => false, "message" => "Invalid action."]);
         break;
 }
