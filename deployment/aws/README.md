@@ -5,9 +5,9 @@ This folder contains AWS-specific Docker helpers for this project.
 Use root-level docs for full deployment instructions:
 
 - `README.md`
-- `QUICKSTART_AWS.md`
-- `AWS_DEPLOYMENT.md`
-- `POSTGRES_SETUP.md`
+- `docs/deployment/QUICKSTART_AWS.md`
+- `docs/deployment/AWS_DEPLOYMENT.md`
+- `docs/deployment/POSTGRES_SETUP.md`
 
 ## Local container test
 

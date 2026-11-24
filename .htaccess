@@ -1,0 +1,63 @@
+# ---------------------------------------------------------------------------
+# RJIT Alumni Portal — Apache front controller + hardening
+# Works at the domain root and in a subfolder (e.g. http://localhost/alumni-portal/)
+# Keep in sync with bootstrap/static_policy.php
+# ---------------------------------------------------------------------------
+
+Options -Indexes -MultiViews +FollowSymLinks
+DirectoryIndex router.php
+ServerSignature Off
+FileETag None
+
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+
+    # Hidden files (.env, .git, .htaccess) — allow only .well-known
+    RewriteRule (^|/)\.(?!well-known/) - [R=404,L]
+
+    # Internal source / infra folders
+    RewriteRule ^(bootstrap|config|helpers|models|middleware|cron|scripts|tests|deployment|terraform|vendor)(/|$) - [R=404,L]
+    RewriteRule ^includes/.+\.php$ - [R=404,L]
+
+    # Private user data in storage
+    RewriteRule ^storage/(verification|exports|logs|cache|messages|imports|test_reports)(/|$) - [R=404,L]
+    # Storage serves media/documents only — never text, json, archives or code
+    RewriteCond %{REQUEST_URI} !\.(jpe?g|png|gif|webp|pdf|docx?|mp3|mp4|m4a|webm)$ [NC]
+    RewriteRule ^storage/ - [R=404,L]
+
+    # Docs, dumps and infra files
+    RewriteRule \.(md|sql|sh|bat|ps1|py|tf|tfvars|ya?ml|lock|ini|log|bak|dist|env|txt)$ - [R=404,NC,L]
+    RewriteRule (^|/)(composer\.json|Dockerfile|docker-compose\.yml)$ - [R=404,NC,L]
+    RewriteRule ^docs/.+\.json$ - [R=404,NC,L]
+
+    # Every PHP request goes through the router (security layer runs first)
+    RewriteCond %{ENV:REDIRECT_STATUS} ^$
+    RewriteRule \.php$ router.php [L,QSA]
+
+    # Clean URLs and old links: anything that isn't a real file → router
+    RewriteCond %{REQUEST_FILENAME} !-f
+    RewriteRule ^ router.php [L,QSA]
+
+    # Pass the Authorization header through (needed by some PHP-FPM setups)
+    RewriteCond %{HTTP:Authorization} .
+    RewriteRule .* - [E=HTTP_AUTHORIZATION:%{HTTP:Authorization}]
+</IfModule>
+
+<IfModule mod_headers.c>
+    Header always unset X-Powered-By
+    Header always set X-Content-Type-Options "nosniff"
+    Header always set Referrer-Policy "strict-origin-when-cross-origin"
+    # Long cache for static assets
+    <FilesMatch "\.(css|js|png|jpe?g|gif|webp|svg|woff2?)$">
+        Header set Cache-Control "public, max-age=604800"
+    </FilesMatch>
+    # Service worker must always be fresh
+    <Files "sw.js">
+        Header set Cache-Control "no-cache"
+        Header set Service-Worker-Allowed "/"
+    </Files>
+</IfModule>
+
+<IfModule mod_mime.c>
+    AddType application/manifest+json .webmanifest
+</IfModule>

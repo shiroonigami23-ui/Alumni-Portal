@@ -43,7 +43,11 @@ class Security
             // Secure session params
             ini_set('session.cookie_httponly', 1);
             ini_set('session.use_only_cookies', 1);
-            // ini_set('session.cookie_secure', 1); // Enable if HTTPS is strictly enforced
+            ini_set('session.use_strict_mode', 1);
+            ini_set('session.cookie_samesite', 'Lax');
+            if (function_exists('ap_is_https') && ap_is_https()) {
+                ini_set('session.cookie_secure', 1);
+            }
 
             session_start();
         }

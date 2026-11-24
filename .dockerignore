@@ -19,3 +19,11 @@ debug.php
 db_test.php
 .DS_Store
 Thumbs.db
+
+# Not needed at runtime
+assets/readme
+docs
+tests
+terraform
+.github
+*.md

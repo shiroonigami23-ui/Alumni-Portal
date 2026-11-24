@@ -61,7 +61,20 @@
     });
   }
 
+  function addSkipLink() {
+    if (document.querySelector(".vu-skip")) return;
+    var main = document.querySelector("main, [role='main'], #main-content, .main-content");
+    if (!main) return;
+    if (!main.id) main.id = "main-content";
+    var a = document.createElement("a");
+    a.href = "#" + main.id;
+    a.className = "vu-skip";
+    a.textContent = "Skip to content";
+    document.body.insertBefore(a, document.body.firstChild);
+  }
+
   function init() {
+    addSkipLink();
     var saved = normalizeTheme(localStorage.getItem(THEME_KEY) || "dark");
     applyTheme(saved);
     bindThemeToggle();

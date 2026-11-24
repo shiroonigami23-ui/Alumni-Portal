@@ -1,0 +1,56 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  lint:
+    name: PHP lint
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        php: ['8.2', '8.3']
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php }}
+          coverage: none
+      - name: Lint every PHP file
+        run: find . -name '*.php' -not -path './vendor/*' -print0 | xargs -0 -n1 php -l > /dev/null
+
+  smoke:
+    name: Routes & security smoke test
+    runs-on: ubuntu-latest
+    needs: lint
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2'
+          extensions: pdo, pdo_pgsql, fileinfo, zip
+          coverage: none
+      - name: Run tests/smoke/routes.sh
+        run: bash tests/smoke/routes.sh
+
+  hygiene:
+    name: Repo hygiene
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: No runtime data or secrets committed
+        run: |
+          bad=$(git ls-files | grep -E '^storage/(messages|exports|resumes|verification|logs|comments|posts|jobs|events|announcements)/|^storage/log\.txt$|(^|/)\.env$|\.pem$|\.key$' || true)
+          if [ -n "$bad" ]; then echo "::error::Runtime data or secrets committed:"; echo "$bad"; exit 1; fi
+          echo "Clean."
+      - name: Root stays tidy (pages belong in pages/)
+        run: |
+          extra=$(ls *.php | grep -vxE 'index\.php|router\.php' || true)
+          if [ -n "$extra" ]; then echo "::error::Move these into pages/ and add a route: $extra"; exit 1; fi
+          echo "Root is tidy."

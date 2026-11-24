@@ -1,4 +1,4 @@
-const CACHE_NAME = "rjit-portal-v1";
+const CACHE_NAME = "rjit-portal-v2";
 const APP_SCOPE = new URL(self.registration.scope).pathname;
 const PRE_CACHE = [
   APP_SCOPE,
@@ -35,8 +35,11 @@ self.addEventListener("fetch", (event) => {
   event.respondWith(
     fetch(req)
       .then((response) => {
-        const copy = response.clone();
-        caches.open(CACHE_NAME).then((cache) => cache.put(req, copy)).catch(() => {});
+        // Only cache successful same-origin responses (never errors, redirects or third-party)
+        if (response.ok && response.type === "basic" && new URL(req.url).origin === self.location.origin) {
+          const copy = response.clone();
+          caches.open(CACHE_NAME).then((cache) => cache.put(req, copy)).catch(() => {});
+        }
         return response;
       })
       .catch(() => caches.match(req).then((cached) => cached || caches.match(APP_SCOPE + "offline.html")))

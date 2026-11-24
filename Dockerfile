@@ -19,6 +19,22 @@ COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 # Enable Apache modules used by vhost config
 RUN a2enmod rewrite headers
 
+# Hardened PHP + Apache defaults
+RUN { \
+      echo 'expose_php = Off'; \
+      echo 'display_errors = Off'; \
+      echo 'log_errors = On'; \
+      echo 'allow_url_include = Off'; \
+      echo 'session.use_strict_mode = 1'; \
+      echo 'session.cookie_httponly = 1'; \
+      echo 'session.cookie_samesite = Lax'; \
+      echo 'upload_max_filesize = 20M'; \
+      echo 'post_max_size = 25M'; \
+      echo 'max_input_vars = 2000'; \
+    } > /usr/local/etc/php/conf.d/zz-security.ini \
+ && { echo 'ServerTokens Prod'; echo 'ServerSignature Off'; echo 'TraceEnable Off'; } > /etc/apache2/conf-available/zz-security.conf \
+ && a2enconf zz-security
+
 # Set working directory
 WORKDIR /var/www/html
 
@@ -29,8 +45,9 @@ COPY . /var/www/html
 RUN composer install --no-dev --optimize-autoloader
 
 # Set permissions
-RUN chown -R www-data:www-data /var/www/html/storage \
-    && chmod -R 775 /var/www/html/storage
+RUN mkdir -p /var/www/html/storage/cache /var/www/html/storage/logs \
+    && chown -R www-data:www-data /var/www/html/storage \
+    && chmod -R 770 /var/www/html/storage
 
 # Configure Apache
 COPY deployment/apache/000-default.conf /etc/apache2/sites-available/000-default.conf
@@ -40,7 +57,7 @@ EXPOSE 80
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=3s --start-period=40s --retries=3 \
-    CMD curl -f http://localhost/live.php || exit 1
+    CMD curl -fsS http://localhost/healthz || exit 1
 
 # Start Apache
 CMD ["apache2-foreground"]

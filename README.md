@@ -1,516 +1,437 @@
-# Alumni Portal (XAMPP + PostgreSQL/MySQL + AWS)
+<div align="center">
 
-This README is written as a beginner-friendly setup guide.
+<img src="assets/readme/banner.gif" alt="RJIT Alumni Portal — Connect, Mentor, Hire, Grow" width="100%">
 
-Use one of these:
+<h3>The campus hub where RJIT students, alumni and faculty meet, mentor, hire and grow together.</h3>
 
-1. Local XAMPP + PostgreSQL (`5433`) (recommended for this repo).
-2. Local XAMPP + MySQL (`3306`) (for college server compatibility).
-3. AWS deploy (Terraform + ECS + RDS + S3).
+[![CI](https://github.com/shiroonigami23-ui/Alumni-Portal/actions/workflows/ci.yml/badge.svg)](https://github.com/shiroonigami23-ui/Alumni-Portal/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-22c55e.svg)](LICENSE)
+![PHP](https://img.shields.io/badge/PHP-8.2+-777BB4?logo=php&logoColor=white)
+![PostgreSQL](https://img.shields.io/badge/PostgreSQL-15-4169E1?logo=postgresql&logoColor=white)
+![MySQL](https://img.shields.io/badge/MySQL-supported-4479A1?logo=mysql&logoColor=white)
+![Docker](https://img.shields.io/badge/Docker-ready-2496ED?logo=docker&logoColor=white)
+![AWS](https://img.shields.io/badge/AWS-ECS%20%7C%20RDS%20%7C%20S3-FF9900?logo=amazonaws&logoColor=white)
+![PWA](https://img.shields.io/badge/PWA-installable-5A0FC8?logo=pwa&logoColor=white)
+[![Security policy](https://img.shields.io/badge/security-policy-ef4444?logo=shield&logoColor=white)](SECURITY.md)
+[![PRs welcome](https://img.shields.io/badge/PRs-welcome-0ea5e9.svg)](CONTRIBUTING.md)
+
+[**Live demo**](http://alumni-portal-alb-616743364.us-east-1.elb.amazonaws.com/) ·
+[Features](#-features) ·
+[Screenshots](#-screenshots) ·
+[Quick start](#-quick-start) ·
+[Routing](#-routing--urls) ·
+[Security](#-security) ·
+[Deploy](#-deployment) ·
+[Contributing](CONTRIBUTING.md)
+
+</div>
 
 ---
 
-## 1. Local Setup On Windows (XAMPP)
+<div align="center">
+<img src="assets/readme/tour.gif" alt="Animated tour of the portal: landing, login, register, help centre, friendly 404 and privacy policy" width="92%">
+<br><sub>A quick tour — landing page, sign-in, registration, help centre, the friendly 404 and legal pages.</sub>
+</div>
 
-### 1A. Fast start (PostgreSQL in XAMPP)
+## 📚 Table of contents
 
-From project root:
+- [What is this?](#-what-is-this)
+- [Features](#-features)
+- [Screenshots](#-screenshots)
+- [Tech stack](#-tech-stack)
+- [Project structure](#-project-structure)
+- [Quick start](#-quick-start)
+  - [Docker (fastest)](#option-a--docker-fastest)
+  - [XAMPP + PostgreSQL](#option-b--xampp--postgresql-windows)
+  - [XAMPP + MySQL](#option-c--xampp--mysql-windows)
+  - [PHP built-in server](#option-d--php-built-in-server-any-os)
+- [Configuration](#-configuration)
+- [Routing & URLs](#-routing--urls)
+- [Security](#-security)
+- [Testing](#-testing)
+- [Deployment](#-deployment)
+- [API overview](#-api-overview)
+- [Roadmap](#-roadmap)
+- [Contributing, conduct & license](#-contributing-conduct--license)
+
+---
+
+## 🎓 What is this?
+
+**RJIT Alumni Portal** is a full-stack community platform for **Rustamji Institute of Technology (RJIT), Gwalior**. It brings students, alumni, faculty and admins into one place to:
+
+- 🤝 **Connect** — a searchable alumni directory with batch, branch, company and city filters
+- 🧭 **Mentor** — structured mentor ↔ mentee matching with private mentor-group chats and live audio/video spaces
+- 💼 **Hire** — a job board where alumni post roles and students apply with their résumé
+- 📣 **Share** — a social feed with posts, polls, GIFs, attachments, reposts and reactions
+- 📅 **Meet** — events with RSVPs, attendee lists and live streams
+- 🛡️ **Stay safe** — reporting, moderation queues, shadow-bans, device bans and an admin console
+
+It runs on plain **PHP 8 + PostgreSQL/MySQL**, works on **XAMPP** for college servers, ships as a **Docker** image, and deploys to **AWS (ECS + RDS + S3)** with Terraform.
+
+---
+
+## ✨ Features
+
+<table>
+<tr>
+<td width="50%" valign="top">
+
+### 👥 Community & profiles
+- Role-aware accounts: **student, alumni, faculty, admin, moderator**
+- Rich profiles: avatar, cover, bio, company, role, skills, socials
+- Profile privacy controls and blocking
+- Activity timeline with posts **and** reposts
+- Automatic **student → alumni** promotion at graduation (cron)
+- Verified-alumni document flow with admin approval
+- GDPR-style **data export** (streamed privately to the owner)
+
+### 📰 Feed
+- Posts with images, files, **GIF search** (Wikimedia Commons), polls
+- Reactions, threaded comments & replies, reposts, shares
+- Pinned posts, scheduled posts, drafts, editing
+- Infinite scroll, upload progress, view counts
+- Report content → moderation queue
+
+</td>
+<td width="50%" valign="top">
+
+### 🧭 Mentorship
+- Mentor applications (alumni) with faculty/admin approval
+- One active mentor per person, enforced server-side
+- Auto-created **mentor groups** with chat, ban/kick/unban
+- Shared live **audio/video mentor spaces** (Jitsi)
+
+### 💬 Messaging
+- Direct messages and mentor-group conversations
+- Edit / delete messages and unread counts
+- 1:1 **audio/video calls** with in-app call notifications
+
+### 💼 Careers & events
+- Job board with applications and résumé upload
+- Events with RSVP, attendee lists, approval workflow
+- Live-stream sessions and success stories
+
+### 🛠️ Admin & moderation
+- Admin dashboard with live stats
+- User management: ban, suspend, shadow-ban, device ban, mute DMs
+- Reports, announcements approval, alumni token generation
+- Bulk user actions and activity logs
+
+</td>
+</tr>
+</table>
+
+**Everywhere:** installable **PWA** with offline page and push notifications · **dark / light / ocean** themes · mobile bottom-nav · IST-consistent timestamps · in-app dialogs instead of browser pop-ups · accessible focus rings, skip-link and reduced-motion support.
+
+---
+
+## 🖼️ Screenshots
+
+<div align="center">
+
+| Landing (dark) | Landing (light) |
+|:---:|:---:|
+| <img src="assets/readme/landing.jpg" alt="Landing page, dark theme" width="100%"> | <img src="assets/readme/landing_light.jpg" alt="Landing page, light theme" width="100%"> |
+| **Sign in** | **Register** |
+| <img src="assets/readme/login.jpg" alt="Login page" width="100%"> | <img src="assets/readme/register.jpg" alt="Registration page" width="100%"> |
+| **Help centre** | **Friendly 404 with quick links** |
+| <img src="assets/readme/help.jpg" alt="Help centre" width="100%"> | <img src="assets/readme/notfound.jpg" alt="Friendly 404 page" width="100%"> |
+
+<img src="assets/readme/theme-switch.gif" alt="Switching between dark and light themes on the sign-in page" width="70%">
+<br><sub>Theme switching — every page follows the active theme (dark is the default).</sub>
+<br><br>
+<img src="assets/readme/mobile.png" alt="Portal on a phone: landing and sign-in" width="460">
+<br><sub>Mobile-first: bottom navigation, compact layouts and an installable app.</sub>
+
+</div>
+
+---
+
+## 🧰 Tech stack
+
+| Layer | Technology |
+|---|---|
+| Backend | PHP 8.2+, PDO, Composer (AWS SDK) |
+| Database | PostgreSQL 15 (primary) or MySQL 8 / MariaDB (XAMPP) via `config/DbCompat.php` |
+| Frontend | Server-rendered PHP pages, Tailwind CSS, Lucide icons, vanilla JS |
+| Realtime-ish | Polling APIs, Web Push, Jitsi rooms for calls |
+| Storage | DB-backed asset & content store; S3 in production |
+| Infra | Docker, Apache (`mod_rewrite`), Terraform → AWS VPC, ALB, ECS Fargate, RDS, S3, CloudWatch, SES |
+| CI | GitHub Actions — PHP lint, route/security smoke test, image build & ECS deploy |
+
+---
+
+## 🗂️ Project structure
+
+The root holds only entry points. Pages, APIs and infrastructure each live in their own folder.
+
+```text
+Alumni-Portal/
+├── index.php               # Landing page
+├── router.php              # ★ Front controller — every page & API request goes through here
+├── .htaccess               # Apache rules: send requests to the router, hide internals
+├── sw.js · manifest.webmanifest · offline.html   # PWA (must stay at the root for scope)
+│
+├── pages/                  # All user-facing pages (served at their old URLs, e.g. /feed.php)
+│   ├── dashboard.php  feed.php  profile.php  settings.php  messages.php
+│   ├── discovery.php  mentorship.php  jobs.php  events.php  moderation.php
+│   ├── help.php  live.php
+│   ├── auth/               # login, register, forgot-password, reset
+│   ├── legal/              # terms, policy (privacy), conduct
+│   └── errors/error.php    # Friendly 404 / 429 / 415 … page
+│
+├── admin/                  # Admin console pages
+├── api/                    # JSON endpoints (files starting with _ are internal helpers)
+├── bootstrap/
+│   ├── routes.php          # ★ Route table: pages, aliases/redirects, executable dirs
+│   ├── security.php        # ★ Security layer (headers, CSP, CORS, rate limits, upload checks)
+│   └── static_policy.php   # Which static files may be served
+├── config/                 # Database + AWS config
+├── middleware/             # Auth (bearer sessions), CSRF/security helpers
+├── models/  helpers/       # Domain models and services (email, S3, logging, streams…)
+├── includes/               # Shared header, sidebar, footer, auth-check.js
+├── assets/                 # CSS, JS, icons, images, README media
+├── cron/                   # Scheduled jobs (publish posts, archive, promote students)
+├── storage/                # Runtime uploads (never committed, never executable)
+├── fallback_content/       # Demo content shown when the DB is empty/offline
+├── deployment/             # SQL schema + migrations, Apache vhost, deploy scripts
+├── terraform/              # AWS infrastructure as code
+├── scripts/                # Import/maintenance utilities
+├── tests/                  # Smoke tests (CI) + local PowerShell feature matrix
+└── docs/                   # Deployment guides, technical write-up, dev notes
+    └── deployment/         # AWS_DEPLOYMENT, QUICKSTART_AWS, POSTGRES_SETUP, DEPLOYMENT
+```
+
+---
+
+## 🚀 Quick start
+
+### Option A — Docker (fastest)
+
+```bash
+git clone https://github.com/shiroonigami23-ui/Alumni-Portal.git
+cd Alumni-Portal
+cp .env.example .env
+docker compose up --build
+# then load the schema once:
+docker compose exec -T db psql -U postgres -d alumni_portal < deployment/db.sql
+```
+
+Open **http://localhost/** — health check at **http://localhost/healthz**.
+
+### Option B — XAMPP + PostgreSQL (Windows)
 
 ```bat
 scripts\start_local_xampp.bat
 ```
 
-This starts:
+This starts XAMPP PostgreSQL on `127.0.0.1:5433` and Apache. Open `http://127.0.0.1:8088/` (or `http://localhost/<folder-name>/`).
 
-- XAMPP PostgreSQL at `127.0.0.1:5433`
-- Apache web server
+> Make sure Apache has `mod_rewrite` enabled and `AllowOverride All` for the project folder (XAMPP's default for `htdocs`). The router works both at the domain root and inside a sub-folder.
 
-Then open:
+### Option C — XAMPP + MySQL (Windows)
 
-- `http://127.0.0.1:8088/`
+1. **Start** Apache and MySQL in the XAMPP Control Panel.
+2. **Create the database**
+   ```bat
+   C:\xampp\mysql\bin\mysql.exe -u root -e "CREATE DATABASE IF NOT EXISTS alumni_portal CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;"
+   ```
+   (add `-p` if your MySQL root user has a password)
+3. **Import the schema + MySQL migration**
+   ```bat
+   C:\xampp\mysql\bin\mysql.exe -u root alumni_portal < deployment\db.sql
+   C:\xampp\mysql\bin\mysql.exe -u root alumni_portal < deployment\sql\2026_04_12_moderator_post_workflow_mysql.sql
+   ```
+4. **Tell PHP which database to use.** The app reads settings from the environment (`getenv`). Add inside your `<VirtualHost>` in `C:\xampp\apache\conf\extra\httpd-vhosts.conf`:
+   ```apache
+   SetEnv DB_DRIVER mysql
+   SetEnv DB_HOST 127.0.0.1
+   SetEnv DB_PORT 3306
+   SetEnv DB_NAME alumni_portal
+   SetEnv DB_USER root
+   SetEnv DB_PASSWORD your_mysql_password
+   ```
+   Restart Apache.
+5. **Verify the connection**
+   ```bat
+   C:\xampp\php\php.exe -r "require 'config/Database.php'; var_dump((new Database())->getConnection() !== null);"
+   ```
+   `bool(true)` means you're connected.
+6. **Open** `http://localhost/alumni_portal/` (or whatever your folder is called).
 
-### 1B. MySQL setup on XAMPP (step-by-step)
+### Option D — PHP built-in server (any OS)
 
-Use this if you want local behavior close to a MySQL-based server.
-
-### Step 1: Start XAMPP services
-
-In XAMPP Control Panel, start:
-
-- `Apache`
-- `MySQL`
-
-### Step 2: Create database
-
-```bat
-C:\xampp\mysql\bin\mysql.exe -u root -e "CREATE DATABASE IF NOT EXISTS alumni_portal CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;"
+```bash
+php -S localhost:8088 router.php
 ```
 
-If MySQL root has a password, use `-p`:
-
-```bat
-C:\xampp\mysql\bin\mysql.exe -u root -p -e "CREATE DATABASE IF NOT EXISTS alumni_portal CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;"
-```
-
-### Step 3: Import schema + required MySQL migration
-
-```bat
-C:\xampp\mysql\bin\mysql.exe -u root alumni_portal < deployment\db.sql
-C:\xampp\mysql\bin\mysql.exe -u root alumni_portal < deployment\sql\2026_04_12_moderator_post_workflow_mysql.sql
-```
-
-If using password:
-
-```bat
-C:\xampp\mysql\bin\mysql.exe -u root -p alumni_portal < deployment\db.sql
-C:\xampp\mysql\bin\mysql.exe -u root -p alumni_portal < deployment\sql\2026_04_12_moderator_post_workflow_mysql.sql
-```
-
-### Step 4: Set app DB env vars for Apache runtime
-
-Important: this app reads DB settings from process environment (`getenv`).  
-Set vars inside Apache config so browser requests use MySQL too.
-
-Edit file:
-
-- `C:\xampp\apache\conf\extra\httpd-vhosts.conf`  
-  (or your active Apache vhost file)
-
-Add inside your `<VirtualHost ...>` block:
-
-```apache
-SetEnv DB_DRIVER mysql
-SetEnv DB_HOST 127.0.0.1
-SetEnv DB_PORT 3306
-SetEnv DB_NAME alumni_portal
-SetEnv DB_USER root
-SetEnv DB_PASSWORD
-```
-
-If root has password:
-
-```apache
-SetEnv DB_PASSWORD your_mysql_password
-```
-
-Restart Apache after saving config.
-
-### Step 5: Verify DB connection
-
-```bat
-C:\xampp\php\php.exe db_test.php
-```
-
-Expected output: successful connection.
-
-### Step 6: Run app
-
-Open:
-
-- `http://localhost/alumni_portal`
+`router.php` doubles as the built-in server's router script, applying exactly the same routes and security rules as Apache.
 
 ---
 
-## 2. Local Verification Script
+## ⚙️ Configuration
 
-Run this to test major features end-to-end with placeholder data:
+Copy `.env.example` → `.env` (Docker) or set the same keys as Apache `SetEnv` / ECS task variables.
+
+| Variable | Purpose | Default |
+|---|---|---|
+| `DB_DRIVER` | `pgsql` or `mysql` | `pgsql` |
+| `DB_HOST`, `DB_PORT`, `DB_NAME`, `DB_USER`, `DB_PASSWORD` | Database connection | — |
+| `APP_ENV`, `APP_DEBUG`, `APP_URL` | Environment; `APP_DEBUG=true` shows raw errors | `production`, `false` |
+| `AWS_REGION`, `AWS_BUCKET`, `AWS_SES_*`, `AWS_CLOUDWATCH_*` | S3 uploads, SES email, CloudWatch logs | — |
+| `ALLOWED_ORIGINS` | Extra origins allowed to call the API from browsers | *(same-origin only)* |
+| `TRUSTED_PROXIES` | CIDRs allowed to set `X-Forwarded-*` | loopback + private ranges |
+| `RATE_LIMIT_API_PER_MIN` | API requests per IP per minute | `300` |
+| `RATE_LIMIT_LOGIN` | Login attempts per IP per 10 min | `20` |
+| `LOGIN_MAX_FAILURES`, `LOGIN_LOCK_SECONDS` | Per-account lockout after wrong passwords | `8`, `900` |
+| `MAX_REQUEST_MB` | Largest accepted request body | `25` |
+| `CSP_CONNECT_EXTRA` | Extra `connect-src` hosts (e.g. a streaming server) | — |
+
+---
+
+## 🧭 Routing & URLs
+
+<div align="center">
+<img src="assets/readme/router-demo.gif" alt="Terminal demo: old URLs resolve, aliases redirect, internals return 404, malicious uploads and cross-origin calls are blocked" width="88%">
+</div>
+
+Every `.php` request and every URL that isn't a real static file goes through **`router.php`**, driven by the table in **`bootstrap/routes.php`**:
+
+```mermaid
+flowchart LR
+    B[Browser] -->|/feed.php · /feed · /signup · /api/get_feed.php| A[Apache .htaccess<br/>or php -S]
+    A --> R[router.php]
+    R --> S[bootstrap/security.php<br/>headers · CORS · rate limits · upload checks]
+    S --> T{bootstrap/routes.php}
+    T -->|page| P[pages/…]
+    T -->|alias| D[301 → canonical URL]
+    T -->|api/ admin/| X[api/*.php · admin/*.php]
+    T -->|unknown or internal| E[pages/errors/error.php<br/>friendly 404]
+```
+
+**Nothing that worked before breaks.** Browser URLs never change, so every relative link, asset path and API call in the pages keeps resolving:
+
+| You visit | You get |
+|---|---|
+| `/feed.php` *(old URL)* | `pages/feed.php` — 200 |
+| `/feed` *(clean URL)* | the same page — 200 |
+| `/edit-profile.php` | 301 → `/settings.php#profile` |
+| `/signup`, `/join`, `/sign-up` | 301 → `/register.php` |
+| `/privacy`, `/directory`, `/careers`, `/inbox`, `/admin` … | 301 → the right page |
+| `/pages/feed.php` *(internal path)* | 301 → `/feed.php` |
+| `/feed/` *(trailing slash)* | 301 → `/feed` |
+| `/config/Database.php`, `/api/_feed_schema.php`, `/storage/verification/…` | 404 — never served |
+| anything unknown | friendly 404 with quick links |
+
+**Add a page:** drop the file in `pages/` and add one line to `'pages'` in `bootstrap/routes.php`.
+**Rename a page:** change its target and add the old slug to `'redirects'` — old links keep working forever.
+
+---
+
+## 🔐 Security
+
+Security is centralised in `bootstrap/security.php`, which runs **before every page and API script**, so new endpoints are protected automatically. It aims to be strict without getting in the way: every block returns a clear, human message.
+
+| Layer | What it does |
+|---|---|
+| **Front controller** | Only routed pages, `api/*.php` and `admin/*.php` can execute. Internal helpers (`api/_*.php`), `config/`, `models/`, `helpers/`, `middleware/`, `cron/`, `scripts/`, `bootstrap/` are unreachable. Path traversal is rejected. |
+| **Headers** | Content-Security-Policy (no plugins, no foreign framing, locked `base-uri`/`form-action`), `X-Frame-Options`, `nosniff`, strict Referrer-Policy, Permissions-Policy (camera/mic only for Jitsi), COOP, HSTS on HTTPS. APIs get a sandboxed `default-src 'none'` CSP and `no-store`. |
+| **CORS** | The legacy `Access-Control-Allow-Origin: *` on ~100 endpoints is rewritten to **same-origin + `ALLOWED_ORIGINS`** only; hostile pre-flights are refused. |
+| **Brute-force protection** | Sliding-window rate limits per IP for all APIs, stricter limits for login, registration and password-reset, plus a **per-account lockout** after repeated wrong passwords ("try again in 12 minutes, or use Forgot password"). |
+| **Real client IP** | `X-Forwarded-For` is trusted **only** from configured proxies (e.g. the ALB), so bans and rate limits can't be bypassed by spoofing a header. |
+| **Uploads** | Every file is checked platform-wide: dangerous and double extensions (`shell.php.jpg`) refused, real MIME sniffed with `finfo` and matched to the extension, images must decode, and files with embedded `<?php` / `<script>` (polyglots) are blocked. |
+| **Storage** | `storage/` can never execute PHP, serves media/documents only, and private areas (verification documents, exports, logs, caches) are never web-visible. Uploaded files are served with a sandbox CSP. |
+| **Data exports** | Personal data archives are streamed to the authenticated owner and deleted immediately — never left at a guessable public URL. |
+| **Sessions** | `HttpOnly`, `SameSite=Lax`, `Secure` on HTTPS, strict mode, longer IDs, custom cookie name. Bearer tokens are 256-bit random and expire after 7 days. CSRF tokens are checked for cookie-based requests. |
+| **Error hygiene** | In production, API responses that would leak SQL errors, stack traces or server paths are replaced with a friendly message; the original is logged server-side. |
+| **Server** | `expose_php` off, `ServerTokens Prod`, `TRACE` disabled, no directory listings, non-standard HTTP methods rejected, request-size cap. |
+
+Found a vulnerability? Please follow **[SECURITY.md](SECURITY.md)** — don't open a public issue.
+
+---
+
+## 🧪 Testing
+
+```bash
+# Route + security smoke test (no database needed) — also runs in CI
+bash tests/smoke/routes.sh
+
+# Lint every PHP file
+find . -name '*.php' -not -path './vendor/*' -print0 | xargs -0 -n1 php -l
+```
+
+Full end-to-end feature matrix against a local database (Windows / PowerShell):
 
 ```powershell
 $env:PGPASSWORD=""
 powershell -ExecutionPolicy Bypass -File .\tests\local\verify_feature_matrix.ps1
 ```
 
-It validates:
-
-- Auth and profile update
-- Feed/posts/comments/reactions
-- Messaging and inbox
-- Events and RSVP
-- Jobs and applications
-- Mentorship flow
-- Resources and success stories
-- Notifications read flow
-- Upload endpoints
-- Search endpoints
-- Live stream lifecycle
+It covers auth & profile, feed/posts/comments/reactions, messaging, events & RSVP, jobs & applications, mentorship, resources & success stories, notifications, uploads, search and the live-stream lifecycle.
 
 ---
 
-## 3. AWS Deployment (Beginner Checklist)
+## ☁️ Deployment
 
-This is the safest sequence for first deployment.
+### AWS (Terraform + ECS + RDS + S3)
 
-### Step 1: Install required tools
+1. **Tools:** AWS CLI, Terraform, Docker, Git, `psql`.
+2. **Credentials:** `aws configure` (region e.g. `us-east-1`).
+3. **Variables:** `cd terraform && cp terraform.tfvars.example terraform.tfvars` — set `aws_region`, `environment`, `db_password`, sizing.
+4. **Infrastructure:** `terraform init && terraform plan && terraform apply`, then `terraform output`.
+5. **Image:** `./deployment/deploy-aws.sh` (Git Bash on Windows).
+6. **Database:** `./deployment/migrate-to-rds.sh`, then run the SQL migrations in `deployment/sql/` on RDS.
+7. **Runtime env:** set `DB_*`, `AWS_REGION`, `AWS_BUCKET`, `APP_ENV=production`, `APP_DEBUG=false` on the ECS task.
+8. **Verify:** `curl http://<alb_dns_name>/healthz` and open `/`.
 
-- AWS CLI
-- Terraform
-- Docker Desktop
-- Git
-- PostgreSQL client tools (`psql`)
+Pushing to `main` runs the **Deploy to AWS** workflow automatically (build → ECR → ECS).
 
-Quick check:
+Detailed guides: [Quick start on AWS](docs/deployment/QUICKSTART_AWS.md) · [Full AWS guide](docs/deployment/AWS_DEPLOYMENT.md) · [PostgreSQL setup](docs/deployment/POSTGRES_SETUP.md) · [General deployment](docs/deployment/DEPLOYMENT.md) · [Android APK build](docs/APK_BUILD.md)
 
-```bash
-aws --version
-terraform version
-docker --version
-psql --version
-```
-
-### Step 2: Configure AWS credentials
-
-```bash
-aws configure
-```
-
-Set:
-
-- Access key
-- Secret key
-- Region (example: `us-east-1`)
-- Output: `json`
-
-### Step 3: Configure Terraform variables
-
-```bash
-cd terraform
-cp terraform.tfvars.example terraform.tfvars
-```
-
-Edit `terraform.tfvars` and set at least:
-
-- `aws_region`
-- `environment`
-- `db_password`
-- sizing/count variables as needed
-
-### Step 4: Create AWS infrastructure
-
-```bash
-terraform init
-terraform plan
-terraform apply
-```
-
-Check outputs:
-
-```bash
-terraform output
-terraform output -raw alb_dns_name
-terraform output -raw rds_address
-terraform output -raw ecr_repository_url
-```
-
-### Step 5: Build and push app image
-
-From repo root, run:
-
-```bash
-./deployment/deploy-aws.sh
-```
-
-On Windows, run from Git Bash.
-
-### Step 6: Migrate database to RDS
-
-```bash
-./deployment/migrate-to-rds.sh
-```
-
-### Step 7: Run required SQL migration on RDS
-
-```bash
-psql -h <RDS_ENDPOINT> -U admin -d alumni_portal -f deployment/sql/2026_02_20_create_mentorship_requests.sql
-```
-
-### Step 8: Ensure ECS runtime env vars are set
-
-Required:
-
-- `DB_HOST=<rds endpoint>`
-- `DB_PORT=5432`
-- `DB_NAME=alumni_portal`
-- `DB_USER=<db user>`
-- `DB_PASSWORD=<db password>`
-- `AWS_REGION=<region>`
-- `AWS_BUCKET=<bucket name>`
-- `APP_ENV=production`
-- `APP_DEBUG=false`
-
-### Step 9: Validate live service
-
-```bash
-curl http://<alb_dns_name>/live.php
-curl http://<alb_dns_name>/
-```
+> **Production checklist:** never commit `.env`; keep secrets in AWS Secrets Manager / ECS env vars; use RDS + S3; run migrations before traffic; attach an ACM certificate so the ALB serves HTTPS (HSTS and secure cookies switch on automatically).
 
 ---
 
-## 4. PostgreSQL Setup Guide
+## 🔌 API overview
 
-See detailed DB guide:
+All endpoints live in `api/` and return JSON. Authenticate with `Authorization: Bearer <token>` from `POST /api/login.php`.
 
-- `POSTGRES_SETUP.md`
+| Area | Endpoints (selection) |
+|---|---|
+| Auth | `login`, `register_student`, `register_alumni`, `register_faculty`, `request_reset`, `reset_password`, `change_password`, `me`, `csrf_token` |
+| Feed | `get_feed`, `create_post`, `edit_post`, `delete_post`, `react_to_post`, `create_comment`, `add_reply`, `toggle_repost`, `share_post`, `create_poll`, `vote_poll`, `schedule_post`, `pin_post`, `search_gifs` |
+| People | `search_directory`, `search_alumni`, `get_user_profile`, `update_profile`, `upload_avatar`, `upload_cover`, `connect_user`, `block_user`, `update_privacy`, `export_data` |
+| Mentorship | `mentorship?action=…` (list mentors, request, accept, groups, moderation) |
+| Messages | `get_conversations`, `get_messages`, `send_message`, `edit_message`, `delete_message`, `start_call` |
+| Careers & events | `get_jobs`, `post_job`, `apply_job`, `get_applicants`, `get_events`, `create_event`, `rsvp_event`, `get_event_attendees` |
+| Admin | `admin_stats`, `admin_users`, `admin_user_actions`, `admin_report_action`, `moderation_queue`, `approve_user`, `generate_token` |
 
-This includes:
+Clean forms like `/api/get_feed` work too.
 
-- Local DB creation
-- Backup and restore commands
-- RDS migration commands
+---
 
-## 5. AWS Deployment Reference
+## 🗺️ Roadmap
 
-If you want copy-paste production deployment, follow:
+- [ ] HTTPS on the production ALB (ACM certificate)
+- [ ] Self-hosted Tailwind build (drop the CDN warning, tighten CSP further)
+- [ ] Server-synced post drafts across devices
+- [ ] Two-factor sign-in for admins and faculty
+- [ ] Alumni map by city and company, batch reunions page
+- [ ] Referral board ("I can refer you at …") and give-back / donations
 
-1. `QUICKSTART_AWS.md` (fast path)
-2. `AWS_DEPLOYMENT.md` (complete details)
+See the full history in **[CHANGELOG.md](CHANGELOG.md)** and the running deploy log in **[docs/DEV_NOTES.md](docs/DEV_NOTES.md)**.
 
-## 6. Important Files
+---
 
-- `deployment/deploy-aws.sh` - build/push image and redeploy ECS
-- `deployment/migrate-to-rds.sh` - local PostgreSQL to AWS RDS migration
-- `deployment/sql/2026_02_20_create_mentorship_requests.sql` - required migration for mentorship
-- `tests/local/verify_local.ps1` - lightweight local health checks
-- `tests/local/verify_feature_matrix.ps1` - full feature matrix
+## 🤝 Contributing, conduct & license
 
-## 7. Notes for Production
+- **Contributing:** read [CONTRIBUTING.md](CONTRIBUTING.md) — setup, branch/commit style, how to add pages & routes, PR checklist.
+- **Community standards:** [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md). The portal's own user-facing rules are at `/conduct.php`, `/terms.php` and `/policy.php`.
+- **Security:** [SECURITY.md](SECURITY.md).
+- **License:** [MIT](LICENSE) © 2026 Aryan Singh Chandel. Faculty photos and RJIT imagery belong to their owners and are used for the institute's portal only.
 
-- Never commit `.env` files.
-- Keep DB credentials in AWS Secrets Manager / ECS env vars.
-- Use RDS for DB and S3 for uploads in production.
-- Run SQL migrations on RDS before first production traffic.
-
-## 8. Current Status
-
-Latest local verification result:
-
-- API/model/cron lint: pass
-- API runtime fatal sweep: pass
-- Full feature matrix: pass
-
-## 9. Working Memory
-
-Use this section as the quick project memory for both local work and live AWS checks.
-
-### Live production URL
-
-- Base URL: `http://alumni-portal-alb-616743364.us-east-1.elb.amazonaws.com/`
-- Feed: `http://alumni-portal-alb-616743364.us-east-1.elb.amazonaws.com/feed.php`
-- Dashboard: `http://alumni-portal-alb-616743364.us-east-1.elb.amazonaws.com/dashboard.php`
-
-When verifying a fresh deploy, append `?refresh=<commit>` to bypass stale browser caches.
-
-### Recent live fixes
-
-- `259264a`:
-  - fixed feed like/share/reply UI crashes
-  - fixed shared footer `classList` null errors affecting jobs/events/mentorship
-- `a7ff122`:
-  - moved post/comment attachments into DB-backed asset storage
-- `c2d6d1e`:
-  - moved post/comment payload content off ECS task-local files into DB-backed content payloads
-- `e09ff7a`:
-  - fixed feed crash regression
-  - added first GIF picker UI
-  - made dashboard sections collapsible
-- `2c0b9e5`:
-  - added dashboard stats count endpoints
-  - replaced dead Giphy calls with live GIF search against Wikimedia Commons
-  - added feed draft support
-  - added feed upload progress / post-button locking
-  - polished dashboard quick links and collapse defaults
-- current worktree:
-  - students are now blocked from creating top-level posts on both feed and profile; they can still comment/reply/repost/report
-  - profile now falls back cleanly when legacy local avatar/cover paths are missing instead of rendering a broken image in the UI
-  - aligned dashboard upcoming-event APIs with the real `events` schema (`start_datetime` / `event_status`)
-  - changed mentorship so:
-    - students and alumni can each be under only one active mentor at a time
-    - they must leave the current mentor before joining another
-    - faculty/admin can become mentors immediately
-    - alumni submit mentor applications for faculty/admin approval
-    - students never see `Become a Mentor`
-    - accepted mentor requests create a mentor group
-    - mentor-group admin ownership transfers if the current admin leaves and another member is available
-    - mentors/admins can ban, unban, or kick group members
-    - bans are messaging bans for the mentor group chat
-  - surfaced mentor groups inside the existing Messages screen using `group:<id>` conversations
-  - added clearer mentor-group badges in Messages plus member list/header metadata
-  - added unread tracking for mentor-group conversations
-  - changed feed so older posts load progressively with a bottom sentinel instead of trying to render everything at once
-  - added post draft controls plus upload-progress / upload-lock UI in the feed composer
-  - mentorship page now uses accepted-request state as a fallback source of truth for the current mentor and refreshes requests before rendering mentor actions, so accepted mentees should no longer see `Current Mentor: none` plus extra `Request to Join` buttons
-  - the remaining feed/comment/discovery avatar APIs now scrub dead local `storage/profiles/...` paths, and header/sidebar stop reusing stale cached local avatar URLs
-  - profile identity now resolves current-user state from `api/me.php` before falling back to `localStorage`, reducing the “sometimes blank profile” behavior when local cache is missing or stale
-  - avatar / cover uploads and generic file uploads now use DB-backed asset URLs; old local avatar/cover references are migrated or cleared on read
-  - bare legacy avatar filenames like `avatar_46_...jpg` are treated as stale local media and no longer reused blindly by header/sidebar/feed/profile
-  - `get_conversations.php` now includes the mentor owner id for mentor groups, preventing warning-leak / malformed JSON risk in group conversation payloads
-  - admin user management now loads moderation state per account so action buttons only show the valid next action (`Ban` vs `Unban`, `Shadow` vs `Lift Shadow`, `Mute DM` vs `Unmute DM`)
-  - admins can open any profile, including private faculty/alumni profiles, through the same profile API
-  - clicking the bell icon now bulk-marks all notifications as read instead of requiring notification-by-notification clearing
-  - admins can delete any post or comment/reply directly from the live feed UI; comment/reply delete now respects admin role too
-  - admin delete now also works cleanly from profile and admin report flows, and post/comment deletion removes DB-backed payloads for cascaded comment/reply trees instead of leaving orphaned content rows
-  - post/comment moderation no longer relies on enum-unsafe role SQL such as `LOWER(role)` against PostgreSQL enum columns
-  - mentor-group admin transfer is now restricted to non-student members, and a group can be disbanded explicitly; if an admin leaves without an eligible successor, the mentor group is disbanded automatically and its GC/messages are removed via cascade
-  - mentorship now separates one normal mentor-group slot from one admin-led GC slot:
-    - students cannot see or join admin-led mentor groups
-    - faculty can only join admin-led mentor groups, not another normal mentor group
-    - alumni/faculty can keep one normal mentor-group relationship plus one admin-led GC, but no extra regular groups
-    - accepted-request fallback no longer recreates a mentorship after the user left or the group was disbanded
-    - site admins can disband any mentor group / GC from the mentorship or messages flows
-  - mobile navigation now uses a bottom-bar-first pattern on small screens with a `More` sheet for secondary destinations instead of a persistent left drawer
-  - mobile polish pass:
-    - bottom-nav icons are larger with tighter labels and touch-feedback states
-    - the mobile `More` sheet opens with a smoother slide-up animation
-    - the mobile header uses a shorter brand treatment and hides the theme button to avoid crowding notification/profile actions
-    - dashboard hides lower-priority blocks by default on phones (`Jump Back In`, `Recent Activity`, `Recent Notifications`) and suppresses the least important stats card to reduce scroll
-    - discovery now defaults to compact list mode on phones, collapses filters by default, trims low-priority card details, and hides the top-companies block on mobile
-  - direct messages call flow is now real instead of placeholder UI:
-    - starting an audio/video call opens a live Jitsi room immediately for the caller
-    - the receiver gets a clickable notification that opens the same room
-    - mentor-group chats now support one live shared mentor space at a time:
-      - members can start or join an audio/video mentor space from the group header
-      - the active space is reused for all members until it is ended or expires
-      - group admins or the person who started the space can end it from Messages
-  - message content payloads are no longer written to task-local `storage/messages/...` files for new sends/edits:
-    - direct and mentor-group messages now store content in the DB-backed content store
-    - legacy message payload pointers are auto-migrated to DB-backed storage on successful read
-    - this fixes the live AWS `[Content Missing]` flicker caused by different app tasks disagreeing about local files
-  - the shared header theme toggle is now visible on small screens across pages instead of disappearing outside Discovery
-  - browser `alert` / `confirm` / `prompt` dialogs are being replaced with the shared in-app portal dialog layer:
-    - Messages uses custom dialogs for edit/delete/disband/call flows
-    - mentorship, feed, profile, settings, dashboard, discovery, jobs, events, and admin moderation pages now use the same app-styled modal system instead of native browser popups
-  - portal timestamp rendering is now being standardized to Indian Standard Time (`Asia/Kolkata`) in the shared frontend date parser/formatter:
-    - raw DB timestamps without offsets are treated as UTC-source server values before display
-    - relative labels such as `m ago` / `h ago` and exact date-time labels now resolve through one shared IST formatter
-    - messages, feed/profile posts and replies, mentorship membership timestamps, notifications, and admin time tables should no longer drift between pages
-  - dashboard now routes its cards/feed/notification requests through the shared API helper instead of a stale local `res.json()` wrapper, avoiding repeated console parse errors when an endpoint returns HTML or a PHP warning page instead of JSON
-  - profile timeline no longer shows `Edit` / `Delete` controls on repost activity cards for users who only reposted the original post
-  - settings now treats the account email as a managed login identifier instead of an editable profile field:
-    - the email shown in settings is read-only
-    - student login email is explicitly locked by institute policy
-    - alumni/faculty/admin should use bio/contact/social fields for public-facing contact info, without affecting their actual login id
-  - forgot-password is now a real email-reset flow:
-    - new `forgot-password.php` and `reset.php` pages exist
-    - reset tokens are issued securely, expire after 30 minutes, and are invalidated after use
-    - reset emails are sent through the shared `EmailService`
-    - the old localhost/token-in-response simulation flow is gone
-    - SES delivery should use the ECS runtime/SDK path first; if delivery fails, the API now returns an error instead of silently pretending success
-  - profile timeline now treats reposts as first-class activity:
-    - the profile page fetches both authored posts and reposts
-    - student profiles relabel the first timeline tab to `Activity`
-    - students still cannot create top-level posts, but their repost activity can populate the profile timeline
-    - the dedicated `Reposts` tab now uses the profile owner's repost activity instead of the viewer's repost state
-  - discovery directory relies on `api/search_directory.php`; a mapper bug around profile avatar resolution can break the whole alumni response, so verify discovery after avatar/media changes
-
-### Infra note
-
-- The live ALB currently serves HTTP on port `80`.
-- HTTPS on port `443` is not configured yet in `us-east-1` because there is no issued ACM certificate attached to the ALB listener.
-- If phones/browsers auto-upgrade to HTTPS, they can show `ERR_CONNECTION_REFUSED` even while desktop HTTP works.
-
-### Stable behavior we now expect
-
-- Feed loads on AWS without fatal JS crashes
-- Mobile screens should no longer be dominated by the left navigation; small screens should use the bottom nav plus `More` sheet
-- Mobile header should no longer crowd the brand with theme/notification/profile controls
-- Dashboard should open in a lighter mobile state with fewer sections expanded by default
-- Profile posting no longer double-submits
-- Reporting is limited to one report per account per post
-- Share action exists and should either open native sharing or copy the link
-- Image/file attachments for new posts/comments should survive ECS task changes
-- GIF picker should show real GIF search results instead of a dead URL field
-- Feed should progressively load older posts while scrolling instead of dumping the whole feed at once
-- Feed drafts should stay on the current browser until posted or discarded
-- Feed uploads should lock the composer and show progress/overlay feedback while files are being sent
-- Dashboard count cards should hit real API endpoints instead of 404 routes
-- Mentorship should no longer show `Become a Mentor` to students
-- Alumni should move through a pending mentor-application flow instead of becoming mentors instantly
-- Accepted mentor/mentee matches should have a mentor group conversation available in Messages
-- Mentor-group conversations should show a mentor-group badge, member list, and unread counts
-- Admin should be able to delete any post/comment/reply from feed, profile, and admin review flows without PostgreSQL enum errors
-- Students should not be able to create top-level posts from feed or profile
-- Forgot-password should send a real reset email instead of returning a token/simulation link
-- Reset links should expire after 30 minutes and work through `reset.php`
-- A student/alumni should never have more than one active mentor relationship at once
-- Students should not see or join admin-led mentor groups; faculty/alumni can have at most one normal mentor group plus one admin-led GC
-- Disbanding a mentor group should remove all members, end active matches, and delete the GC/messages by cascade
-- Discovery should open in a compact mobile layout with collapsed filters and list view on phones
-- Direct 1:1 message audio/video calls should open a working Jitsi room for both the caller and the callee
-- Mentor-group chats should support one active shared mentor space that members can join safely from the chat header
-- The theme toggle should remain visible in the shared mobile header, not just on Discovery
-- Custom in-app dialogs should appear across the portal instead of native browser `alert` / `confirm` / `prompt` popups
-- New and edited messages should survive AWS task changes without briefly rendering `[Content Missing]`
-- Portal timestamps should render consistently in Indian Standard Time across posts, replies, messages, notifications, mentorship, and admin views
-- Dashboard should not spam JSON parse errors in console just because an API response body is HTML/malformed
-- Repost activity cards on profile should not show misleading edit/delete controls
-- Settings should not imply that login email is editable when it is actually managed separately from profile content
-
-### Known follow-up items
-
-- Drafts are currently browser-local, not server-synced across devices
-- Tailwind CDN warning still appears in console; this is a production warning, not a runtime blocker
-- Old posts created before the DB-backed attachment/content migrations may still show broken legacy media
-- Messages still need a cleanup pass for placeholder avatar/media fallbacks
-- Mentor-group admin transfer currently falls back to the next available member; there is no separate admin-picker UI yet
-
-### Verification checklist before calling a deploy good
-
-1. Open:
-   - `feed.php?refresh=<commit>`
-   - `profile.php?refresh=<commit>`
-   - `dashboard.php?refresh=<commit>`
-   - `jobs.php?refresh=<commit>`
-   - `events.php?refresh=<commit>`
-   - `mentorship.php?refresh=<commit>`
-2. Confirm there are no new console errors except the Tailwind CDN warning.
-3. Confirm:
-   - post create works
-   - comments/replies work
-   - like/share work
-   - GIF picker shows real results
-   - GIF selection renders an actual animated GIF on the post, not a dead preview card
-   - attachment upload shows progress and renders after posting
-   - feed infinite-scroll loads older posts as you reach the bottom
-   - draft save / discard works on the current browser
-   - dashboard cards load counts without 404/API parse errors
-   - dashboard upcoming-events panel loads without HTML/PHP warning leakage
-   - students do not see `Become a Mentor`
-   - students do not see a top-level post composer on feed/profile
-   - admin can delete a post from feed, profile, and admin reports without `lower(user_role)` / enum SQL failures
-   - admin can delete comments and replies from the live feed
-   - alumni mentor applications require faculty/admin approval
-   - students/alumni cannot join a second mentor without leaving the current one
-   - students cannot see or join admin-led mentor groups
-   - faculty/alumni cannot exceed one normal mentor group plus one admin-led GC
-   - mentor group moderation actions work: accept, reject, ban, unban, kick, leave
-   - disbanding a mentor group removes members, ends active matches, and removes the GC conversation
-   - mentor-group conversation list shows unread counts and header member chips
-   - starting an audio/video call from a direct message opens a live Jitsi room without popup-blocker regressions
-   - the receiving user gets a call notification that opens the same room from the header notification tray
-   - mentor-group audio/video buttons open or join one active mentor space for the whole group
-   - group admins or the space starter can end the current mentor space
-   - mobile pages keep the theme toggle visible in the shared header
-   - Messages edit/delete/disband flows use the custom app dialog rather than browser popup chrome
-   - discovery on mobile starts in list mode with filters collapsed and the top-companies block hidden
-4. Verify any new API route directly from the live ALB URL.
-
-### Notes for future work
-
-- Keep this section updated after every meaningful deploy.
-- Add commit ID + what changed + any remaining known issue.
-- Prefer recording live behavior here instead of relying on chat memory.
-## Project Memory
-
-### Admin Moderation And Access Control
-- Admin moderation is being expanded through `api/admin_user_actions.php` and `api/admin_report_action.php`.
-- Admin can now ban/unban users, collect and ban their known devices, restrict posting, restrict messaging, shadow-ban, and reset passwords through the admin flow.
-- Non-admins cannot report admin-authored posts/comments anymore; the backend blocks those attempts in `api/report_content.php`.
-- Non-admins cannot directly message admins. Private alumni/faculty also cannot start direct conversations while their profile is private.
-
-### Password Reset Delivery
-- App-side forgot-password flow exists through `forgot-password.php`, `api/request_reset.php`, and `api/reset_password.php`.
-- Current AWS SES status still blocks real delivery:
-  - SES account is still in sandbox
-  - no SES email identities are verified
-  - no production sender identity is available yet
-- Because of that, password reset requests can generate tokens but cannot reliably send email until SES is configured.
+<div align="center">
+<br>
+Made with ❤️ for the RJIT community · <a href="https://github.com/shiroonigami23-ui">@shiroonigami23-ui</a>
+</div>

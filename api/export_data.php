@@ -26,7 +26,7 @@ try {
     // 3. Create Export Directory
     $export_name = "export_" . $user_id . "_" . time();
     $export_path = dirname(__DIR__) . "/storage/exports/" . $export_name;
-    if (!file_exists($export_path)) mkdir($export_path, 0777, true);
+    if (!file_exists($export_path)) mkdir($export_path, 0750, true);
 
     // 4. Save Profile JSON
     file_put_contents($export_path . "/profile.json", json_encode($profile, JSON_PRETTY_PRINT));
@@ -55,13 +55,33 @@ try {
         $zip->close();
     }
 
+    // Remove the unzipped working folder — only the archive is needed
+    foreach (new RecursiveIteratorIterator(new RecursiveDirectoryIterator($export_path, FilesystemIterator::SKIP_DOTS), RecursiveIteratorIterator::CHILD_FIRST) as $item) {
+        $item->isDir() ? @rmdir($item->getPathname()) : @unlink($item->getPathname());
+    }
+    @rmdir($export_path);
+
+    // storage/exports is not web-accessible. The archive is streamed only to its
+    // owner (authenticated) and deleted right after.
+    if (($_GET['download'] ?? '') === '1') {
+        header_remove('Content-Type');
+        header('Content-Type: application/zip');
+        header('Content-Disposition: attachment; filename="rjit-alumni-data-export.zip"');
+        header('Content-Length: ' . filesize($zip_file));
+        readfile($zip_file);
+        @unlink($zip_file);
+        exit;
+    }
+    @unlink($zip_file);
+
     echo json_encode([
-        "message" => "Data export prepared successfully.",
-        "download_url" => "storage/exports/" . $export_name . ".zip"
+        "message" => "Data export is ready. Request this endpoint with ?download=1 (authenticated) to download your archive.",
+        "download_url" => "api/export_data.php?download=1"
     ]);
 
 } catch (Exception $e) {
     http_response_code(500);
-    echo json_encode(["message" => "Export failed: " . $e->getMessage()]);
+    error_log("Export failed: " . $e->getMessage());
+    echo json_encode(["message" => "Export failed. Please try again later."]);
 }
 ?>

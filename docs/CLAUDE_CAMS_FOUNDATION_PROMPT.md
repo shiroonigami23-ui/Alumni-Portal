@@ -48,9 +48,9 @@ Use these as hard facts:
   - `verify_local.ps1`
 - Deployment docs available:
   - `README.md`
-  - `POSTGRES_SETUP.md`
-  - `AWS_DEPLOYMENT.md`
-  - `QUICKSTART_AWS.md`
+  - `docs/deployment/POSTGRES_SETUP.md`
+  - `docs/deployment/AWS_DEPLOYMENT.md`
+  - `docs/deployment/QUICKSTART_AWS.md`
 
 ## 4) Main User-Facing Pages (mention in module mapping)
 Top-level pages include:

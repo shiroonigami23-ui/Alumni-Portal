@@ -1,0 +1,19 @@
+name: 💡 Feature request
+description: Suggest an idea to make the alumni hub better
+labels: [enhancement]
+body:
+  - type: textarea
+    id: problem
+    attributes: { label: "What problem does this solve?", placeholder: "As an alumnus, I want … so that …" }
+    validations: { required: true }
+  - type: textarea
+    id: solution
+    attributes: { label: Proposed solution }
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      options: [Feed, Profiles & directory, Mentorship, Messages, Jobs, Events, Admin & moderation, Mobile / PWA, Other]
+  - type: textarea
+    id: extra
+    attributes: { label: Mock-ups or examples }

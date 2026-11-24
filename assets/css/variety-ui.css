@@ -280,3 +280,66 @@ nav.bg-white.shadow-md {
     -webkit-backdrop-filter: blur(14px);
   }
 }
+
+/* ------------------------------------------------------------------
+   v2 polish — contrast fixes, accessibility, cleaner surfaces
+   ------------------------------------------------------------------ */
+
+/* Page-specific light cards must follow the active theme, otherwise the
+   dark theme renders light text on a light card (login/register bug). */
+[data-theme="dark"] .login-card,
+[data-theme="dark"] .register-card,
+[data-theme="dark"] .conduct-rule,
+[data-theme="dark"] .pinned-post,
+[data-theme="dark"] .tab-active {
+  background: var(--surface-strong) !important;
+  border: 1px solid var(--surface-border) !important;
+  color: var(--text-main) !important;
+}
+[data-theme="dark"] .login-card .bg-blue-100,
+[data-theme="dark"] .register-card .bg-blue-100 {
+  background: rgba(56, 189, 248, 0.14) !important;
+}
+[data-theme="dark"] .text-gray-800 { color: #e7e9ea !important; }
+[data-theme="dark"] label { color: #cbd5e1; }
+[data-theme="dark"] .bg-gray-100,
+[data-theme="dark"] .bg-gray-200 { background: rgba(148, 163, 184, 0.12) !important; }
+
+/* Keyboard users always see where they are */
+:where(a, button, input, select, textarea, [tabindex]):focus-visible {
+  outline: 2px solid var(--brand-2) !important;
+  outline-offset: 2px;
+}
+
+/* Calmer, consistent geometry */
+.rounded-lg, .rounded-xl { border-radius: 14px; }
+.rounded-2xl { border-radius: 20px; }
+button, a.inline-flex, a.px-4, a.px-6 { transition: transform .15s ease, filter .15s ease, box-shadow .15s ease; }
+button:active:not(:disabled) { transform: translateY(1px); }
+button:disabled { opacity: .55; cursor: not-allowed; }
+
+/* Readable long text */
+p, li { line-height: 1.6; }
+.prose, .post-content { max-width: 72ch; }
+
+/* Selection + scrollbars */
+::selection { background: color-mix(in srgb, var(--brand-2) 30%, transparent); }
+* { scrollbar-width: thin; scrollbar-color: color-mix(in srgb, var(--text-muted) 40%, transparent) transparent; }
+
+/* Skip-to-content link (added by variety-ui.js) */
+.vu-skip {
+  position: fixed; left: 12px; top: -48px; z-index: 9999;
+  padding: 10px 14px; border-radius: 10px;
+  background: var(--brand-1); color: #fff !important; font-weight: 600;
+  transition: top .2s ease;
+}
+.vu-skip:focus { top: 12px; }
+
+/* Respect reduced-motion preferences */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; scroll-behavior: auto !important; }
+  .vu-reveal { opacity: 1 !important; transform: none !important; }
+  .card-hover, .hover\:shadow-md:hover, .post-card:hover, .alumni-card:hover { transform: none; }
+}
+html { scroll-behavior: smooth; }
+[data-theme="dark"] .bg-blue-50 { background: rgba(56, 189, 248, 0.14) !important; color: #7dd3fc !important; }

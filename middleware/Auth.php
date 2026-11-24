@@ -114,12 +114,12 @@ class Auth {
 
     public static function getClientIp(): string
     {
-        $ip = $_SERVER['HTTP_X_FORWARDED_FOR'] ?? ($_SERVER['REMOTE_ADDR'] ?? '127.0.0.1');
-        if (strpos($ip, ',') !== false) {
-            $parts = explode(',', $ip);
-            $ip = trim((string)$parts[0]);
+        // Security layer resolves X-Forwarded-For only from trusted proxies (anti-spoofing)
+        if (function_exists('ap_client_ip')) {
+            return ap_client_ip();
         }
-        return (string)$ip;
+        $ip = (string)($_SERVER['REMOTE_ADDR'] ?? '127.0.0.1');
+        return $ip;
     }
 
     public static function getClientFingerprint(): string
@@ -161,12 +161,13 @@ class Auth {
     public function logAction($user_id, $action, $details) {
         $query = "INSERT INTO activity_logs (user_id, action, details, ip_address) VALUES (:uid, :action, :details, :ip)";
         $stmt = $this->db->prepare($query);
-        $ip = $_SERVER['REMOTE_ADDR'] ?? '127.0.0.1';
+        $ip = self::getClientIp();
         $stmt->execute(['uid' => $user_id, 'action' => $action, 'details' => $details, 'ip' => $ip]);
 
         $log_entry = "[" . date('Y-m-d H:i:s') . "] User ID: $user_id | Action: $action | Details: $details | IP: $ip" . PHP_EOL;
         $log_file = dirname(__DIR__) . DIRECTORY_SEPARATOR . 'storage' . DIRECTORY_SEPARATOR . 'log.txt';
-        if (!file_exists(dirname($log_file))) { mkdir(dirname($log_file), 0777, true); }
+        $log_file = dirname(__DIR__) . DIRECTORY_SEPARATOR . 'storage' . DIRECTORY_SEPARATOR . 'logs' . DIRECTORY_SEPARATOR . 'activity.log';
+        if (!file_exists(dirname($log_file))) { mkdir(dirname($log_file), 0750, true); }
         file_put_contents($log_file, $log_entry, FILE_APPEND);
     }
 }

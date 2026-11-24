@@ -1,0 +1,28 @@
+name: 🐛 Bug report
+description: Something on the portal isn't working
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: "Thanks for reporting! **Security problems?** Please follow SECURITY.md instead of filing an issue."
+  - type: input
+    id: page
+    attributes: { label: "Page / URL", placeholder: "/feed.php or /api/get_feed.php" }
+    validations: { required: true }
+  - type: textarea
+    id: steps
+    attributes: { label: Steps to reproduce, placeholder: "1. Go to …\n2. Click …\n3. See error" }
+    validations: { required: true }
+  - type: textarea
+    id: expected
+    attributes: { label: "Expected vs actual" }
+    validations: { required: true }
+  - type: dropdown
+    id: role
+    attributes: { label: Your role, options: [Student, Alumni, Faculty, Admin, Not signed in] }
+  - type: input
+    id: device
+    attributes: { label: "Browser & device", placeholder: "Chrome 131 on Android" }
+  - type: textarea
+    id: extra
+    attributes: { label: "Screenshots / console errors" }
