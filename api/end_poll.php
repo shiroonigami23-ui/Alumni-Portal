@@ -1,4 +1,6 @@
 <?php
+require_once __DIR__ . '/_kernel.php';
+$api = api_endpoint(['access' => 'member']);   // who may call this — enforced before anything below
 header("Access-Control-Allow-Origin: *");
 header("Content-Type: application/json; charset=UTF-8");
 header("Access-Control-Allow-Methods: POST");
@@ -50,7 +52,7 @@ if (!empty($data->poll_id)) {
         }
     } catch (Exception $e) {
         http_response_code(500);
-        echo json_encode(["message" => "Error: " . $e->getMessage()]);
+        echo json_encode(["message" => api_error_message($e)]);
     }
 } else {
     http_response_code(400);

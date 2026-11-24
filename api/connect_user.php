@@ -8,6 +8,8 @@
  * GET  ?action=requests                         pending requests sent to me
  * GET  ?action=state&user_id=N                  my follow state toward N
  */
+require_once __DIR__ . '/_kernel.php';
+$api = api_endpoint(['access' => 'member']);   // who may call this — enforced before anything below
 header("Content-Type: application/json; charset=UTF-8");
 
 require_once '../config/Database.php';

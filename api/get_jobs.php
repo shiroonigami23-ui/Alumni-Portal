@@ -3,6 +3,8 @@
  * Job board listing. GET ?all=1 includes closed jobs (for their posters/admins).
  * Poster names come from profiles — emails are never exposed.
  */
+require_once __DIR__ . '/_kernel.php';
+$api = api_endpoint(['access' => 'member']);   // who may call this — enforced before anything below
 header("Content-Type: application/json; charset=UTF-8");
 
 include_once '../config/Database.php';

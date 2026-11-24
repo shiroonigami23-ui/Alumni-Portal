@@ -4,6 +4,8 @@
  * GET ?q=term  →  { success, results: { users, jobs, events, referrals } }
  * Private profiles are hidden (admins see everyone). Max 5 per group.
  */
+require_once __DIR__ . '/_kernel.php';
+$api = api_endpoint(['access' => 'member']);   // who may call this — enforced before anything below
 header("Content-Type: application/json; charset=UTF-8");
 
 include_once '../config/Database.php';

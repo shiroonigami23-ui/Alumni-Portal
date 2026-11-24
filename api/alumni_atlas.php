@@ -9,6 +9,8 @@
  * Aggregates are computed from active alumni. Private profiles are counted in
  * totals but never listed by name (admins see everyone, like the directory).
  */
+require_once __DIR__ . '/_kernel.php';
+$api = api_endpoint(['access' => 'member']);   // who may call this — enforced before anything below
 header("Content-Type: application/json; charset=UTF-8");
 
 include_once '../config/Database.php';

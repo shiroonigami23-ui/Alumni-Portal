@@ -5,6 +5,25 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and 
 
 ## [Unreleased]
 
+## [2.3.1] — 2026-11-24 — "One front door"
+
+Every API endpoint now goes through a shared kernel, so security doesn't depend on each of 121 files remembering the same checks.
+
+### 🏗️ Architecture
+- **`api/_kernel.php`**: endpoints start with `api_endpoint(['access' => ...])` — `public`, `member`, `staff`, `admin`, `moderator`, or a role list, plus optional stricter levels per `action`. The kernel authenticates, enforces the level *before* the endpoint runs, parses input (query/form/JSON) with validated getters, and gives one response shape (`api_ok` / `api_fail`).
+- All 121 endpoints migrated; retired ones use `api_retired()`.
+- Internal errors are never shown to people: `api_error_message($e)` keeps our own messages and replaces database/PHP errors with a calm message and a reference code (`ERR-3f9a2c1b`) that's explained only in the server log. 42 endpoints used to echo raw exception text.
+- `Auth::authenticate()` (non-exiting, memoised per request) underneath the old `validateRequest()`.
+
+### 🔐 Security
+- `get_event_attendees.php` was readable **without signing in** — names, photos and branches of everyone going to any event. Now members only, and private accounts you don't follow and blocked people are counted but not named.
+- Sign-in tokens weren't found on nginx/PHP-FPM servers (the header fallback looked in the wrong place).
+
+### 🧪 Tests (CI)
+- **API contract** (`tests/static/api_contract.php`): fails the build if an endpoint has no access declaration, reads input or touches the database before declaring, or sends raw exception text. Writes `tests/results/api-manifest.json`, the access map of the whole API.
+- **Front-end contract** (`tests/static/frontend_contract.py`): fails on unescaped user values in page templates, links without `safeUrl()`, and user text inside `onclick` strings.
+- **Authorization sweep** now reads the declarations (no hand list to forget) and adds a faculty attacker: 64 → **185** attempts. Demo data gains a fictional faculty account.
+
 ## [2.3.0] — 2026-11-24 — "Private means private"
 
 A full audit of profiles, privacy, uploads, permissions and injection, driven by new automated attack suites that now run in CI.
@@ -226,7 +245,8 @@ Every feature was exercised end-to-end (185 API checks, 68 browser checks); ever
 - Initial AWS-deployable alumni portal with Terraform, Docker and CI/CD.
 - Premium UI theme; PostgreSQL/AWS setup docs; local verification scripts.
 
-[Unreleased]: https://github.com/shiroonigami23-ui/Alumni-Portal/compare/v2.3.0...HEAD
+[Unreleased]: https://github.com/shiroonigami23-ui/Alumni-Portal/compare/v2.3.1...HEAD
+[2.3.1]: https://github.com/shiroonigami23-ui/Alumni-Portal/releases/tag/v2.3.1
 [2.3.0]: https://github.com/shiroonigami23-ui/Alumni-Portal/releases/tag/v2.3.0
 [2.2.0]: https://github.com/shiroonigami23-ui/Alumni-Portal/releases/tag/v2.2.0
 [2.1.0]: https://github.com/shiroonigami23-ui/Alumni-Portal/releases/tag/v2.1.0

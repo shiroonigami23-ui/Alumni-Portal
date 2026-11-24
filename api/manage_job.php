@@ -3,6 +3,8 @@
  * Poster / admin job management.
  * POST {job_id, action: update|close|reopen|delete, ...fields for update}
  */
+require_once __DIR__ . '/_kernel.php';
+$api = api_endpoint(['access' => 'member']);   // who may call this — enforced before anything below
 header("Content-Type: application/json; charset=UTF-8");
 
 include_once '../config/Database.php';

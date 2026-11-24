@@ -748,7 +748,7 @@ include 'includes/sidebar.php';
                         ${hasPreviousVersion ? `
                             <div id="previous-version-${post.id}" class="hidden mt-3 rounded-lg border border-gray-200 bg-gray-50 p-3">
                                 <div class="flex items-center justify-between gap-2 mb-2">
-                                    <span class="text-xs font-semibold text-gray-600">Previous version (r${post.previous_version_preview.revision_no || ''})</span>
+                                    <span class="text-xs font-semibold text-gray-600">Previous version (r${Number(post.previous_version_preview.revision_no) || ''})</span>
                                     <button class="text-xs text-blue-700 underline jump-newer-version-btn" data-post-id="${post.id}" type="button">Jump to newer version</button>
                                 </div>
                                 <p class="text-gray-700 whitespace-pre-line blur-[1px]">${escapeHtml(post.previous_version_preview.content || '')}</p>
@@ -762,10 +762,10 @@ include 'includes/sidebar.php';
                             <div class="grid grid-cols-2 md:grid-cols-3 gap-2">
                                 ${attachmentsSafe.map(attachment => `
                                     ${(attachment.type === 'image' || attachment.type === 'gif') ? 
-                                        `<img src="${attachment.url}" alt="Attachment" class="w-full h-32 object-cover rounded-lg cursor-pointer hover:opacity-90" onerror="this.style.display='none'" data-view-image="${attachment.url}">` : 
-                                        `<a href="${attachment.url}" target="_blank" rel="noopener noreferrer" class="flex items-center p-3 border border-gray-200 rounded-lg hover:bg-gray-50">
+                                        `<img src="${attachment.url /* safe-html: escaped when attachmentsSafe/cAttachments were built */}" alt="Attachment" class="w-full h-32 object-cover rounded-lg cursor-pointer hover:opacity-90" onerror="this.style.display='none'" data-view-image="${attachment.url /* safe-html: escaped when attachmentsSafe/cAttachments were built */}">` : 
+                                        `<a href="${attachment.url /* safe-html: escaped when attachmentsSafe/cAttachments were built */}" target="_blank" rel="noopener noreferrer" class="flex items-center p-3 border border-gray-200 rounded-lg hover:bg-gray-50">
                                             <i data-lucide="file" class="h-5 w-5 text-gray-400 mr-3"></i>
-                                            <span class="text-sm text-gray-700 truncate">${attachment.name}</span>
+                                            <span class="text-sm text-gray-700 truncate">${attachment.name /* safe-html: escaped when attachmentsSafe/cAttachments were built */}</span>
                                         </a>`}
                                 `).join('')}
                             </div>
@@ -1437,9 +1437,9 @@ include 'includes/sidebar.php';
                             <div class="mt-2 flex flex-wrap gap-2">
                                 ${cAttachments.map(a => {
                                     if (a.type === 'image' || a.type === 'gif') {
-                                        return `<img src="${a.url}" alt="${a.name}" class="h-20 w-20 object-cover rounded border border-gray-200 cursor-pointer" onerror="this.style.display='none'" data-view-image="${a.url}">`;
+                                        return `<img src="${a.url /* safe-html: escaped when attachmentsSafe/cAttachments were built */}" alt="${a.name /* safe-html: escaped when attachmentsSafe/cAttachments were built */}" class="h-20 w-20 object-cover rounded border border-gray-200 cursor-pointer" onerror="this.style.display='none'" data-view-image="${a.url /* safe-html: escaped when attachmentsSafe/cAttachments were built */}">`;
                                     }
-                                    return `<a href="${a.url}" target="_blank" rel="noopener noreferrer" class="text-xs text-blue-600 underline">${a.name}</a>`;
+                                    return `<a href="${a.url /* safe-html: escaped when attachmentsSafe/cAttachments were built */}" target="_blank" rel="noopener noreferrer" class="text-xs text-blue-600 underline">${a.name /* safe-html: escaped when attachmentsSafe/cAttachments were built */}</a>`;
                                 }).join('')}
                             </div>
                         ` : ''}
@@ -2138,7 +2138,7 @@ include 'includes/sidebar.php';
                         const preview = document.createElement('div');
                         preview.className = 'relative';
                         preview.innerHTML = `
-                            <img src="${e.target.result}" alt="Preview" class="h-20 w-20 object-cover rounded-lg">
+                            <img src="${escapeHtml(safeUrl(e.target.result))}" alt="Preview" class="h-20 w-20 object-cover rounded-lg">
                             <button type="button" class="absolute -top-1 -right-1 bg-red-500 text-white rounded-full h-5 w-5 flex items-center justify-center text-xs" 
                                     onclick="removeImagePreview(this)">
                                 ×

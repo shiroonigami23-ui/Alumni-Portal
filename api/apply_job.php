@@ -5,6 +5,8 @@
  * Fixed: $_FILES array access
  */
 
+require_once __DIR__ . '/_kernel.php';
+$api = api_endpoint(['access' => 'member']);   // who may call this — enforced before anything below
 require_once __DIR__ . '/../middleware/Auth.php';
 require_once __DIR__ . '/../config/Database.php';
 
@@ -201,11 +203,11 @@ try {
 } catch (PDOException $e) {
     http_response_code(500);
     echo json_encode([
-        'message' => 'Database error: ' . $e->getMessage()
+        'message' => api_error_message($e)
     ]);
 } catch (Exception $e) {
     http_response_code(500);
     echo json_encode([
-        'message' => 'Server error: ' . $e->getMessage()
+        'message' => api_error_message($e)
     ]);
 }

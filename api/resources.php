@@ -6,6 +6,8 @@
  * POST ?action=download {resource_id}   → counts a download, returns the URL
  * POST ?action=delete {resource_id}     owner or admin
  */
+require_once __DIR__ . '/_kernel.php';
+$api = api_endpoint(['access' => 'member']);   // who may call this — enforced before anything below
 header("Content-Type: application/json; charset=UTF-8");
 include_once '../config/Database.php';
 include_once '../middleware/Auth.php';

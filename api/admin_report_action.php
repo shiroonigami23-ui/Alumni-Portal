@@ -1,4 +1,6 @@
 <?php
+require_once __DIR__ . '/_kernel.php';
+$api = api_endpoint(['access' => 'admin']);   // who may call this — enforced before anything below
 header("Access-Control-Allow-Origin: *");
 header("Content-Type: application/json; charset=UTF-8");
 header("Access-Control-Allow-Methods: POST");
@@ -59,5 +61,5 @@ try {
 
     respond_report_action(['success' => false, 'message' => 'Unsupported report action.'], 400);
 } catch (Throwable $e) {
-    respond_report_action(['success' => false, 'message' => 'Report action failed.', 'error' => $e->getMessage()], 500);
+    respond_report_action(['success' => false, 'message' => 'Report action failed.', 'error_ref' => api_error_ref($e)], 500);
 }

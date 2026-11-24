@@ -1,4 +1,6 @@
 <?php
+require_once __DIR__ . '/_kernel.php';
+$api = api_endpoint(['access' => 'member']);   // who may call this — enforced before anything below
 require_once __DIR__ . '/_privacy.php';
 /** POST {poll_id, option_id} — one vote per person; returns fresh results. */
 header("Content-Type: application/json; charset=UTF-8");

@@ -5,6 +5,8 @@
  * Faculty events are auto-approved, alumni events need approval
  */
 
+require_once __DIR__ . '/_kernel.php';
+$api = api_endpoint(['access' => 'member']);   // who may call this — enforced before anything below
 require_once '../config/Database.php';
 require_once '../middleware/Auth.php';
 require_once '../models/Event.php';

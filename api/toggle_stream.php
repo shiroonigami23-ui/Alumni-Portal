@@ -4,6 +4,8 @@
  * POST {action: start, title, description?, provider: jitsi|youtube, url? (YouTube link)}
  * POST {action: stop}
  */
+require_once __DIR__ . '/_kernel.php';
+$api = api_endpoint(['access' => ['alumni', 'faculty', 'admin']]);   // who may call this — enforced before anything below
 header('Content-Type: application/json; charset=UTF-8');
 require_once '../config/Database.php';
 require_once '../middleware/Auth.php';

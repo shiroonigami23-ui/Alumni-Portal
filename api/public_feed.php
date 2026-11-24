@@ -4,6 +4,8 @@
  * Only published, approved posts meant for everyone; never emails; capped and cached.
  * GET ?limit=12 (max 30)
  */
+require_once __DIR__ . '/_kernel.php';
+$api = api_endpoint(['access' => 'public']);   // who may call this — enforced before anything below
 header("Content-Type: application/json; charset=UTF-8");
 header('Cache-Control: public, max-age=60');
 

@@ -165,3 +165,11 @@ jobs:
           extra=$(ls *.php | grep -vxE 'index\.php|router\.php' || true)
           if [ -n "$extra" ]; then echo "::error::Move these into pages/ and add a route: $extra"; exit 1; fi
           echo "Root is tidy."
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          coverage: none
+      - name: API contract (every endpoint declares who may call it)
+        run: php tests/static/api_contract.php
+      - name: Front-end contract (user values are escaped)
+        run: python3 tests/static/frontend_contract.py

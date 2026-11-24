@@ -3,6 +3,8 @@
  * Public: the current site-wide banner set by admins (or null).
  * Shown at the top of every page by assets/js/variety-ui.js.
  */
+require_once __DIR__ . '/_kernel.php';
+$api = api_endpoint(['access' => 'public']);   // who may call this — enforced before anything below
 header("Content-Type: application/json; charset=UTF-8");
 header('Cache-Control: public, max-age=60');
 

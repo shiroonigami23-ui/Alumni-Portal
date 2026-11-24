@@ -4,6 +4,8 @@
  * GET ?role=alumni|student|faculty|admin&status=active  (optional filters)
  * Values are neutralised against spreadsheet formula injection.
  */
+require_once __DIR__ . '/_kernel.php';
+$api = api_endpoint(['access' => 'admin']);   // who may call this — enforced before anything below
 include_once '../config/Database.php';
 include_once '../middleware/Auth.php';
 

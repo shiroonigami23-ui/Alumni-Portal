@@ -1,4 +1,6 @@
 <?php
+require_once __DIR__ . '/_kernel.php';
+$api = api_endpoint(['access' => 'moderator']);   // who may call this — enforced before anything below
 require_once __DIR__ . '/../helpers/Cache.php';
 register_shutdown_function(function () { if (($_SERVER['REQUEST_METHOD'] ?? '') !== 'GET' && http_response_code() < 400) { Cache::bump('public_feed'); } });
 header("Access-Control-Allow-Origin: *");
@@ -108,7 +110,7 @@ if (strtoupper((string)($_SERVER['REQUEST_METHOD'] ?? 'GET')) === 'GET') {
             'data' => $data
         ]);
     } catch (Throwable $e) {
-        moderation_queue_respond(['success' => false, 'message' => 'Failed to load moderation queue.', 'error' => $e->getMessage()], 500);
+        moderation_queue_respond(['success' => false, 'message' => 'Failed to load moderation queue.', 'error_ref' => api_error_ref($e)], 500);
     }
 }
 
@@ -252,5 +254,5 @@ try {
         'queue_item_type' => 'new_post'
     ]);
 } catch (Throwable $e) {
-    moderation_queue_respond(['success' => false, 'message' => 'Failed to process moderation action.', 'error' => $e->getMessage()], 500);
+    moderation_queue_respond(['success' => false, 'message' => 'Failed to process moderation action.', 'error_ref' => api_error_ref($e)], 500);
 }

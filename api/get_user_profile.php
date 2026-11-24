@@ -4,6 +4,8 @@
  * Retrieve public profile information for any user
  */
 
+require_once __DIR__ . '/_kernel.php';
+$api = api_endpoint(['access' => 'member']);   // who may call this — enforced before anything below
 require_once '../config/Database.php';
 require_once '../config/DbCompat.php';
 require_once '../middleware/Auth.php';

@@ -1,5 +1,7 @@
 <?php
 
+require_once __DIR__ . '/_kernel.php';
+$api = api_endpoint(['access' => 'public']);   // who may call this — enforced before anything below
 include_once '../config/Database.php';
 include_once __DIR__ . '/_asset_store.php';
 

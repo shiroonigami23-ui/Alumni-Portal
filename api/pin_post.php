@@ -6,6 +6,8 @@
  * Faculty: Max 5 pinned posts
  */
 
+require_once __DIR__ . '/_kernel.php';
+$api = api_endpoint(['access' => 'member']);   // who may call this — enforced before anything below
 require_once '../config/Database.php';
 require_once '../middleware/Auth.php';
 
@@ -110,5 +112,5 @@ try {
     
 } catch (PDOException $e) {
     http_response_code(500);
-    echo json_encode(['message' => 'Database error: ' . $e->getMessage()]);
+    echo json_encode(['message' => api_error_message($e)]);
 }

@@ -7,6 +7,8 @@
  * Fixed: Tech stack from normalized user_skills table
  */
 
+require_once __DIR__ . '/_kernel.php';
+$api = api_endpoint(['access' => 'member']);   // who may call this — enforced before anything below
 require_once __DIR__ . '/../middleware/Auth.php';
 require_once __DIR__ . '/../config/Database.php';
 require_once __DIR__ . '/_profile_media.php';
@@ -22,7 +24,7 @@ try {
     $user_id = $auth->validateRequest();
 } catch (Exception $e) {
     http_response_code(401);
-    echo json_encode(['message' => 'Unauthorized: ' . $e->getMessage()]);
+    echo json_encode(['message' => api_error_message($e, 'Unauthorized')]);
     exit;
 }
 
@@ -352,6 +354,6 @@ try {
 } catch (PDOException $e) {
     http_response_code(500);
     echo json_encode([
-        'message' => 'Database error: ' . $e->getMessage()
+        'message' => api_error_message($e)
     ]);
 }

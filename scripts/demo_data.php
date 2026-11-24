@@ -50,6 +50,13 @@ function seed_demo_data(PDO $db): int
             'c' => null, 'jr' => null, 'city' => 'Gwalior', 'country' => 'India', 'li' => null, 'sk' => 'DSA, Web development']);
     }
 
+    // One fictional faculty member (used by the authorization tests: faculty must not reach admin-only endpoints)
+    $insUser->execute(['e' => 'neha.kulkarni.faculty@demo.rjit.local', 'h' => $hash, 'r' => 'faculty', 'll' => '1', 'ca' => '40']);
+    $fid = (int)$insUser->fetchColumn();
+    $insProfile->execute(['u' => $fid, 'n' => 'Dr. Neha Kulkarni', 'b' => 'Associate Professor, CSE. Databases and distributed systems.',
+        'br' => $branches[0], 'gy' => null, 'jy' => 2015, 'c' => null, 'jr' => null, 'city' => 'Gwalior', 'country' => 'India', 'li' => null,
+        'sk' => 'Databases, Distributed systems']);
+
     // Posts
     $posts = [
         "🎉 Just completed 5 years at %s! Grateful to RJIT for the foundation. Juniors — DM me for interview prep.",

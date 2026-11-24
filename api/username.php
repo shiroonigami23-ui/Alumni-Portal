@@ -6,6 +6,8 @@
  * GET                        → your handle + when you can change it next
  * POST { username }          → change it
  */
+require_once __DIR__ . '/_kernel.php';
+$api = api_endpoint(['access' => 'member']);   // who may call this — enforced before anything below
 header("Content-Type: application/json; charset=UTF-8");
 
 require_once '../config/Database.php';

@@ -1,18 +1,10 @@
 {
-    "generated": "2026-11-24T04:30:56+00:00",
-    "passed": 64,
-    "total": 64,
+    "generated": "2026-11-24T09:01:16+00:00",
+    "passed": 185,
+    "total": 185,
     "results": [
         {
             "as": "student",
-            "endpoint": "POST api\/admin_moderation.php",
-            "http": 410,
-            "refused": true,
-            "db_unchanged": true,
-            "pass": true
-        },
-        {
-            "as": "student",
             "endpoint": "POST api\/ban_user.php",
             "http": 403,
             "refused": true,
@@ -55,14 +47,6 @@
             "as": "student",
             "endpoint": "POST api\/restore_content.php",
             "http": 403,
-            "refused": true,
-            "db_unchanged": true,
-            "pass": true
-        },
-        {
-            "as": "student",
-            "endpoint": "POST api\/approve_announcement.php",
-            "http": 410,
             "refused": true,
             "db_unchanged": true,
             "pass": true
@@ -173,14 +157,6 @@
         },
         {
             "as": "student",
-            "endpoint": "POST api\/create_announcement.php",
-            "http": 410,
-            "refused": true,
-            "db_unchanged": true,
-            "pass": true
-        },
-        {
-            "as": "student",
             "endpoint": "POST api\/mentorship.php?action=review_application {\"status\":\"approved\"}",
             "http": 403,
             "refused": true,
@@ -260,9 +236,321 @@
             "pass": true
         },
         {
-            "as": "alumni",
-            "endpoint": "POST api\/admin_moderation.php",
-            "http": 410,
+            "as": "student",
+            "endpoint": "POST api\/admin_bulk_users.php",
+            "http": 403,
+            "refused": true,
+            "db_unchanged": true,
+            "pass": true
+        },
+        {
+            "as": "student",
+            "endpoint": "GET api\/admin_bulk_users.php",
+            "http": 403,
+            "refused": true,
+            "db_unchanged": true,
+            "pass": true
+        },
+        {
+            "as": "student",
+            "endpoint": "POST api\/admin_export_users.php",
+            "http": 403,
+            "refused": true,
+            "db_unchanged": true,
+            "pass": true
+        },
+        {
+            "as": "student",
+            "endpoint": "POST api\/admin_insights.php",
+            "http": 403,
+            "refused": true,
+            "db_unchanged": true,
+            "pass": true
+        },
+        {
+            "as": "student",
+            "endpoint": "POST api\/admin_report_action.php",
+            "http": 403,
+            "refused": true,
+            "db_unchanged": true,
+            "pass": true
+        },
+        {
+            "as": "student",
+            "endpoint": "GET api\/admin_report_action.php",
+            "http": 403,
+            "refused": true,
+            "db_unchanged": true,
+            "pass": true
+        },
+        {
+            "as": "student",
+            "endpoint": "POST api\/admin_stats.php",
+            "http": 403,
+            "refused": true,
+            "db_unchanged": true,
+            "pass": true
+        },
+        {
+            "as": "student",
+            "endpoint": "POST api\/admin_transfer_alumni_email.php",
+            "http": 403,
+            "refused": true,
+            "db_unchanged": true,
+            "pass": true
+        },
+        {
+            "as": "student",
+            "endpoint": "GET api\/admin_transfer_alumni_email.php",
+            "http": 403,
+            "refused": true,
+            "db_unchanged": true,
+            "pass": true
+        },
+        {
+            "as": "student",
+            "endpoint": "POST api\/admin_user_actions.php",
+            "http": 403,
+            "refused": true,
+            "db_unchanged": true,
+            "pass": true
+        },
+        {
+            "as": "student",
+            "endpoint": "GET api\/admin_user_actions.php",
+            "http": 403,
+            "refused": true,
+            "db_unchanged": true,
+            "pass": true
+        },
+        {
+            "as": "student",
+            "endpoint": "POST api\/admin_users.php",
+            "http": 403,
+            "refused": true,
+            "db_unchanged": true,
+            "pass": true
+        },
+        {
+            "as": "student",
+            "endpoint": "POST api\/approve_event.php",
+            "http": 403,
+            "refused": true,
+            "db_unchanged": true,
+            "pass": true
+        },
+        {
+            "as": "student",
+            "endpoint": "GET api\/approve_event.php",
+            "http": 403,
+            "refused": true,
+            "db_unchanged": true,
+            "pass": true
+        },
+        {
+            "as": "student",
+            "endpoint": "POST api\/approve_user.php",
+            "http": 403,
+            "refused": true,
+            "db_unchanged": true,
+            "pass": true
+        },
+        {
+            "as": "student",
+            "endpoint": "GET api\/approve_user.php",
+            "http": 403,
+            "refused": true,
+            "db_unchanged": true,
+            "pass": true
+        },
+        {
+            "as": "student",
+            "endpoint": "POST api\/ban_user.php",
+            "http": 403,
+            "refused": true,
+            "db_unchanged": true,
+            "pass": true
+        },
+        {
+            "as": "student",
+            "endpoint": "GET api\/ban_user.php",
+            "http": 403,
+            "refused": true,
+            "db_unchanged": true,
+            "pass": true
+        },
+        {
+            "as": "student",
+            "endpoint": "POST api\/generate_token.php",
+            "http": 403,
+            "refused": true,
+            "db_unchanged": true,
+            "pass": true
+        },
+        {
+            "as": "student",
+            "endpoint": "GET api\/generate_token.php",
+            "http": 403,
+            "refused": true,
+            "db_unchanged": true,
+            "pass": true
+        },
+        {
+            "as": "student",
+            "endpoint": "POST api\/get_reports.php",
+            "http": 403,
+            "refused": true,
+            "db_unchanged": true,
+            "pass": true
+        },
+        {
+            "as": "student",
+            "endpoint": "POST api\/kick_user.php",
+            "http": 403,
+            "refused": true,
+            "db_unchanged": true,
+            "pass": true
+        },
+        {
+            "as": "student",
+            "endpoint": "GET api\/kick_user.php",
+            "http": 403,
+            "refused": true,
+            "db_unchanged": true,
+            "pass": true
+        },
+        {
+            "as": "student",
+            "endpoint": "POST api\/mentorship.php?action=review_application {\"action\":\"review_application\"}",
+            "http": 403,
+            "refused": true,
+            "db_unchanged": true,
+            "pass": true
+        },
+        {
+            "as": "student",
+            "endpoint": "GET api\/mentorship.php?action=review_application",
+            "http": 403,
+            "refused": true,
+            "db_unchanged": true,
+            "pass": true
+        },
+        {
+            "as": "student",
+            "endpoint": "POST api\/moderation_queue.php",
+            "http": 403,
+            "refused": true,
+            "db_unchanged": true,
+            "pass": true
+        },
+        {
+            "as": "student",
+            "endpoint": "GET api\/moderation_queue.php",
+            "http": 403,
+            "refused": true,
+            "db_unchanged": true,
+            "pass": true
+        },
+        {
+            "as": "student",
+            "endpoint": "POST api\/post_job.php",
+            "http": 403,
+            "refused": true,
+            "db_unchanged": true,
+            "pass": true
+        },
+        {
+            "as": "student",
+            "endpoint": "GET api\/post_job.php",
+            "http": 403,
+            "refused": true,
+            "db_unchanged": true,
+            "pass": true
+        },
+        {
+            "as": "student",
+            "endpoint": "POST api\/process_fake_report.php",
+            "http": 403,
+            "refused": true,
+            "db_unchanged": true,
+            "pass": true
+        },
+        {
+            "as": "student",
+            "endpoint": "GET api\/process_fake_report.php",
+            "http": 403,
+            "refused": true,
+            "db_unchanged": true,
+            "pass": true
+        },
+        {
+            "as": "student",
+            "endpoint": "POST api\/restore_content.php",
+            "http": 403,
+            "refused": true,
+            "db_unchanged": true,
+            "pass": true
+        },
+        {
+            "as": "student",
+            "endpoint": "GET api\/restore_content.php",
+            "http": 403,
+            "refused": true,
+            "db_unchanged": true,
+            "pass": true
+        },
+        {
+            "as": "student",
+            "endpoint": "POST api\/success_stories.php?action=approve {\"action\":\"approve\"}",
+            "http": 403,
+            "refused": true,
+            "db_unchanged": true,
+            "pass": true
+        },
+        {
+            "as": "student",
+            "endpoint": "GET api\/success_stories.php?action=approve",
+            "http": 403,
+            "refused": true,
+            "db_unchanged": true,
+            "pass": true
+        },
+        {
+            "as": "student",
+            "endpoint": "POST api\/success_stories.php?action=reject {\"action\":\"reject\"}",
+            "http": 403,
+            "refused": true,
+            "db_unchanged": true,
+            "pass": true
+        },
+        {
+            "as": "student",
+            "endpoint": "GET api\/success_stories.php?action=reject",
+            "http": 403,
+            "refused": true,
+            "db_unchanged": true,
+            "pass": true
+        },
+        {
+            "as": "student",
+            "endpoint": "POST api\/toggle_stream.php",
+            "http": 403,
+            "refused": true,
+            "db_unchanged": true,
+            "pass": true
+        },
+        {
+            "as": "student",
+            "endpoint": "GET api\/toggle_stream.php",
+            "http": 403,
+            "refused": true,
+            "db_unchanged": true,
+            "pass": true
+        },
+        {
+            "as": "student",
+            "endpoint": "POST api\/view_logs.php",
+            "http": 403,
             "refused": true,
             "db_unchanged": true,
             "pass": true
@@ -311,14 +599,6 @@
             "as": "alumni",
             "endpoint": "POST api\/restore_content.php",
             "http": 403,
-            "refused": true,
-            "db_unchanged": true,
-            "pass": true
-        },
-        {
-            "as": "alumni",
-            "endpoint": "POST api\/approve_announcement.php",
-            "http": 410,
             "refused": true,
             "db_unchanged": true,
             "pass": true
@@ -429,14 +709,6 @@
         },
         {
             "as": "alumni",
-            "endpoint": "POST api\/create_announcement.php",
-            "http": 410,
-            "refused": true,
-            "db_unchanged": true,
-            "pass": true
-        },
-        {
-            "as": "alumni",
             "endpoint": "POST api\/mentorship.php?action=review_application {\"status\":\"approved\"}",
             "http": 403,
             "refused": true,
@@ -510,6 +782,702 @@
         {
             "as": "alumni",
             "endpoint": "GET api\/get_applicants.php?job_id=1",
+            "http": 403,
+            "refused": true,
+            "db_unchanged": true,
+            "pass": true
+        },
+        {
+            "as": "alumni",
+            "endpoint": "POST api\/admin_bulk_users.php",
+            "http": 403,
+            "refused": true,
+            "db_unchanged": true,
+            "pass": true
+        },
+        {
+            "as": "alumni",
+            "endpoint": "GET api\/admin_bulk_users.php",
+            "http": 403,
+            "refused": true,
+            "db_unchanged": true,
+            "pass": true
+        },
+        {
+            "as": "alumni",
+            "endpoint": "POST api\/admin_export_users.php",
+            "http": 403,
+            "refused": true,
+            "db_unchanged": true,
+            "pass": true
+        },
+        {
+            "as": "alumni",
+            "endpoint": "POST api\/admin_insights.php",
+            "http": 403,
+            "refused": true,
+            "db_unchanged": true,
+            "pass": true
+        },
+        {
+            "as": "alumni",
+            "endpoint": "POST api\/admin_report_action.php",
+            "http": 403,
+            "refused": true,
+            "db_unchanged": true,
+            "pass": true
+        },
+        {
+            "as": "alumni",
+            "endpoint": "GET api\/admin_report_action.php",
+            "http": 403,
+            "refused": true,
+            "db_unchanged": true,
+            "pass": true
+        },
+        {
+            "as": "alumni",
+            "endpoint": "POST api\/admin_stats.php",
+            "http": 403,
+            "refused": true,
+            "db_unchanged": true,
+            "pass": true
+        },
+        {
+            "as": "alumni",
+            "endpoint": "POST api\/admin_transfer_alumni_email.php",
+            "http": 403,
+            "refused": true,
+            "db_unchanged": true,
+            "pass": true
+        },
+        {
+            "as": "alumni",
+            "endpoint": "GET api\/admin_transfer_alumni_email.php",
+            "http": 403,
+            "refused": true,
+            "db_unchanged": true,
+            "pass": true
+        },
+        {
+            "as": "alumni",
+            "endpoint": "POST api\/admin_user_actions.php",
+            "http": 403,
+            "refused": true,
+            "db_unchanged": true,
+            "pass": true
+        },
+        {
+            "as": "alumni",
+            "endpoint": "GET api\/admin_user_actions.php",
+            "http": 403,
+            "refused": true,
+            "db_unchanged": true,
+            "pass": true
+        },
+        {
+            "as": "alumni",
+            "endpoint": "POST api\/admin_users.php",
+            "http": 403,
+            "refused": true,
+            "db_unchanged": true,
+            "pass": true
+        },
+        {
+            "as": "alumni",
+            "endpoint": "POST api\/approve_event.php",
+            "http": 403,
+            "refused": true,
+            "db_unchanged": true,
+            "pass": true
+        },
+        {
+            "as": "alumni",
+            "endpoint": "GET api\/approve_event.php",
+            "http": 403,
+            "refused": true,
+            "db_unchanged": true,
+            "pass": true
+        },
+        {
+            "as": "alumni",
+            "endpoint": "POST api\/approve_user.php",
+            "http": 403,
+            "refused": true,
+            "db_unchanged": true,
+            "pass": true
+        },
+        {
+            "as": "alumni",
+            "endpoint": "GET api\/approve_user.php",
+            "http": 403,
+            "refused": true,
+            "db_unchanged": true,
+            "pass": true
+        },
+        {
+            "as": "alumni",
+            "endpoint": "POST api\/ban_user.php",
+            "http": 403,
+            "refused": true,
+            "db_unchanged": true,
+            "pass": true
+        },
+        {
+            "as": "alumni",
+            "endpoint": "GET api\/ban_user.php",
+            "http": 403,
+            "refused": true,
+            "db_unchanged": true,
+            "pass": true
+        },
+        {
+            "as": "alumni",
+            "endpoint": "POST api\/generate_token.php",
+            "http": 403,
+            "refused": true,
+            "db_unchanged": true,
+            "pass": true
+        },
+        {
+            "as": "alumni",
+            "endpoint": "GET api\/generate_token.php",
+            "http": 403,
+            "refused": true,
+            "db_unchanged": true,
+            "pass": true
+        },
+        {
+            "as": "alumni",
+            "endpoint": "POST api\/get_reports.php",
+            "http": 403,
+            "refused": true,
+            "db_unchanged": true,
+            "pass": true
+        },
+        {
+            "as": "alumni",
+            "endpoint": "POST api\/kick_user.php",
+            "http": 403,
+            "refused": true,
+            "db_unchanged": true,
+            "pass": true
+        },
+        {
+            "as": "alumni",
+            "endpoint": "GET api\/kick_user.php",
+            "http": 403,
+            "refused": true,
+            "db_unchanged": true,
+            "pass": true
+        },
+        {
+            "as": "alumni",
+            "endpoint": "POST api\/mentorship.php?action=review_application {\"action\":\"review_application\"}",
+            "http": 403,
+            "refused": true,
+            "db_unchanged": true,
+            "pass": true
+        },
+        {
+            "as": "alumni",
+            "endpoint": "GET api\/mentorship.php?action=review_application",
+            "http": 403,
+            "refused": true,
+            "db_unchanged": true,
+            "pass": true
+        },
+        {
+            "as": "alumni",
+            "endpoint": "POST api\/moderation_queue.php",
+            "http": 403,
+            "refused": true,
+            "db_unchanged": true,
+            "pass": true
+        },
+        {
+            "as": "alumni",
+            "endpoint": "GET api\/moderation_queue.php",
+            "http": 403,
+            "refused": true,
+            "db_unchanged": true,
+            "pass": true
+        },
+        {
+            "as": "alumni",
+            "endpoint": "POST api\/process_fake_report.php",
+            "http": 403,
+            "refused": true,
+            "db_unchanged": true,
+            "pass": true
+        },
+        {
+            "as": "alumni",
+            "endpoint": "GET api\/process_fake_report.php",
+            "http": 403,
+            "refused": true,
+            "db_unchanged": true,
+            "pass": true
+        },
+        {
+            "as": "alumni",
+            "endpoint": "POST api\/restore_content.php",
+            "http": 403,
+            "refused": true,
+            "db_unchanged": true,
+            "pass": true
+        },
+        {
+            "as": "alumni",
+            "endpoint": "GET api\/restore_content.php",
+            "http": 403,
+            "refused": true,
+            "db_unchanged": true,
+            "pass": true
+        },
+        {
+            "as": "alumni",
+            "endpoint": "POST api\/success_stories.php?action=approve {\"action\":\"approve\"}",
+            "http": 403,
+            "refused": true,
+            "db_unchanged": true,
+            "pass": true
+        },
+        {
+            "as": "alumni",
+            "endpoint": "GET api\/success_stories.php?action=approve",
+            "http": 403,
+            "refused": true,
+            "db_unchanged": true,
+            "pass": true
+        },
+        {
+            "as": "alumni",
+            "endpoint": "POST api\/success_stories.php?action=reject {\"action\":\"reject\"}",
+            "http": 403,
+            "refused": true,
+            "db_unchanged": true,
+            "pass": true
+        },
+        {
+            "as": "alumni",
+            "endpoint": "GET api\/success_stories.php?action=reject",
+            "http": 403,
+            "refused": true,
+            "db_unchanged": true,
+            "pass": true
+        },
+        {
+            "as": "alumni",
+            "endpoint": "POST api\/view_logs.php",
+            "http": 403,
+            "refused": true,
+            "db_unchanged": true,
+            "pass": true
+        },
+        {
+            "as": "faculty",
+            "endpoint": "POST api\/ban_user.php",
+            "http": 403,
+            "refused": true,
+            "db_unchanged": true,
+            "pass": true
+        },
+        {
+            "as": "faculty",
+            "endpoint": "POST api\/restore_content.php",
+            "http": 403,
+            "refused": true,
+            "db_unchanged": true,
+            "pass": true
+        },
+        {
+            "as": "faculty",
+            "endpoint": "POST api\/approve_event.php",
+            "http": 403,
+            "refused": true,
+            "db_unchanged": true,
+            "pass": true
+        },
+        {
+            "as": "faculty",
+            "endpoint": "POST api\/admin_bulk_users.php",
+            "http": 403,
+            "refused": true,
+            "db_unchanged": true,
+            "pass": true
+        },
+        {
+            "as": "faculty",
+            "endpoint": "POST api\/admin_transfer_alumni_email.php",
+            "http": 403,
+            "refused": true,
+            "db_unchanged": true,
+            "pass": true
+        },
+        {
+            "as": "faculty",
+            "endpoint": "POST api\/admin_user_actions.php",
+            "http": 403,
+            "refused": true,
+            "db_unchanged": true,
+            "pass": true
+        },
+        {
+            "as": "faculty",
+            "endpoint": "POST api\/admin_user_actions.php {\"action\":\"set_role\"}",
+            "http": 403,
+            "refused": true,
+            "db_unchanged": true,
+            "pass": true
+        },
+        {
+            "as": "faculty",
+            "endpoint": "POST api\/admin_user_actions.php {\"action\":\"delete\"}",
+            "http": 403,
+            "refused": true,
+            "db_unchanged": true,
+            "pass": true
+        },
+        {
+            "as": "faculty",
+            "endpoint": "POST api\/admin_report_action.php",
+            "http": 403,
+            "refused": true,
+            "db_unchanged": true,
+            "pass": true
+        },
+        {
+            "as": "faculty",
+            "endpoint": "POST api\/admin_report_action.php {\"action\":\"dismiss\"}",
+            "http": 403,
+            "refused": true,
+            "db_unchanged": true,
+            "pass": true
+        },
+        {
+            "as": "faculty",
+            "endpoint": "POST api\/generate_token.php",
+            "http": 403,
+            "refused": true,
+            "db_unchanged": true,
+            "pass": true
+        },
+        {
+            "as": "faculty",
+            "endpoint": "POST api\/moderation_queue.php {\"action\":\"approve\"}",
+            "http": 403,
+            "refused": true,
+            "db_unchanged": true,
+            "pass": true
+        },
+        {
+            "as": "faculty",
+            "endpoint": "POST api\/moderation_queue.php {\"action\":\"reject\"}",
+            "http": 403,
+            "refused": true,
+            "db_unchanged": true,
+            "pass": true
+        },
+        {
+            "as": "faculty",
+            "endpoint": "POST api\/admin_insights.php {\"action\":\"broadcast\"}",
+            "http": 403,
+            "refused": true,
+            "db_unchanged": true,
+            "pass": true
+        },
+        {
+            "as": "faculty",
+            "endpoint": "POST api\/success_stories.php?action=approve {\"story_id\":1}",
+            "http": 403,
+            "refused": true,
+            "db_unchanged": true,
+            "pass": true
+        },
+        {
+            "as": "faculty",
+            "endpoint": "POST api\/events.php?action=approve",
+            "http": 400,
+            "refused": true,
+            "db_unchanged": true,
+            "pass": true
+        },
+        {
+            "as": "faculty",
+            "endpoint": "GET api\/admin_users.php",
+            "http": 403,
+            "refused": true,
+            "db_unchanged": true,
+            "pass": true
+        },
+        {
+            "as": "faculty",
+            "endpoint": "GET api\/admin_stats.php",
+            "http": 403,
+            "refused": true,
+            "db_unchanged": true,
+            "pass": true
+        },
+        {
+            "as": "faculty",
+            "endpoint": "GET api\/view_logs.php",
+            "http": 403,
+            "refused": true,
+            "db_unchanged": true,
+            "pass": true
+        },
+        {
+            "as": "faculty",
+            "endpoint": "GET api\/get_reports.php",
+            "http": 403,
+            "refused": true,
+            "db_unchanged": true,
+            "pass": true
+        },
+        {
+            "as": "faculty",
+            "endpoint": "GET api\/admin_export_users.php",
+            "http": 403,
+            "refused": true,
+            "db_unchanged": true,
+            "pass": true
+        },
+        {
+            "as": "faculty",
+            "endpoint": "GET api\/admin_insights.php",
+            "http": 403,
+            "refused": true,
+            "db_unchanged": true,
+            "pass": true
+        },
+        {
+            "as": "faculty",
+            "endpoint": "GET api\/get_applicants.php?job_id=1",
+            "http": 403,
+            "refused": true,
+            "db_unchanged": true,
+            "pass": true
+        },
+        {
+            "as": "faculty",
+            "endpoint": "POST api\/admin_bulk_users.php",
+            "http": 403,
+            "refused": true,
+            "db_unchanged": true,
+            "pass": true
+        },
+        {
+            "as": "faculty",
+            "endpoint": "GET api\/admin_bulk_users.php",
+            "http": 403,
+            "refused": true,
+            "db_unchanged": true,
+            "pass": true
+        },
+        {
+            "as": "faculty",
+            "endpoint": "POST api\/admin_export_users.php",
+            "http": 403,
+            "refused": true,
+            "db_unchanged": true,
+            "pass": true
+        },
+        {
+            "as": "faculty",
+            "endpoint": "POST api\/admin_insights.php",
+            "http": 403,
+            "refused": true,
+            "db_unchanged": true,
+            "pass": true
+        },
+        {
+            "as": "faculty",
+            "endpoint": "POST api\/admin_report_action.php",
+            "http": 403,
+            "refused": true,
+            "db_unchanged": true,
+            "pass": true
+        },
+        {
+            "as": "faculty",
+            "endpoint": "GET api\/admin_report_action.php",
+            "http": 403,
+            "refused": true,
+            "db_unchanged": true,
+            "pass": true
+        },
+        {
+            "as": "faculty",
+            "endpoint": "POST api\/admin_stats.php",
+            "http": 403,
+            "refused": true,
+            "db_unchanged": true,
+            "pass": true
+        },
+        {
+            "as": "faculty",
+            "endpoint": "POST api\/admin_transfer_alumni_email.php",
+            "http": 403,
+            "refused": true,
+            "db_unchanged": true,
+            "pass": true
+        },
+        {
+            "as": "faculty",
+            "endpoint": "GET api\/admin_transfer_alumni_email.php",
+            "http": 403,
+            "refused": true,
+            "db_unchanged": true,
+            "pass": true
+        },
+        {
+            "as": "faculty",
+            "endpoint": "POST api\/admin_user_actions.php",
+            "http": 403,
+            "refused": true,
+            "db_unchanged": true,
+            "pass": true
+        },
+        {
+            "as": "faculty",
+            "endpoint": "GET api\/admin_user_actions.php",
+            "http": 403,
+            "refused": true,
+            "db_unchanged": true,
+            "pass": true
+        },
+        {
+            "as": "faculty",
+            "endpoint": "POST api\/admin_users.php",
+            "http": 403,
+            "refused": true,
+            "db_unchanged": true,
+            "pass": true
+        },
+        {
+            "as": "faculty",
+            "endpoint": "POST api\/approve_event.php",
+            "http": 403,
+            "refused": true,
+            "db_unchanged": true,
+            "pass": true
+        },
+        {
+            "as": "faculty",
+            "endpoint": "GET api\/approve_event.php",
+            "http": 403,
+            "refused": true,
+            "db_unchanged": true,
+            "pass": true
+        },
+        {
+            "as": "faculty",
+            "endpoint": "POST api\/ban_user.php",
+            "http": 403,
+            "refused": true,
+            "db_unchanged": true,
+            "pass": true
+        },
+        {
+            "as": "faculty",
+            "endpoint": "GET api\/ban_user.php",
+            "http": 403,
+            "refused": true,
+            "db_unchanged": true,
+            "pass": true
+        },
+        {
+            "as": "faculty",
+            "endpoint": "POST api\/generate_token.php",
+            "http": 403,
+            "refused": true,
+            "db_unchanged": true,
+            "pass": true
+        },
+        {
+            "as": "faculty",
+            "endpoint": "GET api\/generate_token.php",
+            "http": 403,
+            "refused": true,
+            "db_unchanged": true,
+            "pass": true
+        },
+        {
+            "as": "faculty",
+            "endpoint": "POST api\/get_reports.php",
+            "http": 403,
+            "refused": true,
+            "db_unchanged": true,
+            "pass": true
+        },
+        {
+            "as": "faculty",
+            "endpoint": "POST api\/moderation_queue.php",
+            "http": 403,
+            "refused": true,
+            "db_unchanged": true,
+            "pass": true
+        },
+        {
+            "as": "faculty",
+            "endpoint": "GET api\/moderation_queue.php",
+            "http": 403,
+            "refused": true,
+            "db_unchanged": true,
+            "pass": true
+        },
+        {
+            "as": "faculty",
+            "endpoint": "POST api\/restore_content.php",
+            "http": 403,
+            "refused": true,
+            "db_unchanged": true,
+            "pass": true
+        },
+        {
+            "as": "faculty",
+            "endpoint": "GET api\/restore_content.php",
+            "http": 403,
+            "refused": true,
+            "db_unchanged": true,
+            "pass": true
+        },
+        {
+            "as": "faculty",
+            "endpoint": "POST api\/success_stories.php?action=approve {\"action\":\"approve\"}",
+            "http": 403,
+            "refused": true,
+            "db_unchanged": true,
+            "pass": true
+        },
+        {
+            "as": "faculty",
+            "endpoint": "GET api\/success_stories.php?action=approve",
+            "http": 403,
+            "refused": true,
+            "db_unchanged": true,
+            "pass": true
+        },
+        {
+            "as": "faculty",
+            "endpoint": "POST api\/success_stories.php?action=reject {\"action\":\"reject\"}",
+            "http": 403,
+            "refused": true,
+            "db_unchanged": true,
+            "pass": true
+        },
+        {
+            "as": "faculty",
+            "endpoint": "GET api\/success_stories.php?action=reject",
+            "http": 403,
+            "refused": true,
+            "db_unchanged": true,
+            "pass": true
+        },
+        {
+            "as": "faculty",
+            "endpoint": "POST api\/view_logs.php",
             "http": 403,
             "refused": true,
             "db_unchanged": true,

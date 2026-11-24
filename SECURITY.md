@@ -65,6 +65,7 @@ A summary of the controls is in the [README Security section](README.md#-securit
 - `bootstrap/security.php` — headers & CSP, CORS allowlist, rate limiting, login lockout, upload inspection, error scrubbing
 - `bootstrap/static_policy.php` + `.htaccess` + `storage/.htaccess` — what may be served, and that uploads can never execute
 - `bootstrap/security.php` also: numeric-id check on every API parameter, oversized-upload messages, image-bomb refusal, lossless EXIF/GPS stripping
+- `api/_kernel.php` — the one front door: every endpoint declares its access level (`public`, `member`, `staff`, `admin`, `moderator` or a role list) and the kernel enforces it before the endpoint runs; safe error messages with reference codes
 - `api/_privacy.php` — who may see which profile, post, comment and contact detail (private accounts, follow requests, blocks)
 - `api/_usernames.php` — case-insensitive unique @handles and e-mails, enforced by the database
 - `assets/js/safe.js` — `escapeHtml`, `safeUrl`, `linkifyText`: the only way user text reaches the page
@@ -73,12 +74,14 @@ A summary of the controls is in the [README Security section](README.md#-securit
 
 | Suite | What it attacks |
 |---|---|
-| `tests/integration/authz.php` | A student and an alumnus call every staff endpoint; refused **and** database unchanged |
+| `tests/static/api_contract.php` | Every endpoint declares its access level before touching input or the database; no raw exception text in responses |
+| `tests/static/frontend_contract.py` | Every user value in page templates is escaped; no user text in `onclick` strings |
+| `tests/integration/authz.php` | A student, an alumnus and a faculty member attack every endpoint above their level (targets read from the declarations); refused **and** database unchanged |
 | `tests/integration/sqli_fuzz.php` | 2,744 SQL-injection requests across 98 endpoints, including time-based blind payloads |
 | `tests/ui/xss_sweep.py` | Payloads in every writable field (plus raw legacy rows), 37 pages opened in Chrome |
 | `tests/integration/security_limits.php` | Brute-force login lockout |
 
-If you add an endpoint, it's covered by the fuzz automatically. If it's staff-only, add it to the list in `authz.php`.
+A new endpoint is covered automatically: the contract makes it declare its access level, the authorization sweep attacks it if that level is above `member`, and the fuzz sends it injection payloads.
 
 ## For maintainers
 

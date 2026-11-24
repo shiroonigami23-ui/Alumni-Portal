@@ -4,6 +4,8 @@
  * POST {content, publish_at (ISO-8601, any timezone), visibility_scope?, allow_comments?, gif_url?,
  *       poll?: {question, options[], duration_hours?}}
  */
+require_once __DIR__ . '/_kernel.php';
+$api = api_endpoint(['access' => 'member']);   // who may call this — enforced before anything below
 header("Content-Type: application/json; charset=UTF-8");
 
 include_once '../config/Database.php';

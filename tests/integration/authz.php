@@ -2,6 +2,10 @@
 /**
  * Authorization sweep: ordinary members try every staff-only endpoint.
  *
+ * The target list is built from the endpoints' own api_endpoint() declarations (tests/lib/api_manifest.php),
+ * so a new admin/staff/moderator endpoint — or a stricter per-action level — is attacked automatically.
+ * A few member endpoints with owner-only checks are listed by hand at the bottom of $endpoints.
+ *
  * A student and an alumnus send a catch-all payload (ban/approve/delete/transfer, targeting another member)
  * to each admin/faculty endpoint. Passing means: the request is refused (4xx or success=false) AND a
  * fingerprint of users/posts/events/strikes/tokens/banner is byte-for-byte unchanged.
@@ -75,6 +79,27 @@ $payload = [
     'email' => 'stolen@evil.test', 'role' => 'admin', 'count' => 5, 'message' => 'pwned', 'tone' => 'danger', 'title' => 'pwned',
     'content' => 'pwned', 'is_moderator' => true, 'decision' => 'approve',
 ];
+require __DIR__ . '/../lib/api_manifest.php';
+$manifest = api_manifest(dirname(__DIR__, 2));
+$auto = [];   // [method, path, extra payload, roles allowed]
+foreach ($manifest as $name => $e) {
+    if ($e['retired'] || !$e['declared']) {
+        continue;
+    }
+    $levels = [];
+    if ($e['access'] !== 'public' && $e['access'] !== 'member') {
+        $levels[''] = $e['access'];
+    }
+    foreach ($e['actions'] as $action => $lvl) {
+        $levels[$action] = $lvl;
+    }
+    foreach ($levels as $action => $lvl) {
+        $q = $action !== '' ? '?action=' . rawurlencode($action) : '';
+        $extra = $action !== '' ? ['action' => $action] : [];
+        $auto[] = ['POST', "api/$name$q", $extra, $lvl];
+        $auto[] = ['GET', "api/$name$q", null, $lvl];
+    }
+}
 $endpoints = [
     ['POST', 'api/admin_moderation.php'], ['POST', 'api/ban_user.php'], ['POST', 'api/kick_user.php'],
     ['POST', 'api/approve_user.php'], ['POST', 'api/approve_user.php', ['action' => 'reject']], ['POST', 'api/process_fake_report.php'],
@@ -83,27 +108,61 @@ $endpoints = [
     ['POST', 'api/admin_user_actions.php'], ['POST', 'api/admin_user_actions.php', ['action' => 'set_role']],
     ['POST', 'api/admin_user_actions.php', ['action' => 'delete']], ['POST', 'api/admin_report_action.php'],
     ['POST', 'api/admin_report_action.php', ['action' => 'dismiss']], ['POST', 'api/generate_token.php'],
-    ['POST', 'api/moderate_post.php'], ['POST', 'api/moderation_queue.php', ['action' => 'approve']],
+    ['POST', 'api/moderate_post.php', null, 'staff'], ['POST', 'api/moderation_queue.php', ['action' => 'approve']],
     ['POST', 'api/moderation_queue.php', ['action' => 'reject']],
     ['POST', 'api/admin_insights.php', ['action' => 'broadcast']], ['POST', 'api/create_announcement.php'],
     ['POST', 'api/mentorship.php?action=review_application', ['status' => 'approved']],
     ['POST', 'api/success_stories.php?action=approve', ['story_id' => 1]], ['POST', 'api/events.php?action=approve'],
     ['GET', 'api/admin_users.php'], ['GET', 'api/admin_stats.php'], ['GET', 'api/view_logs.php'], ['GET', 'api/get_reports.php'],
-    ['GET', 'api/admin_export_users.php'], ['GET', 'api/admin_insights.php'], ['GET', "api/get_applicants.php?job_id=1"],
+    ['GET', 'api/admin_export_users.php'], ['GET', 'api/admin_insights.php'], ['GET', "api/get_applicants.php?job_id=1", null, 'admin'],
 ];
 
 $attackers = [
     'student' => token('ayaan.tomar@demo.rjit.local', 'Demo@12345'),
     'alumni' => token('ananya.verma.1@demo.rjit.local', 'Demo@12345'),
+    'faculty' => token('neha.kulkarni.faculty@demo.rjit.local', 'Demo@12345'),
 ];
+/** Would this attacker legitimately be allowed in? (then it isn't an attack) */
+function allowed_for(string $who, $level): bool
+{
+    if (is_array($level)) {
+        return in_array($who, $level, true);
+    }
+    return $level === 'member' || $level === 'public' || ($level === 'staff' && $who === 'faculty');
+}
+// hand-listed targets count as admin-only unless stated
+$targets = [];
+foreach ($endpoints as $ep) {
+    // the endpoint's own declaration decides who is legitimately allowed
+    $file = basename(parse_url($ep[1], PHP_URL_PATH));
+    parse_str((string)parse_url($ep[1], PHP_URL_QUERY), $qs);
+    $act = strtolower((string)($qs['action'] ?? ($ep[2]['action'] ?? '')));
+    $decl = $manifest[$file] ?? null;
+    $level = $ep[3] ?? ($decl ? ($decl['actions'][$act] ?? $decl['access']) : 'admin');
+    if ($level === 'member' && !isset($ep[3])) {
+        $level = 'admin';   // member-level endpoints in the hand list guard admin-only actions inside
+    }
+    $targets[] = [$ep[0], $ep[1], $ep[2] ?? null, $level];
+}
+foreach ($auto as $ep) {
+    $targets[] = $ep;
+}
+$seen = [];
+$targets = array_values(array_filter($targets, function ($t) use (&$seen) {
+    $k = $t[0] . ' ' . $t[1] . ' ' . json_encode($t[2]);
+    return isset($seen[$k]) ? false : ($seen[$k] = true);
+}));
 $sensitive = ['admin_users', 'view_logs', 'get_reports', 'admin_export_users', 'admin_stats', 'admin_insights'];
 
 $pass = 0;
 $total = 0;
 foreach ($attackers as $who => $tok) {
-    foreach ($endpoints as $ep) {
-        [$method, $path] = $ep;
-        $body = $method === 'POST' ? array_merge($payload, $ep[2] ?? []) : null;
+    foreach ($targets as $ep) {
+        [$method, $path, $epExtra, $level] = $ep;
+        if (allowed_for($who, $level)) {
+            continue;
+        }
+        $body = $method === 'POST' ? array_merge($payload, $epExtra ?? []) : null;
         $before = $fingerprint();
         $r = req($method, $path, $tok, $body);
         $after = $fingerprint();
@@ -120,7 +179,7 @@ foreach ($attackers as $who => $tok) {
         $ok = $refused && $before === $after && !$leak;
         $total++;
         $pass += $ok ? 1 : 0;
-        $label = $method . ' ' . $path . (isset($ep[2]) ? ' ' . json_encode($ep[2]) : '');
+        $label = $method . ' ' . $path . ($epExtra ? ' ' . json_encode($epExtra) : '');
         $results[] = ['as' => $who, 'endpoint' => $label, 'http' => $r['code'], 'refused' => $refused, 'db_unchanged' => $before === $after, 'pass' => $ok];
         printf("  %s %-8s %-70s %d%s\n", $ok ? '✓' : '✗', $who, mb_substr($label, 0, 70), $r['code'], $ok ? '' : ($before !== $after ? '  ← DATABASE CHANGED' : '  ← not refused: ' . mb_substr($r['raw'], 0, 90)));
         if ($before !== $after) {

@@ -1,4 +1,6 @@
 <?php
+require_once __DIR__ . '/_kernel.php';
+$api = api_endpoint(['access' => 'admin']);   // who may call this — enforced before anything below
 require_once __DIR__ . '/../helpers/Cache.php';
 register_shutdown_function(function () { if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST' && http_response_code() < 400) { Cache::bump('atlas'); } });
 header("Access-Control-Allow-Origin: *");
@@ -242,5 +244,5 @@ try {
     if (isset($db) && $db instanceof PDO && $db->inTransaction()) {
         $db->rollBack();
     }
-    respond_action(['success' => false, 'message' => 'Admin action failed.', 'error' => $e->getMessage()], 500);
+    respond_action(['success' => false, 'message' => 'Admin action failed.', 'error_ref' => api_error_ref($e)], 500);
 }

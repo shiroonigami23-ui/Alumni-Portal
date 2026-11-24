@@ -7,6 +7,8 @@
  * POST ?action=reject   {story_id}   admin (deletes)
  * POST ?action=view     {story_id}   count a read
  */
+require_once __DIR__ . '/_kernel.php';
+$api = api_endpoint(['access' => 'member', 'actions' => ['approve' => 'admin', 'reject' => 'admin']]);   // who may call this — enforced before anything below
 header("Content-Type: application/json; charset=UTF-8");
 include_once '../config/Database.php';
 include_once '../middleware/Auth.php';

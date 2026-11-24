@@ -144,7 +144,7 @@ include 'includes/sidebar.php';
         const left = Math.max(0, o.slots - o.filled);
         const pct = Math.min(100, Math.round(o.filled / Math.max(1, o.slots) * 100));
         let action = '';
-        if (o.is_mine) action = `<span class="text-xs text-gray-500">Your offer · ${o.pending} pending</span>`;
+        if (o.is_mine) action = `<span class="text-xs text-gray-500">Your offer · ${Number(o.pending || 0)} pending</span>`;
         else if (o.my_status && o.my_status !== 'withdrawn') action = chip(o.my_status);
         else if (perms.can_request) action = `<button class="ref-request bg-blue-600 text-white text-sm px-4 py-2 rounded-lg font-medium" data-id="${o.offer_id}" data-company="${esc(o.company)}" data-roles="${esc(o.roles)}">Request referral</button>`;
         const admin = perms.is_admin && !o.is_mine ? `<button class="ref-remove text-xs text-red-500 hover:underline" data-id="${o.offer_id}">Remove</button>` : '';
@@ -162,7 +162,7 @@ include 'includes/sidebar.php';
             </div>
             ${o.notes ? `<p class="text-sm text-gray-600 whitespace-pre-line">${esc(o.notes)}</p>` : ''}
             <div>
-                <div class="flex justify-between text-xs text-gray-500 mb-1"><span>${left} of ${o.slots} spots left</span><span>${o.pending} waiting</span></div>
+                <div class="flex justify-between text-xs text-gray-500 mb-1"><span>${left} of ${Number(o.slots || 0)} spots left</span><span>${Number(o.pending || 0)} waiting</span></div>
                 <div class="bg-gray-100 rounded-full"><div class="ref-progress" style="width:${Math.max(3, pct)}%"></div></div>
             </div>
             <div class="flex items-center justify-between pt-1 border-t border-gray-100">
@@ -221,7 +221,7 @@ include 'includes/sidebar.php';
                 <div class="flex flex-wrap items-center gap-3">
                     ${logo(o.company)}
                     <div class="flex-1 min-w-0"><strong class="text-gray-900">${esc(o.company)}</strong> <span class="ref-chip bg-gray-100 text-gray-700">${esc(o.status)}</span>
-                        <p class="text-sm text-gray-600">${esc(o.roles)} · ${o.filled}/${o.slots} filled · ${o.pending} pending</p></div>
+                        <p class="text-sm text-gray-600">${esc(o.roles)} · ${Number(o.filled || 0)}/${Number(o.slots || 0)} filled · ${Number(o.pending || 0)} pending</p></div>
                     <div class="flex gap-2 text-sm">
                         <button class="ref-load px-3 py-1.5 rounded-lg border border-gray-300 text-gray-700" data-id="${o.offer_id}">Requests</button>
                         ${o.status === 'open' ? `<button class="ref-status px-3 py-1.5 rounded-lg border border-gray-300 text-gray-700" data-id="${o.offer_id}" data-status="paused">Pause</button>`

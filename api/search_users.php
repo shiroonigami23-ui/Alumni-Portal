@@ -1,4 +1,6 @@
 <?php
+require_once __DIR__ . '/_kernel.php';
+$api = api_endpoint(['access' => 'member']);   // who may call this — enforced before anything below
 header("Access-Control-Allow-Origin: *");
 header("Content-Type: application/json; charset=UTF-8");
 
@@ -83,6 +85,6 @@ try {
     echo json_encode([
         'success' => false,
         'message' => 'Failed to search users',
-        'error' => $e->getMessage()
+        'error_ref' => api_error_ref($e)
     ]);
 }

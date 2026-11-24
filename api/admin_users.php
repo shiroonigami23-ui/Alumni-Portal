@@ -1,4 +1,6 @@
 <?php
+require_once __DIR__ . '/_kernel.php';
+$api = api_endpoint(['access' => 'admin']);   // who may call this — enforced before anything below
 header("Access-Control-Allow-Origin: *");
 header("Content-Type: application/json; charset=UTF-8");
 header("Access-Control-Allow-Methods: GET");
@@ -140,5 +142,5 @@ try {
         "data" => $data
     ]);
 } catch (Throwable $e) {
-    respond(["success" => false, "message" => "Failed to load users.", "error" => $e->getMessage()], 500);
+    respond(["success" => false, "message" => "Failed to load users.", "error_ref" => api_error_ref($e)], 500);
 }

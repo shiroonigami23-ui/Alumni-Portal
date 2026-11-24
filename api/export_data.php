@@ -4,6 +4,8 @@
  * GET  → JSON (the profile page saves it as a file). Nothing is written to disk.
  * Other people's private data is never included (only their user ids / names on things you interacted with).
  */
+require_once __DIR__ . '/_kernel.php';
+$api = api_endpoint(['access' => 'member']);   // who may call this — enforced before anything below
 header("Content-Type: application/json; charset=UTF-8");
 header('Cache-Control: no-store');
 

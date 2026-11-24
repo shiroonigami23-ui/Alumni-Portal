@@ -8,6 +8,8 @@
  * messages, both follow links are removed, and pending follow requests are dropped. The other person isn't told.
  * Staff (faculty/admin) can't be blocked — use Report instead — so moderation keeps working.
  */
+require_once __DIR__ . '/_kernel.php';
+$api = api_endpoint(['access' => 'member']);   // who may call this — enforced before anything below
 header("Content-Type: application/json; charset=UTF-8");
 
 require_once '../config/Database.php';

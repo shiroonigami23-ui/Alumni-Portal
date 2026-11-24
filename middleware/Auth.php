@@ -11,105 +11,110 @@ class Auth {
         $this->session = new Session($db);
     }
 
-    public function validateRequest() {
-        if (!$this->db) {
-            http_response_code(503);
-            echo json_encode(array("message" => "Database unavailable."));
-            exit();
-        }
+    /** Per-request cache: the API kernel and older in-file checks share one lookup. */
+    private static $memo = [];
 
-        // 1. Get Headers
-        $headers = null;
-        if (function_exists('apache_request_headers')) {
-            $headers = apache_request_headers();
-        } else {
-            $headers = $_SERVER; 
-        }
-
-        // 2. Extract Token
-        $token = null;
+    /** Bearer token from the request (Authorization header on any server type), or null. */
+    public static function bearerToken(): ?string
+    {
         $authHeader = null;
-        if (isset($headers['Authorization'])) {
-            $authHeader = $headers['Authorization'];
-        } elseif (isset($headers['authorization'])) {
-            $authHeader = $headers['authorization'];
+        if (function_exists('apache_request_headers')) {
+            foreach ((array)apache_request_headers() as $k => $v) {
+                if (strtolower((string)$k) === 'authorization') {
+                    $authHeader = (string)$v;
+                    break;
+                }
+            }
         }
-
-        if ($authHeader && preg_match('/Bearer\s(\S+)/', $authHeader, $matches)) {
-            $token = $matches[1];
+        // nginx / PHP-FPM / CGI expose it here instead
+        $authHeader = $authHeader ?: ($_SERVER['HTTP_AUTHORIZATION'] ?? $_SERVER['REDIRECT_HTTP_AUTHORIZATION'] ?? null);
+        if ($authHeader && preg_match('/Bearer\s+(\S+)/i', (string)$authHeader, $m)) {
+            return $m[1];
         }
+        return null;
+    }
 
-        // 3. Reject if missing
+    /**
+     * Check the caller without exiting.
+     * Returns ['ok' => bool, 'code' => int, 'message' => string, 'user_id' => int|null, ...extra].
+     */
+    public function authenticate(): array
+    {
+        if (!$this->db) {
+            return ['ok' => false, 'code' => 503, 'message' => 'Database unavailable.', 'user_id' => null];
+        }
+        $token = self::bearerToken();
         if (!$token) {
-            http_response_code(401);
-            echo json_encode(array("message" => "Unauthorized. No token provided."));
-            exit();
+            return ['ok' => false, 'code' => 401, 'message' => 'Unauthorized. No token provided.', 'user_id' => null];
+        }
+        $method = strtoupper((string)($_SERVER['REQUEST_METHOD'] ?? 'GET'));
+        $memoKey = hash('sha256', $token) . '|' . $method;
+        if (isset(self::$memo[$memoKey])) {
+            return self::$memo[$memoKey];
         }
 
-        // 4. Validate against Session Table
         $user_session = $this->session->isValid($token);
         if (!$user_session) {
-            http_response_code(401);
-            echo json_encode(array("message" => "Unauthorized. Invalid or expired token."));
-            exit();
+            return self::$memo[$memoKey] = ['ok' => false, 'code' => 401, 'message' => 'Unauthorized. Invalid or expired token.', 'user_id' => null];
         }
+        $user_id = (int)$user_session['user_id'];
 
-        $user_id = $user_session['user_id'];
-
-        // 5. STATUS CHECK: Permanent Ban & Suspension (Section 6)
+        // Permanent ban & suspension (Section 6)
         $u_stmt = $this->db->prepare("SELECT status, suspension_expires_at FROM users WHERE user_id = :uid");
         $u_stmt->execute(['uid' => $user_id]);
         $user = $u_stmt->fetch(PDO::FETCH_ASSOC);
-
+        if (!$user) {
+            return self::$memo[$memoKey] = ['ok' => false, 'code' => 401, 'message' => 'Unauthorized. Account not found.', 'user_id' => null];
+        }
         if ($user['status'] === 'banned') {
-            http_response_code(403);
-            echo json_encode(["message" => "Account is permanently banned."]);
-            exit();
+            return self::$memo[$memoKey] = ['ok' => false, 'code' => 403, 'message' => 'Account is permanently banned.', 'user_id' => null];
+        }
+        if ($user['status'] === 'suspended' && strtotime((string)$user['suspension_expires_at']) > time()) {
+            return self::$memo[$memoKey] = ['ok' => false, 'code' => 403, 'message' => 'Account is suspended until ' . $user['suspension_expires_at'], 'user_id' => null];
         }
 
-        if ($user['status'] === 'suspended' && strtotime($user['suspension_expires_at']) > time()) {
-            http_response_code(403);
-            echo json_encode(["message" => "Account is suspended until " . $user['suspension_expires_at']]);
-            exit();
-        }
-
-        // 6. SHADOW BAN CHECK: reported abuse threshold
+        // Shadow ban: reported abuse threshold
         try {
             $s_stmt = $this->db->prepare("SELECT shadow_ban_until FROM moderation_strikes WHERE user_id = :uid");
             $s_stmt->execute(['uid' => $user_id]);
             $shadow_ban = $s_stmt->fetchColumn();
-
             if ($shadow_ban && strtotime((string)$shadow_ban) > time()) {
-                $method = strtoupper((string)($_SERVER['REQUEST_METHOD'] ?? 'GET'));
                 $script = basename((string)($_SERVER['SCRIPT_NAME'] ?? ''));
                 $readBlockedScripts = ['get_feed.php', 'public_feed.php', 'search_posts.php', 'get_user_replies.php'];
-
                 if (in_array($method, ['POST', 'PUT', 'PATCH', 'DELETE'], true) || ($method === 'GET' && in_array($script, $readBlockedScripts, true))) {
-                    http_response_code(403);
-                    echo json_encode([
-                        "message" => "Your account is shadow banned until $shadow_ban.",
-                        "is_shadow_banned" => true
-                    ]);
-                    exit();
+                    return self::$memo[$memoKey] = ['ok' => false, 'code' => 403, 'message' => "Your account is shadow banned until $shadow_ban.",
+                                                     'user_id' => null, 'is_shadow_banned' => true];
                 }
             }
-        } catch (Exception $e) {
-            // moderation_strikes table might not exist, ignore
+        } catch (Throwable $e) {
             error_log("Moderation strikes check failed: " . $e->getMessage());
         }
 
-        // 7. DEVICE BAN CHECK
+        // Device ban
         try {
             if ($this->isCurrentDeviceBanned()) {
-                http_response_code(403);
-                echo json_encode(["message" => "This device is banned from the platform."]);
-                exit();
+                return self::$memo[$memoKey] = ['ok' => false, 'code' => 403, 'message' => 'This device is banned from the platform.', 'user_id' => null];
             }
-        } catch (Exception $e) {
+        } catch (Throwable $e) {
             error_log("Device ban check failed: " . $e->getMessage());
         }
 
-        return $user_id;
+        return self::$memo[$memoKey] = ['ok' => true, 'code' => 200, 'message' => '', 'user_id' => $user_id];
+    }
+
+    /** Old-style check: returns the user id or ends the request with 401/403. */
+    public function validateRequest() {
+        $r = $this->authenticate();
+        if (!$r['ok']) {
+            http_response_code($r['code']);
+            $body = ['success' => false, 'message' => $r['message']];
+            if (!empty($r['is_shadow_banned'])) {
+                $body['is_shadow_banned'] = true;
+            }
+            echo json_encode($body);
+            exit();
+        }
+        return $r['user_id'];
     }
 
     public static function getClientIp(): string

@@ -7,6 +7,8 @@
  * being knocked back to "pending" (the old behaviour locked people out). Files go to the database asset store
  * (private, admin-reviewed), never to a world-writable folder.
  */
+require_once __DIR__ . '/_kernel.php';
+$api = api_endpoint(['access' => 'member']);   // who may call this — enforced before anything below
 header("Content-Type: application/json; charset=UTF-8");
 
 require_once '../config/Database.php';

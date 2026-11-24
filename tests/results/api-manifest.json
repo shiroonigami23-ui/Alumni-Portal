@@ -1,0 +1,997 @@
+{
+    "generated": "2026-11-24T09:06:52+00:00",
+    "endpoints": 121,
+    "violations": 0,
+    "by_access": {
+        "admin": 14,
+        "member": 80,
+        "moderator": 1,
+        "public": 12,
+        "retired": 9,
+        "roles:alumni|faculty|admin": 2,
+        "staff": 3
+    },
+    "endpoints_detail": {
+        "add_comment.php": {
+            "file": "api/add_comment.php",
+            "declared": true,
+            "access": "public",
+            "actions": [],
+            "retired": true,
+            "problems": []
+        },
+        "add_reply.php": {
+            "file": "api/add_reply.php",
+            "declared": true,
+            "access": "public",
+            "actions": [],
+            "retired": true,
+            "problems": []
+        },
+        "admin_bulk_users.php": {
+            "file": "api/admin_bulk_users.php",
+            "declared": true,
+            "access": "admin",
+            "actions": [],
+            "retired": false,
+            "problems": []
+        },
+        "admin_export_users.php": {
+            "file": "api/admin_export_users.php",
+            "declared": true,
+            "access": "admin",
+            "actions": [],
+            "retired": false,
+            "problems": []
+        },
+        "admin_insights.php": {
+            "file": "api/admin_insights.php",
+            "declared": true,
+            "access": "admin",
+            "actions": [],
+            "retired": false,
+            "problems": []
+        },
+        "admin_moderation.php": {
+            "file": "api/admin_moderation.php",
+            "declared": true,
+            "access": "public",
+            "actions": [],
+            "retired": true,
+            "problems": []
+        },
+        "admin_report_action.php": {
+            "file": "api/admin_report_action.php",
+            "declared": true,
+            "access": "admin",
+            "actions": [],
+            "retired": false,
+            "problems": []
+        },
+        "admin_stats.php": {
+            "file": "api/admin_stats.php",
+            "declared": true,
+            "access": "admin",
+            "actions": [],
+            "retired": false,
+            "problems": []
+        },
+        "admin_transfer_alumni_email.php": {
+            "file": "api/admin_transfer_alumni_email.php",
+            "declared": true,
+            "access": "admin",
+            "actions": [],
+            "retired": false,
+            "problems": []
+        },
+        "admin_user_actions.php": {
+            "file": "api/admin_user_actions.php",
+            "declared": true,
+            "access": "admin",
+            "actions": [],
+            "retired": false,
+            "problems": []
+        },
+        "admin_users.php": {
+            "file": "api/admin_users.php",
+            "declared": true,
+            "access": "admin",
+            "actions": [],
+            "retired": false,
+            "problems": []
+        },
+        "alumni_atlas.php": {
+            "file": "api/alumni_atlas.php",
+            "declared": true,
+            "access": "member",
+            "actions": [],
+            "retired": false,
+            "problems": []
+        },
+        "apply_job.php": {
+            "file": "api/apply_job.php",
+            "declared": true,
+            "access": "member",
+            "actions": [],
+            "retired": false,
+            "problems": []
+        },
+        "approve_announcement.php": {
+            "file": "api/approve_announcement.php",
+            "declared": true,
+            "access": "public",
+            "actions": [],
+            "retired": true,
+            "problems": []
+        },
+        "approve_event.php": {
+            "file": "api/approve_event.php",
+            "declared": true,
+            "access": "admin",
+            "actions": [],
+            "retired": false,
+            "problems": []
+        },
+        "approve_user.php": {
+            "file": "api/approve_user.php",
+            "declared": true,
+            "access": "staff",
+            "actions": [],
+            "retired": false,
+            "problems": []
+        },
+        "asset.php": {
+            "file": "api/asset.php",
+            "declared": true,
+            "access": "public",
+            "actions": [],
+            "retired": false,
+            "problems": []
+        },
+        "ban_user.php": {
+            "file": "api/ban_user.php",
+            "declared": true,
+            "access": "admin",
+            "actions": [],
+            "retired": false,
+            "problems": []
+        },
+        "block_user.php": {
+            "file": "api/block_user.php",
+            "declared": true,
+            "access": "member",
+            "actions": [],
+            "retired": false,
+            "problems": []
+        },
+        "cancel_rsvp.php": {
+            "file": "api/cancel_rsvp.php",
+            "declared": true,
+            "access": "member",
+            "actions": [],
+            "retired": false,
+            "problems": []
+        },
+        "change_password.php": {
+            "file": "api/change_password.php",
+            "declared": true,
+            "access": "member",
+            "actions": [],
+            "retired": false,
+            "problems": []
+        },
+        "connect_user.php": {
+            "file": "api/connect_user.php",
+            "declared": true,
+            "access": "member",
+            "actions": [],
+            "retired": false,
+            "problems": []
+        },
+        "create_announcement.php": {
+            "file": "api/create_announcement.php",
+            "declared": true,
+            "access": "public",
+            "actions": [],
+            "retired": true,
+            "problems": []
+        },
+        "create_comment.php": {
+            "file": "api/create_comment.php",
+            "declared": true,
+            "access": "member",
+            "actions": [],
+            "retired": false,
+            "problems": []
+        },
+        "create_conversation.php": {
+            "file": "api/create_conversation.php",
+            "declared": true,
+            "access": "member",
+            "actions": [],
+            "retired": false,
+            "problems": []
+        },
+        "create_event.php": {
+            "file": "api/create_event.php",
+            "declared": true,
+            "access": "member",
+            "actions": [],
+            "retired": false,
+            "problems": []
+        },
+        "create_poll.php": {
+            "file": "api/create_poll.php",
+            "declared": true,
+            "access": "member",
+            "actions": [],
+            "retired": false,
+            "problems": []
+        },
+        "create_post.php": {
+            "file": "api/create_post.php",
+            "declared": true,
+            "access": "member",
+            "actions": [],
+            "retired": false,
+            "problems": []
+        },
+        "create_share_link.php": {
+            "file": "api/create_share_link.php",
+            "declared": true,
+            "access": "member",
+            "actions": [],
+            "retired": false,
+            "problems": []
+        },
+        "csrf_token.php": {
+            "file": "api/csrf_token.php",
+            "declared": true,
+            "access": "member",
+            "actions": [],
+            "retired": false,
+            "problems": []
+        },
+        "delete_comment.php": {
+            "file": "api/delete_comment.php",
+            "declared": true,
+            "access": "member",
+            "actions": [],
+            "retired": false,
+            "problems": []
+        },
+        "delete_message.php": {
+            "file": "api/delete_message.php",
+            "declared": true,
+            "access": "member",
+            "actions": [],
+            "retired": false,
+            "problems": []
+        },
+        "delete_post.php": {
+            "file": "api/delete_post.php",
+            "declared": true,
+            "access": "member",
+            "actions": [],
+            "retired": false,
+            "problems": []
+        },
+        "edit_comment.php": {
+            "file": "api/edit_comment.php",
+            "declared": true,
+            "access": "member",
+            "actions": [],
+            "retired": false,
+            "problems": []
+        },
+        "edit_message.php": {
+            "file": "api/edit_message.php",
+            "declared": true,
+            "access": "member",
+            "actions": [],
+            "retired": false,
+            "problems": []
+        },
+        "edit_post.php": {
+            "file": "api/edit_post.php",
+            "declared": true,
+            "access": "member",
+            "actions": [],
+            "retired": false,
+            "problems": []
+        },
+        "end_group_call.php": {
+            "file": "api/end_group_call.php",
+            "declared": true,
+            "access": "member",
+            "actions": [],
+            "retired": false,
+            "problems": []
+        },
+        "end_poll.php": {
+            "file": "api/end_poll.php",
+            "declared": true,
+            "access": "member",
+            "actions": [],
+            "retired": false,
+            "problems": []
+        },
+        "events.php": {
+            "file": "api/events.php",
+            "declared": true,
+            "access": "member",
+            "actions": [],
+            "retired": false,
+            "problems": []
+        },
+        "export_data.php": {
+            "file": "api/export_data.php",
+            "declared": true,
+            "access": "member",
+            "actions": [],
+            "retired": false,
+            "problems": []
+        },
+        "featured_alumni.php": {
+            "file": "api/featured_alumni.php",
+            "declared": true,
+            "access": "public",
+            "actions": [],
+            "retired": false,
+            "problems": []
+        },
+        "generate_token.php": {
+            "file": "api/generate_token.php",
+            "declared": true,
+            "access": "admin",
+            "actions": [],
+            "retired": false,
+            "problems": []
+        },
+        "get_active_streams.php": {
+            "file": "api/get_active_streams.php",
+            "declared": true,
+            "access": "member",
+            "actions": [],
+            "retired": false,
+            "problems": []
+        },
+        "get_applicants.php": {
+            "file": "api/get_applicants.php",
+            "declared": true,
+            "access": "member",
+            "actions": [],
+            "retired": false,
+            "problems": []
+        },
+        "get_badges.php": {
+            "file": "api/get_badges.php",
+            "declared": true,
+            "access": "member",
+            "actions": [],
+            "retired": false,
+            "problems": []
+        },
+        "get_comments.php": {
+            "file": "api/get_comments.php",
+            "declared": true,
+            "access": "member",
+            "actions": [],
+            "retired": false,
+            "problems": []
+        },
+        "get_connections_count.php": {
+            "file": "api/get_connections_count.php",
+            "declared": true,
+            "access": "member",
+            "actions": [],
+            "retired": false,
+            "problems": []
+        },
+        "get_conversations.php": {
+            "file": "api/get_conversations.php",
+            "declared": true,
+            "access": "member",
+            "actions": [],
+            "retired": false,
+            "problems": []
+        },
+        "get_event_attendees.php": {
+            "file": "api/get_event_attendees.php",
+            "declared": true,
+            "access": "member",
+            "actions": [],
+            "retired": false,
+            "problems": []
+        },
+        "get_events.php": {
+            "file": "api/get_events.php",
+            "declared": true,
+            "access": "member",
+            "actions": [],
+            "retired": false,
+            "problems": []
+        },
+        "get_feed.php": {
+            "file": "api/get_feed.php",
+            "declared": true,
+            "access": "member",
+            "actions": [],
+            "retired": false,
+            "problems": []
+        },
+        "get_inbox.php": {
+            "file": "api/get_inbox.php",
+            "declared": true,
+            "access": "member",
+            "actions": [],
+            "retired": false,
+            "problems": []
+        },
+        "get_jobs.php": {
+            "file": "api/get_jobs.php",
+            "declared": true,
+            "access": "member",
+            "actions": [],
+            "retired": false,
+            "problems": []
+        },
+        "get_messages.php": {
+            "file": "api/get_messages.php",
+            "declared": true,
+            "access": "member",
+            "actions": [],
+            "retired": false,
+            "problems": []
+        },
+        "get_notifications.php": {
+            "file": "api/get_notifications.php",
+            "declared": true,
+            "access": "member",
+            "actions": [],
+            "retired": false,
+            "problems": []
+        },
+        "get_reports.php": {
+            "file": "api/get_reports.php",
+            "declared": true,
+            "access": "admin",
+            "actions": [],
+            "retired": false,
+            "problems": []
+        },
+        "get_unread_messages_count.php": {
+            "file": "api/get_unread_messages_count.php",
+            "declared": true,
+            "access": "member",
+            "actions": [],
+            "retired": false,
+            "problems": []
+        },
+        "get_unread_notifications_count.php": {
+            "file": "api/get_unread_notifications_count.php",
+            "declared": true,
+            "access": "member",
+            "actions": [],
+            "retired": false,
+            "problems": []
+        },
+        "get_upcoming_events.php": {
+            "file": "api/get_upcoming_events.php",
+            "declared": true,
+            "access": "member",
+            "actions": [],
+            "retired": false,
+            "problems": []
+        },
+        "get_upcoming_events_count.php": {
+            "file": "api/get_upcoming_events_count.php",
+            "declared": true,
+            "access": "member",
+            "actions": [],
+            "retired": false,
+            "problems": []
+        },
+        "get_user.php": {
+            "file": "api/get_user.php",
+            "declared": true,
+            "access": "member",
+            "actions": [],
+            "retired": false,
+            "problems": []
+        },
+        "get_user_profile.php": {
+            "file": "api/get_user_profile.php",
+            "declared": true,
+            "access": "member",
+            "actions": [],
+            "retired": false,
+            "problems": []
+        },
+        "get_user_replies.php": {
+            "file": "api/get_user_replies.php",
+            "declared": true,
+            "access": "member",
+            "actions": [],
+            "retired": false,
+            "problems": []
+        },
+        "join_event.php": {
+            "file": "api/join_event.php",
+            "declared": true,
+            "access": "public",
+            "actions": [],
+            "retired": true,
+            "problems": []
+        },
+        "kick_user.php": {
+            "file": "api/kick_user.php",
+            "declared": true,
+            "access": "staff",
+            "actions": [],
+            "retired": false,
+            "problems": []
+        },
+        "login.php": {
+            "file": "api/login.php",
+            "declared": true,
+            "access": "public",
+            "actions": [],
+            "retired": false,
+            "problems": []
+        },
+        "manage-post.php": {
+            "file": "api/manage-post.php",
+            "declared": true,
+            "access": "public",
+            "actions": [],
+            "retired": true,
+            "problems": []
+        },
+        "manage_job.php": {
+            "file": "api/manage_job.php",
+            "declared": true,
+            "access": "member",
+            "actions": [],
+            "retired": false,
+            "problems": []
+        },
+        "mark_notif_read.php": {
+            "file": "api/mark_notif_read.php",
+            "declared": true,
+            "access": "member",
+            "actions": [],
+            "retired": false,
+            "problems": []
+        },
+        "master_search.php": {
+            "file": "api/master_search.php",
+            "declared": true,
+            "access": "member",
+            "actions": [],
+            "retired": false,
+            "problems": []
+        },
+        "me.php": {
+            "file": "api/me.php",
+            "declared": true,
+            "access": "member",
+            "actions": [],
+            "retired": false,
+            "problems": []
+        },
+        "mentorship.php": {
+            "file": "api/mentorship.php",
+            "declared": true,
+            "access": "member",
+            "actions": {
+                "review_application": "staff"
+            },
+            "retired": false,
+            "problems": []
+        },
+        "moderate_post.php": {
+            "file": "api/moderate_post.php",
+            "declared": true,
+            "access": "member",
+            "actions": [],
+            "retired": false,
+            "problems": []
+        },
+        "moderation_queue.php": {
+            "file": "api/moderation_queue.php",
+            "declared": true,
+            "access": "moderator",
+            "actions": [],
+            "retired": false,
+            "problems": []
+        },
+        "pin_post.php": {
+            "file": "api/pin_post.php",
+            "declared": true,
+            "access": "member",
+            "actions": [],
+            "retired": false,
+            "problems": []
+        },
+        "post_job.php": {
+            "file": "api/post_job.php",
+            "declared": true,
+            "access": [
+                "alumni",
+                "faculty",
+                "admin"
+            ],
+            "actions": [],
+            "retired": false,
+            "problems": []
+        },
+        "process_fake_report.php": {
+            "file": "api/process_fake_report.php",
+            "declared": true,
+            "access": "staff",
+            "actions": [],
+            "retired": false,
+            "problems": []
+        },
+        "public_feed.php": {
+            "file": "api/public_feed.php",
+            "declared": true,
+            "access": "public",
+            "actions": [],
+            "retired": false,
+            "problems": []
+        },
+        "push_public_key.php": {
+            "file": "api/push_public_key.php",
+            "declared": true,
+            "access": "public",
+            "actions": [],
+            "retired": false,
+            "problems": []
+        },
+        "react_to_comment.php": {
+            "file": "api/react_to_comment.php",
+            "declared": true,
+            "access": "member",
+            "actions": [],
+            "retired": false,
+            "problems": []
+        },
+        "react_to_post.php": {
+            "file": "api/react_to_post.php",
+            "declared": true,
+            "access": "member",
+            "actions": [],
+            "retired": false,
+            "problems": []
+        },
+        "referrals.php": {
+            "file": "api/referrals.php",
+            "declared": true,
+            "access": "member",
+            "actions": [],
+            "retired": false,
+            "problems": []
+        },
+        "register.php": {
+            "file": "api/register.php",
+            "declared": true,
+            "access": "public",
+            "actions": [],
+            "retired": false,
+            "problems": []
+        },
+        "register_alumni.php": {
+            "file": "api/register_alumni.php",
+            "declared": true,
+            "access": "public",
+            "actions": [],
+            "retired": false,
+            "problems": []
+        },
+        "register_faculty.php": {
+            "file": "api/register_faculty.php",
+            "declared": true,
+            "access": "public",
+            "actions": [],
+            "retired": false,
+            "problems": []
+        },
+        "register_student.php": {
+            "file": "api/register_student.php",
+            "declared": true,
+            "access": "public",
+            "actions": [],
+            "retired": false,
+            "problems": []
+        },
+        "report_content.php": {
+            "file": "api/report_content.php",
+            "declared": true,
+            "access": "member",
+            "actions": [],
+            "retired": false,
+            "problems": []
+        },
+        "report_user.php": {
+            "file": "api/report_user.php",
+            "declared": true,
+            "access": "member",
+            "actions": [],
+            "retired": false,
+            "problems": []
+        },
+        "request_reset.php": {
+            "file": "api/request_reset.php",
+            "declared": true,
+            "access": "public",
+            "actions": [],
+            "retired": false,
+            "problems": []
+        },
+        "reset_password.php": {
+            "file": "api/reset_password.php",
+            "declared": true,
+            "access": "public",
+            "actions": [],
+            "retired": false,
+            "problems": []
+        },
+        "resources.php": {
+            "file": "api/resources.php",
+            "declared": true,
+            "access": "member",
+            "actions": [],
+            "retired": false,
+            "problems": []
+        },
+        "restore_content.php": {
+            "file": "api/restore_content.php",
+            "declared": true,
+            "access": "admin",
+            "actions": [],
+            "retired": false,
+            "problems": []
+        },
+        "rsvp_event.php": {
+            "file": "api/rsvp_event.php",
+            "declared": true,
+            "access": "member",
+            "actions": [],
+            "retired": false,
+            "problems": []
+        },
+        "save_push_subscription.php": {
+            "file": "api/save_push_subscription.php",
+            "declared": true,
+            "access": "member",
+            "actions": [],
+            "retired": false,
+            "problems": []
+        },
+        "schedule_post.php": {
+            "file": "api/schedule_post.php",
+            "declared": true,
+            "access": "member",
+            "actions": [],
+            "retired": false,
+            "problems": []
+        },
+        "scheduled_posts.php": {
+            "file": "api/scheduled_posts.php",
+            "declared": true,
+            "access": "member",
+            "actions": [],
+            "retired": false,
+            "problems": []
+        },
+        "search_alumni.php": {
+            "file": "api/search_alumni.php",
+            "declared": true,
+            "access": "public",
+            "actions": [],
+            "retired": true,
+            "problems": []
+        },
+        "search_directory.php": {
+            "file": "api/search_directory.php",
+            "declared": true,
+            "access": "member",
+            "actions": [],
+            "retired": false,
+            "problems": []
+        },
+        "search_gifs.php": {
+            "file": "api/search_gifs.php",
+            "declared": true,
+            "access": "member",
+            "actions": [],
+            "retired": false,
+            "problems": []
+        },
+        "search_posts.php": {
+            "file": "api/search_posts.php",
+            "declared": true,
+            "access": "member",
+            "actions": [],
+            "retired": false,
+            "problems": []
+        },
+        "search_users.php": {
+            "file": "api/search_users.php",
+            "declared": true,
+            "access": "member",
+            "actions": [],
+            "retired": false,
+            "problems": []
+        },
+        "send_message.php": {
+            "file": "api/send_message.php",
+            "declared": true,
+            "access": "member",
+            "actions": [],
+            "retired": false,
+            "problems": []
+        },
+        "share_post.php": {
+            "file": "api/share_post.php",
+            "declared": true,
+            "access": "member",
+            "actions": [],
+            "retired": false,
+            "problems": []
+        },
+        "site_banner.php": {
+            "file": "api/site_banner.php",
+            "declared": true,
+            "access": "public",
+            "actions": [],
+            "retired": false,
+            "problems": []
+        },
+        "start_call.php": {
+            "file": "api/start_call.php",
+            "declared": true,
+            "access": "member",
+            "actions": [],
+            "retired": false,
+            "problems": []
+        },
+        "success_stories.php": {
+            "file": "api/success_stories.php",
+            "declared": true,
+            "access": "member",
+            "actions": {
+                "approve": "admin",
+                "reject": "admin"
+            },
+            "retired": false,
+            "problems": []
+        },
+        "toggle_repost.php": {
+            "file": "api/toggle_repost.php",
+            "declared": true,
+            "access": "member",
+            "actions": [],
+            "retired": false,
+            "problems": []
+        },
+        "toggle_stream.php": {
+            "file": "api/toggle_stream.php",
+            "declared": true,
+            "access": [
+                "alumni",
+                "faculty",
+                "admin"
+            ],
+            "actions": [],
+            "retired": false,
+            "problems": []
+        },
+        "track_post_view.php": {
+            "file": "api/track_post_view.php",
+            "declared": true,
+            "access": "member",
+            "actions": [],
+            "retired": false,
+            "problems": []
+        },
+        "track_share_open.php": {
+            "file": "api/track_share_open.php",
+            "declared": true,
+            "access": "member",
+            "actions": [],
+            "retired": false,
+            "problems": []
+        },
+        "unpin_post.php": {
+            "file": "api/unpin_post.php",
+            "declared": true,
+            "access": "member",
+            "actions": [],
+            "retired": false,
+            "problems": []
+        },
+        "update_privacy.php": {
+            "file": "api/update_privacy.php",
+            "declared": true,
+            "access": "member",
+            "actions": [],
+            "retired": false,
+            "problems": []
+        },
+        "update_profile.php": {
+            "file": "api/update_profile.php",
+            "declared": true,
+            "access": "member",
+            "actions": [],
+            "retired": false,
+            "problems": []
+        },
+        "upload.php": {
+            "file": "api/upload.php",
+            "declared": true,
+            "access": "public",
+            "actions": [],
+            "retired": true,
+            "problems": []
+        },
+        "upload_avatar.php": {
+            "file": "api/upload_avatar.php",
+            "declared": true,
+            "access": "member",
+            "actions": [],
+            "retired": false,
+            "problems": []
+        },
+        "upload_cover.php": {
+            "file": "api/upload_cover.php",
+            "declared": true,
+            "access": "member",
+            "actions": [],
+            "retired": false,
+            "problems": []
+        },
+        "upload_file.php": {
+            "file": "api/upload_file.php",
+            "declared": true,
+            "access": "member",
+            "actions": [],
+            "retired": false,
+            "problems": []
+        },
+        "upload_verification.php": {
+            "file": "api/upload_verification.php",
+            "declared": true,
+            "access": "member",
+            "actions": [],
+            "retired": false,
+            "problems": []
+        },
+        "username.php": {
+            "file": "api/username.php",
+            "declared": true,
+            "access": "member",
+            "actions": [],
+            "retired": false,
+            "problems": []
+        },
+        "view_logs.php": {
+            "file": "api/view_logs.php",
+            "declared": true,
+            "access": "admin",
+            "actions": [],
+            "retired": false,
+            "problems": []
+        },
+        "vote_poll.php": {
+            "file": "api/vote_poll.php",
+            "declared": true,
+            "access": "member",
+            "actions": [],
+            "retired": false,
+            "problems": []
+        }
+    }
+}

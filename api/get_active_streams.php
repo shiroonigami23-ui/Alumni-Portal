@@ -1,5 +1,7 @@
 <?php
 /** Live sessions happening now (signed-in members). Stream keys are never returned. */
+require_once __DIR__ . '/_kernel.php';
+$api = api_endpoint(['access' => 'member']);   // who may call this — enforced before anything below
 header('Content-Type: application/json; charset=UTF-8');
 require_once '../config/Database.php';
 require_once '../middleware/Auth.php';

@@ -47,8 +47,10 @@ refactor(router): extract static policy
 ## ✅ Before you open a PR
 
 ```bash
-# 1. Lint every PHP file
+# 1. Lint every PHP file + the contracts (seconds, no database)
 find . -name '*.php' -not -path './vendor/*' -print0 | xargs -0 -n1 php -l
+php tests/static/api_contract.php          # every endpoint declares who may call it
+python3 tests/static/frontend_contract.py  # every user value in page templates is escaped
 
 # 2. Route + security smoke test (no DB required)
 bash tests/smoke/routes.sh
@@ -81,7 +83,7 @@ Then:
 | Add or change a **page** | `pages/` (auth pages in `pages/auth/`, legal in `pages/legal/`) |
 | Give it a **URL** | one line in `bootstrap/routes.php` → `'pages'` |
 | **Rename / move** a page safely | update its target, add the old slug to `'redirects'` |
-| Add an **API endpoint** | `api/your_endpoint.php` (prefix helpers with `_` so they're never web-reachable) |
+| Add an **API endpoint** | `api/your_endpoint.php`, starting with `api_endpoint([...])` — see below (prefix helpers with `_` so they're never web-reachable) |
 | Change **security** behaviour | `bootstrap/security.php` (and mirror static rules in `.htaccess` ↔ `bootstrap/static_policy.php`) |
 | Shared **layout** | `includes/header.php`, `includes/sidebar.php`, `includes/footer.php` |
 | **Theme / styles** | `assets/css/variety-ui.css`, `assets/js/variety-ui.js` |
@@ -91,31 +93,66 @@ Then:
 
 ### Writing an API endpoint
 
+**Every endpoint goes through the API kernel (`api/_kernel.php`).** The first thing a file does is declare who may call it; the kernel enforces that *before* any of your code runs, so a forgotten role check can't happen. CI fails the build if an endpoint doesn't declare one (`tests/static/api_contract.php`).
+
 ```php
 <?php
-header("Content-Type: application/json; charset=UTF-8");
+/** Pin a post to the top of your profile. POST { post_id } */
+require_once __DIR__ . '/_kernel.php';
+require_once __DIR__ . '/_privacy.php';
+$api = api_endpoint([
+    'access'  => 'member',               // public | member | staff | admin | moderator | ['alumni', 'faculty', 'admin']
+    'methods' => ['POST'],               // anything else → 405
+    'actions' => ['force' => 'admin'],   // optional: stricter level for ?action=force
+]);
 
-include_once '../config/Database.php';
-include_once '../middleware/Auth.php';
+$postId = $api->int('post_id', required: true);          // 400 "post_id is required." / "must be a whole number."
+privacy_require_post($api->db, $api->uid, $postId);       // 404 unless this person may see it
 
-$db = (new Database())->getConnection();
-$userId = (new Auth($db))->validateRequest();   // 401/403 handled for you
-
-$stmt = $db->prepare('SELECT ... WHERE user_id = :uid'); // always prepared statements
-$stmt->execute(['uid' => $userId]);
-echo json_encode(['success' => true, 'data' => $stmt->fetchAll(PDO::FETCH_ASSOC)]);
+$own = $api->db->prepare('SELECT 1 FROM posts WHERE post_id = :p AND user_id = :u');   // always prepared statements
+$own->execute([':p' => $postId, ':u' => $api->uid]);
+if (!$own->fetchColumn() && !$api->isAdmin()) {
+    api_fail(403, 'You can only pin your own posts.');       // ownership is still your job
+}
+// ...
+$api->log('POST_PIN', "Pinned post #$postId");               // audit log; never breaks the request
+api_ok(['post_id' => $postId], 'Pinned.');
 ```
 
-You get rate limiting, CORS rules, upload inspection and security headers automatically from the router — no need to set `Access-Control-Allow-Origin` yourself.
+| You get | From |
+|---|---|
+| `$api->db`, `$api->uid`, `$api->role`, `$api->isModerator`, `$api->action` | the kernel, already authenticated (bans, suspensions, shadow bans, device bans checked) |
+| `$api->int()`, `->str($key, $max)`, `->bool()`, `->oneOf($key, [...])`, `->has()` | validated input from the query string, form fields or JSON body; bad input → a clear 400/422 |
+| `api_ok($data, $message)`, `api_fail($code, $message)` | one response shape everywhere: `{ success, status, message, data }` |
+| `api_error_message($e)` | in a `catch`: your own messages pass through, database/PHP errors become "Something went wrong … (ref ERR-3f9a2c1b)" with details only in the server log |
+| `api_retired('new_endpoint.php')` | when you replace an endpoint: old URL answers 410 with a pointer instead of a 404 |
+
+The access level is the *floor*. Ownership ("is this **your** post?") and finer rules still belong in your code. The router adds rate limiting, CORS, upload inspection, numeric-id checks and security headers on top.
+
+Staff-level endpoints (`staff`, `admin`, `moderator`, role lists, and stricter `actions`) are **attacked automatically** by `tests/integration/authz.php` on every push — it reads your declaration, so there's no list to remember.
+
+### Writing front-end code
+
+Pages build HTML with template strings. Every value that came from a person goes through the shared helpers in `assets/js/safe.js` (loaded on every page):
+
+```js
+el.innerHTML = `
+  <a href="${escapeHtml(safeUrl(user.website))}">${escapeHtml(user.name)}</a>   <!-- text + links -->
+  <p>${linkifyText(escapeHtml(post.content))}</p>                              <!-- @mentions + URLs -->
+  <span>${Number(post.likes_count)}</span>                                    <!-- numbers -->
+  <button data-name="${escapeHtml(user.name)}" onclick="openChat(${Number(user.id)}, this.dataset.name)">Chat</button>`;
+```
+
+Never put a person's text inside `onclick="fn('${…}')"`. HTML-escaping can't protect a JavaScript string; pass it through a `data-` attribute. `tests/static/frontend_contract.py` flags all three mistakes in CI. If a value is genuinely safe (a pre-built HTML snippet, a value escaped earlier), mark it inside the expression: `${chipsHtml /* safe-html: built from escaped parts above */}` — the reason is the review.
 
 ### Security checklist for contributors
 
 - Use **prepared statements** for every query — never concatenate user input into SQL.
 - Escape output in HTML with `htmlspecialchars(..., ENT_QUOTES, 'UTF-8')` (or `Security::e()`). In JS, use `textContent`, or wrap every user value in `escapeHtml()` (and `safeUrl()` for `href`/`src`) inside template strings. Never put user text inside an `onclick="…('${…}')"` string; use a `data-` attribute instead.
 - Anything that shows a person or a post goes through `api/_privacy.php` (`privacy_post_visible_sql()`, `privacy_can_view()`, `privacy_require_post()`), so private accounts and blocks are respected.
-- New staff-only endpoint? Add it to the list in `tests/integration/authz.php`.
+- New endpoint? Declare its access with `api_endpoint()` — the contract check and the authorization sweep pick it up automatically.
 - Check **authorisation**, not just authentication: "is this user allowed to edit *this* post?"
-- Don't echo exception messages to users; log them with `error_log()`.
+- Don't echo exception messages to users; use `api_error_message($e)` (CI rejects raw `$e->getMessage()` in responses).
 - Store uploads through the asset store / S3 helpers, never under a user-chosen filename.
 
 ## 🐛 Reporting bugs & 💡 ideas

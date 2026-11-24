@@ -1,4 +1,6 @@
 <?php
+require_once __DIR__ . '/_kernel.php';
+$api = api_endpoint(['access' => 'staff']);   // who may call this — enforced before anything below
 header("Access-Control-Allow-Origin: *");
 header("Content-Type: application/json; charset=UTF-8");
 
@@ -68,7 +70,7 @@ if (!empty($data->reporter_id)) {
         echo json_encode($response);
     } catch (Exception $e) {
         $db->rollBack();
-        echo json_encode(["message" => "Database error: " . $e->getMessage()]);
+        echo json_encode(["message" => api_error_message($e)]);
     }
 }
 ?>

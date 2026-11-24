@@ -7,6 +7,8 @@
  * Students: identity fields (name, branch, course, batch years) come from institute records and stay
  * locked; everything else (bio, skills, links, city, photo, pronouns...) is theirs to edit.
  */
+require_once __DIR__ . '/_kernel.php';
+$api = api_endpoint(['access' => 'member']);   // who may call this — enforced before anything below
 require_once __DIR__ . '/../helpers/Cache.php';
 register_shutdown_function(function () { if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST' && http_response_code() < 400) { Cache::bump('atlas'); } });
 header("Content-Type: application/json; charset=UTF-8");

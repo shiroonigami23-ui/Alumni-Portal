@@ -1,5 +1,7 @@
 <?php
 /** POST {post_id, question, options[], duration_hours?} — attach a poll to your own post. */
+require_once __DIR__ . '/_kernel.php';
+$api = api_endpoint(['access' => 'member']);   // who may call this — enforced before anything below
 header("Content-Type: application/json; charset=UTF-8");
 include_once '../config/Database.php';
 include_once '../middleware/Auth.php';

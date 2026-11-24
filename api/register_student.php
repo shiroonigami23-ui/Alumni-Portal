@@ -1,4 +1,6 @@
 <?php
+require_once __DIR__ . '/_kernel.php';
+$api = api_endpoint(['access' => 'public']);   // who may call this — enforced before anything below
 // Enable error display for debugging
 ini_set('display_errors', 1);
 error_reporting(E_ALL);
@@ -167,7 +169,7 @@ try {
     http_response_code(500);
     echo json_encode([
         "success" => false,
-        "message" => "Registration failed: " . $e->getMessage(),
+        "message" => api_error_message($e, "Registration failed"),
         "debug" => "Check database tables and connections"
     ]);
     error_log("Registration error: " . $e->getMessage());
