@@ -1,41 +1,16 @@
 {
-    "generated": "2026-11-24T09:06:52+00:00",
-    "endpoints": 121,
+    "generated": "2026-11-24T09:54:58+00:00",
+    "endpoints": 98,
     "violations": 0,
     "by_access": {
-        "admin": 14,
-        "member": 80,
+        "admin": 9,
+        "member": 73,
         "moderator": 1,
         "public": 12,
-        "retired": 9,
         "roles:alumni|faculty|admin": 2,
-        "staff": 3
+        "staff": 1
     },
     "endpoints_detail": {
-        "add_comment.php": {
-            "file": "api/add_comment.php",
-            "declared": true,
-            "access": "public",
-            "actions": [],
-            "retired": true,
-            "problems": []
-        },
-        "add_reply.php": {
-            "file": "api/add_reply.php",
-            "declared": true,
-            "access": "public",
-            "actions": [],
-            "retired": true,
-            "problems": []
-        },
-        "admin_bulk_users.php": {
-            "file": "api/admin_bulk_users.php",
-            "declared": true,
-            "access": "admin",
-            "actions": [],
-            "retired": false,
-            "problems": []
-        },
         "admin_export_users.php": {
             "file": "api/admin_export_users.php",
             "declared": true,
@@ -52,14 +27,6 @@
             "retired": false,
             "problems": []
         },
-        "admin_moderation.php": {
-            "file": "api/admin_moderation.php",
-            "declared": true,
-            "access": "public",
-            "actions": [],
-            "retired": true,
-            "problems": []
-        },
         "admin_report_action.php": {
             "file": "api/admin_report_action.php",
             "declared": true,
@@ -70,14 +37,6 @@
         },
         "admin_stats.php": {
             "file": "api/admin_stats.php",
-            "declared": true,
-            "access": "admin",
-            "actions": [],
-            "retired": false,
-            "problems": []
-        },
-        "admin_transfer_alumni_email.php": {
-            "file": "api/admin_transfer_alumni_email.php",
             "declared": true,
             "access": "admin",
             "actions": [],
@@ -116,22 +75,6 @@
             "retired": false,
             "problems": []
         },
-        "approve_announcement.php": {
-            "file": "api/approve_announcement.php",
-            "declared": true,
-            "access": "public",
-            "actions": [],
-            "retired": true,
-            "problems": []
-        },
-        "approve_event.php": {
-            "file": "api/approve_event.php",
-            "declared": true,
-            "access": "admin",
-            "actions": [],
-            "retired": false,
-            "problems": []
-        },
         "approve_user.php": {
             "file": "api/approve_user.php",
             "declared": true,
@@ -148,24 +91,8 @@
             "retired": false,
             "problems": []
         },
-        "ban_user.php": {
-            "file": "api/ban_user.php",
-            "declared": true,
-            "access": "admin",
-            "actions": [],
-            "retired": false,
-            "problems": []
-        },
         "block_user.php": {
             "file": "api/block_user.php",
-            "declared": true,
-            "access": "member",
-            "actions": [],
-            "retired": false,
-            "problems": []
-        },
-        "cancel_rsvp.php": {
-            "file": "api/cancel_rsvp.php",
             "declared": true,
             "access": "member",
             "actions": [],
@@ -188,14 +115,6 @@
             "retired": false,
             "problems": []
         },
-        "create_announcement.php": {
-            "file": "api/create_announcement.php",
-            "declared": true,
-            "access": "public",
-            "actions": [],
-            "retired": true,
-            "problems": []
-        },
         "create_comment.php": {
             "file": "api/create_comment.php",
             "declared": true,
@@ -206,14 +125,6 @@
         },
         "create_conversation.php": {
             "file": "api/create_conversation.php",
-            "declared": true,
-            "access": "member",
-            "actions": [],
-            "retired": false,
-            "problems": []
-        },
-        "create_event.php": {
-            "file": "api/create_event.php",
             "declared": true,
             "access": "member",
             "actions": [],
@@ -320,7 +231,9 @@
             "file": "api/events.php",
             "declared": true,
             "access": "member",
-            "actions": [],
+            "actions": {
+                "create": "staff"
+            },
             "retired": false,
             "problems": []
         },
@@ -390,22 +303,6 @@
         },
         "get_conversations.php": {
             "file": "api/get_conversations.php",
-            "declared": true,
-            "access": "member",
-            "actions": [],
-            "retired": false,
-            "problems": []
-        },
-        "get_event_attendees.php": {
-            "file": "api/get_event_attendees.php",
-            "declared": true,
-            "access": "member",
-            "actions": [],
-            "retired": false,
-            "problems": []
-        },
-        "get_events.php": {
-            "file": "api/get_events.php",
             "declared": true,
             "access": "member",
             "actions": [],
@@ -516,36 +413,12 @@
             "retired": false,
             "problems": []
         },
-        "join_event.php": {
-            "file": "api/join_event.php",
-            "declared": true,
-            "access": "public",
-            "actions": [],
-            "retired": true,
-            "problems": []
-        },
-        "kick_user.php": {
-            "file": "api/kick_user.php",
-            "declared": true,
-            "access": "staff",
-            "actions": [],
-            "retired": false,
-            "problems": []
-        },
         "login.php": {
             "file": "api/login.php",
             "declared": true,
             "access": "public",
             "actions": [],
             "retired": false,
-            "problems": []
-        },
-        "manage-post.php": {
-            "file": "api/manage-post.php",
-            "declared": true,
-            "access": "public",
-            "actions": [],
-            "retired": true,
             "problems": []
         },
         "manage_job.php": {
@@ -622,14 +495,6 @@
                 "faculty",
                 "admin"
             ],
-            "actions": [],
-            "retired": false,
-            "problems": []
-        },
-        "process_fake_report.php": {
-            "file": "api/process_fake_report.php",
-            "declared": true,
-            "access": "staff",
             "actions": [],
             "retired": false,
             "problems": []
@@ -746,22 +611,6 @@
             "retired": false,
             "problems": []
         },
-        "restore_content.php": {
-            "file": "api/restore_content.php",
-            "declared": true,
-            "access": "admin",
-            "actions": [],
-            "retired": false,
-            "problems": []
-        },
-        "rsvp_event.php": {
-            "file": "api/rsvp_event.php",
-            "declared": true,
-            "access": "member",
-            "actions": [],
-            "retired": false,
-            "problems": []
-        },
         "save_push_subscription.php": {
             "file": "api/save_push_subscription.php",
             "declared": true,
@@ -784,14 +633,6 @@
             "access": "member",
             "actions": [],
             "retired": false,
-            "problems": []
-        },
-        "search_alumni.php": {
-            "file": "api/search_alumni.php",
-            "declared": true,
-            "access": "public",
-            "actions": [],
-            "retired": true,
             "problems": []
         },
         "search_directory.php": {
@@ -828,14 +669,6 @@
         },
         "send_message.php": {
             "file": "api/send_message.php",
-            "declared": true,
-            "access": "member",
-            "actions": [],
-            "retired": false,
-            "problems": []
-        },
-        "share_post.php": {
-            "file": "api/share_post.php",
             "declared": true,
             "access": "member",
             "actions": [],
@@ -929,14 +762,6 @@
             "retired": false,
             "problems": []
         },
-        "upload.php": {
-            "file": "api/upload.php",
-            "declared": true,
-            "access": "public",
-            "actions": [],
-            "retired": true,
-            "problems": []
-        },
         "upload_avatar.php": {
             "file": "api/upload_avatar.php",
             "declared": true,
@@ -955,14 +780,6 @@
         },
         "upload_file.php": {
             "file": "api/upload_file.php",
-            "declared": true,
-            "access": "member",
-            "actions": [],
-            "retired": false,
-            "problems": []
-        },
-        "upload_verification.php": {
-            "file": "api/upload_verification.php",
             "declared": true,
             "access": "member",
             "actions": [],

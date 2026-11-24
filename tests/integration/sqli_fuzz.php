@@ -49,8 +49,8 @@ $params = ['id', 'user_id', 'post_id', 'job_id', 'event_id', 'poll_id', 'option_
            'city', 'page', 'limit', 'category', 'type', 'since', 'year', 'graduation_year', 'mentor_id', 'request_id', 'token', 'email'];
 $skip = ['login.php', 'register.php', 'register_alumni.php', 'register_student.php', 'register_faculty.php', 'request_reset.php',
          'reset_password.php', 'csrf_token.php', 'export_data.php', 'admin_export_users.php', 'asset.php', 'search_gifs.php',
-         'toggle_stream.php', 'admin_user_actions.php', 'ban_user.php', 'kick_user.php', 'admin_bulk_users.php', 'block_user.php',
-         'admin_transfer_alumni_email.php', 'change_password.php', 'delete_post.php', 'connect_user.php', 'admin_insights.php'];
+         'toggle_stream.php', 'admin_user_actions.php', 'block_user.php',
+         'change_password.php', 'delete_post.php', 'connect_user.php', 'admin_insights.php'];
 
 $tokens = ['admin' => login($BASE, 'admin@rjit.ac.in', getenv('ADMIN_PASSWORD') ?: 'Admin@12345'),
            'student' => login($BASE, 'ayaan.tomar@demo.rjit.local', 'Demo@12345')];

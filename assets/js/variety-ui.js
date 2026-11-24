@@ -140,6 +140,32 @@
   }
 
   var palette = null, paletteIdx = 0, paletteList = [];
+  // Live results from api/master_search.php (people incl. @handles, jobs, events, referral offers).
+  // Debounced; the server applies privacy and block rules, and labels are escaped when rendered.
+  var liveQuery = "", liveItems = [], liveTimer = null, liveSeq = 0;
+  function fetchLive(q) {
+    clearTimeout(liveTimer);
+    if (q.length < 2 || !localStorage.getItem("jwt_token") || !window.fetch) { liveQuery = q; liveItems = []; return; }
+    liveTimer = setTimeout(function () {
+      var seq = ++liveSeq, p = prefix();
+      var base = (typeof window.getApiBase === "function") ? window.getApiBase() : p + "api";
+      fetch(base.replace(/\/$/, "") + "/master_search.php?q=" + encodeURIComponent(q), {
+        headers: { Authorization: "Bearer " + localStorage.getItem("jwt_token") }, credentials: "same-origin"
+      }).then(function (r) { return r.ok ? r.json() : null; }).then(function (res) {
+        if (seq !== liveSeq || !palette || !res || !res.results) return;   // a newer keystroke won
+        var R = res.results, out = [];
+        (R.users || []).forEach(function (u) {
+          var meta = [u.username ? "@" + u.username : "", u.is_private ? "private" : (u.job_role && u.current_company ? u.job_role + " at " + u.current_company : u.role)].filter(Boolean).join(" · ");
+          out.push({ label: (u.full_name || "Member") + (meta ? "  —  " + meta : ""), href: p + "profile.php?id=" + Number(u.user_id), group: "People" });
+        });
+        (R.jobs || []).forEach(function (j) { out.push({ label: j.job_title + " · " + j.company_name, href: p + "jobs.php?job=" + Number(j.job_id), group: "Jobs" }); });
+        (R.events || []).forEach(function (e) { out.push({ label: e.title, href: p + "events.php?id=" + Number(e.event_id), group: "Events" }); });
+        (R.referrals || []).forEach(function (o) { out.push({ label: o.company + (o.roles ? " · " + o.roles : ""), href: p + "referrals.php?q=" + encodeURIComponent(o.company), group: "Referral offers" }); });
+        liveQuery = q; liveItems = out;
+        renderPalette(true);
+      }).catch(function () {});
+    }, 180);
+  }
   function buildPalette() {
     palette = document.createElement("div");
     palette.id = "vu-palette";
@@ -164,11 +190,13 @@
       if (li) runItem(paletteList[+li.dataset.i]);
     });
   }
-  function renderPalette() {
+  function renderPalette(fromLive) {
     var q = palette.querySelector("input").value.trim().toLowerCase();
+    if (fromLive !== true) fetchLive(q);
     var items = paletteItems().filter(function (i) {
       return !q || (i.label + " " + i.keys).toLowerCase().indexOf(q) >= 0;
     });
+    if (q && q === liveQuery) items = items.concat(liveItems);   // real matches first, generic searches after
     if (q.length >= 2) {
       var p = prefix(), enc = encodeURIComponent(q);
       items.push({ label: 'Search alumni for “' + q + '”', href: p + "discovery.php?search=" + enc, group: "Search" });
@@ -209,6 +237,19 @@
   }
   function closePalette() { if (palette) palette.classList.remove("vu-open"); }
   window.openCommandPalette = openPalette;
+
+  /* Deep links like jobs.php?job=12: once the list has rendered, scroll to that card and flash it (once per page load). */
+  var focused = {};
+  window.vuFocusFromUrl = function (param, selectorFor) {
+    var id = new URLSearchParams(location.search).get(param);
+    if (!id || !/^\d+$/.test(id) || focused[param]) return;
+    var el = document.querySelector(selectorFor(id));
+    if (!el) return;
+    focused[param] = true;
+    el.scrollIntoView({ behavior: "smooth", block: "center" });
+    el.classList.add("vu-deeplink");
+    setTimeout(function () { el.classList.remove("vu-deeplink"); }, 2600);
+  };
 
   document.addEventListener("keydown", function (e) {
     var typing = /input|textarea|select/i.test((e.target && e.target.tagName) || "") || (e.target && e.target.isContentEditable);

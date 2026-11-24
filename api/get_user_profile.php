@@ -51,9 +51,7 @@ $current_user = (int)$auth->validateRequest();
 privacy_ensure_schema($db);
 $current_user_role = null;
 if ($current_user) {
-    $currentRoleStmt = $db->prepare("SELECT role FROM users WHERE user_id = :uid LIMIT 1");
-    $currentRoleStmt->execute(['uid' => $current_user]);
-    $current_user_role = (string)($currentRoleStmt->fetchColumn() ?: '');
+    $current_user_role = $api->role;   // already loaded by the API kernel
 }
 
 // Get user_id from query parameter
@@ -119,56 +117,25 @@ try {
         exit;
     }
 
-    $profile['posts_count'] = 0;
-    $pCount = $db->prepare("SELECT COUNT(*) FROM posts WHERE user_id = :uid AND status = 'published'");
-    $pCount->execute([':uid' => $user_id]);
-    $profile['posts_count'] = (int)$pCount->fetchColumn();
-
-    $profile['connections_count'] = 0;
-    $profile['followers_count'] = 0;
-    $profile['following_count'] = 0;
-    $profile['is_connected'] = false;
-    if (db_table_exists($db, 'connections')) {
-        $cCount = $db->prepare("
-            SELECT COUNT(*)
-            FROM connections c
-            WHERE c.status = 'accepted'
-              AND (c.requester_user_id = :uid OR c.addressee_user_id = :uid)
-        ");
-        $cCount->execute([':uid' => $user_id]);
-        $profile['connections_count'] = (int)$cCount->fetchColumn();
-
-        $followersCount = $db->prepare("
-            SELECT COUNT(*)
-            FROM connections c
-            WHERE c.status = 'accepted'
-              AND c.addressee_user_id = :uid
-        ");
-        $followersCount->execute([':uid' => $user_id]);
-        $profile['followers_count'] = (int)$followersCount->fetchColumn();
-
-        $followingCount = $db->prepare("
-            SELECT COUNT(*)
-            FROM connections c
-            WHERE c.status = 'accepted'
-              AND c.requester_user_id = :uid
-        ");
-        $followingCount->execute([':uid' => $user_id]);
-        $profile['following_count'] = (int)$followingCount->fetchColumn();
-
-        if ($current_user && (int)$current_user !== (int)$user_id) {
-            $cState = $db->prepare("
-                SELECT 1
-                FROM connections c
-                WHERE c.status = 'accepted'
-                  AND c.requester_user_id = :me
-                  AND c.addressee_user_id = :uid
-                LIMIT 1
-            ");
-            $cState->execute([':me' => $current_user, ':uid' => $user_id]);
-            $profile['is_connected'] = $cState->fetch() ? true : false;
-        }
-    }
+    // All counters in one round trip (was five separate queries).
+    $cnt = $db->prepare("
+        SELECT
+            (SELECT COUNT(*) FROM posts WHERE user_id = :uid AND status = 'published') AS posts_count,
+            COUNT(*) FILTER (WHERE c.requester_user_id = :uid2 OR c.addressee_user_id = :uid3) AS connections_count,
+            COUNT(*) FILTER (WHERE c.addressee_user_id = :uid4) AS followers_count,
+            COUNT(*) FILTER (WHERE c.requester_user_id = :uid5) AS following_count,
+            COUNT(*) FILTER (WHERE c.requester_user_id = :me AND c.addressee_user_id = :uid6) AS me_following
+        FROM connections c
+        WHERE c.status = 'accepted' AND (c.requester_user_id = :uid7 OR c.addressee_user_id = :uid8)
+    ");
+    $cnt->execute([':uid' => $user_id, ':uid2' => $user_id, ':uid3' => $user_id, ':uid4' => $user_id, ':uid5' => $user_id,
+                   ':uid6' => $user_id, ':uid7' => $user_id, ':uid8' => $user_id, ':me' => (int)$current_user]);
+    $c = $cnt->fetch(PDO::FETCH_ASSOC) ?: [];
+    $profile['posts_count'] = (int)($c['posts_count'] ?? 0);
+    $profile['connections_count'] = (int)($c['connections_count'] ?? 0);
+    $profile['followers_count'] = (int)($c['followers_count'] ?? 0);
+    $profile['following_count'] = (int)($c['following_count'] ?? 0);
+    $profile['is_connected'] = $current_user && (int)$current_user !== (int)$user_id && (int)($c['me_following'] ?? 0) > 0;
     
     foreach (['is_private', 'show_email', 'show_contact', 'open_to_mentor', 'open_to_refer', 'open_to_work', 'help_alumni_mates'] as $flag) {
         $profile[$flag] = filter_var($profile[$flag] ?? false, FILTER_VALIDATE_BOOLEAN);
@@ -259,8 +226,8 @@ try {
     
     // Get tech stack
     if(isset($techHelper)) {
-        $profile["tech_stack"] = $techHelper->getUserTechStack($user_id);
         $profile['tech_skills'] = $techHelper->getUserTechStackArray($user_id);
+        $profile["tech_stack"] = $profile['tech_skills'] ? implode(', ', $profile['tech_skills']) : null;   // same data, no second query
     } else {
         $profile["tech_stack"] = '';
         $profile['tech_skills'] = [];

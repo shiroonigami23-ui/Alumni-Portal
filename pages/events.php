@@ -125,7 +125,7 @@
 
             if (response && response.length > 0) {
                 grid.innerHTML = response.map(event => `
-                <div class="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden hover:shadow-md transition">
+                <div data-event-card="${Number(event.event_id)}" class="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden hover:shadow-md transition">
                     ${event.banner_url ? `<img src="${escapeHtml(safeUrl(event.banner_url))}" alt="${escapeHtml(event.title)}" class="w-full h-48 object-cover">` : ''}
                     <div class="p-6">
                         <div class="flex items-center text-sm text-gray-500 mb-2">
@@ -147,6 +147,7 @@
                     </div>
                 </div>
             `).join('');
+                window.vuFocusFromUrl?.('id', (id) => `[data-event-card="${Number(id)}"]`);   // events.php?id=5 (from Ctrl+K)
             } else {
                 grid.innerHTML = '<div class="col-span-full text-center py-12"><i data-lucide="calendar-off" class="h-12 w-12 mx-auto text-gray-400"></i><p class="mt-4 text-gray-500">No events found</p></div>';
             }

@@ -484,7 +484,7 @@ if (($landingStats['total_posts'] ?? 0) <= 0) {
                                 <h3 class="font-semibold text-gray-900 mb-1">${escapeHtml(alumni.name)}</h3>
                                 <p class="text-gray-600 text-sm mb-2">${escapeHtml(alumni.position || 'Alumni')}</p>
                                 <p class="text-gray-500 text-xs">
-                                    ${alumni.branch ? `${alumni.branch} &bull; ` : ''}Class of ${alumni.graduation_year || 'N/A'}
+                                    ${alumni.branch ? `${escapeHtml(alumni.branch)} &bull; ` : ''}Class of ${escapeHtml(alumni.graduation_year || 'N/A')}
                                 </p>
                                 ${alumni.summary ? `<p class="text-sm text-gray-600 mt-3 line-clamp-2">${escapeHtml(alumni.summary)}</p>` : ''}
                                 <div class="mt-4 flex items-center justify-between gap-2">
@@ -611,7 +611,7 @@ if (($landingStats['total_posts'] ?? 0) <= 0) {
                             </div>
                             <div>
                                 <h4 class="font-semibold">${escapeHtml(post.author_name)}</h4>
-                                <p class="text-sm text-gray-500">${escapeHtml(post.author_role)}${post.author_email ? ` | ${escapeHtml(post.author_email)}` : ``}</p>
+                                <p class="text-sm text-gray-500">${escapeHtml(post.author_role)}</p>
                             </div>
                         </div>
                         ${post.image_url ? `<img src="${escapeHtml(safeUrl(post.image_url))}" alt="Post image" class="w-full rounded-lg mb-4 object-cover" style="max-height: 200px;">` : ''}

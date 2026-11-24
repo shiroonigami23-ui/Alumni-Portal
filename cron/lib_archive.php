@@ -1,4 +1,8 @@
 <?php
+if (PHP_SAPI !== 'cli') {   // command-line only — never runnable from a web request, even if a server serves this folder by mistake
+    http_response_code(404);
+    exit;
+}
 /**
  * Archive + purge logic shared by cron/run.php and the standalone scripts.
  *

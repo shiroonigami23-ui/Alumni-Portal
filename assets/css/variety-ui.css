@@ -456,3 +456,8 @@ kbd { font: 600 11px/1 ui-monospace, SFMono-Regular, Menlo, monospace; padding: 
   .vu-enter, .vu-hero-anim, .vu-shimmer-text, .ins-kpi::after, .atlas-stat::after, .vu-live, .vu-motion body,
   .vu-motion #growthChart rect, .vu-motion .atlas-bar, .vu-motion .ref-progress { animation: none !important; }
 }
+
+/* Card opened from a deep link (Ctrl+K result) */
+.vu-deeplink { outline: 3px solid rgba(59,130,246,.65); outline-offset: 3px; border-radius: 14px; animation: vu-deeplink-pulse 1.2s ease-in-out 2; }
+@keyframes vu-deeplink-pulse { 50% { outline-color: rgba(59,130,246,.15); } }
+@media (prefers-reduced-motion: reduce) { .vu-deeplink { animation: none; } }

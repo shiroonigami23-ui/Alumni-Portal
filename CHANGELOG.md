@@ -5,6 +5,37 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and 
 
 ## [Unreleased]
 
+## [2.3.2] — 2026-11-24 — "Lighter and faster"
+
+### ⚡ Faster (measured with production-like database latency — see `tests/results/perf-latest.md`)
+- Every API request: **6 database round trips → 1** before endpoint code runs. Session, account status, role, moderator flag and shadow ban come from one joined query; device-ban checks are cached (and cleared the moment an admin bans or unbans); the UTC time zone is set when the connection opens instead of on every request.
+- Feed: **29 → 8 queries** — post texts load in one batch instead of one query per post (also comments and replies). **106 ms → 31 ms.**
+- Profile: **19 → 11 queries** — the five counters are one query; repeated block/follow/privacy checks are remembered for the request; skills load once. **73 ms → 37 ms.**
+- "Does this table/column exist?" answers are cached instead of asking the database on every request.
+- Overall: median request **24 ms → 12.6 ms**, p95 **107 ms → 37 ms**. With the database on the same machine the kernel costs ~0.05–0.1 ms per request.
+- `tests/perf/bench.php` + `tests/perf/latency_proxy.py`: compare any two versions yourself.
+
+### 🗑️ Removed (unused, and some dangerous to keep)
+- **23 endpoints**, 121 → 98:
+  - Old unguarded or powerful tools nobody used: `admin_moderation` (the ban-anyone endpoint), `ban_user`, `kick_user`, `admin_bulk_users` (mass actions), `admin_transfer_alumni_email` (change someone's login email), `restore_content`, `process_fake_report`, `approve_event`, `upload_verification`.
+  - Duplicates of endpoints the app actually uses: `create_event` / `get_events` / `rsvp_event` / `cancel_rsvp` / `get_event_attendees` (→ `events.php`), `share_post` (→ `create_share_link`).
+  - Retired 410 stubs: `add_comment`, `add_reply`, `manage-post`, `join_event`, `search_alumni`, `upload`, `create_announcement`, `approve_announcement`.
+- Dead helpers `RateLimiter`, `StreamHelper`, and a duplicate `Logger` class.
+
+### 🔐 Security
+- Creating events is now faculty/admin only on the server too (the button already was); events posted through the API by others landed in a pending state that nothing could approve or show.
+- `scripts/` and `cron/` files refuse to run from a web request even if a server is misconfigured to serve those folders.
+- The CSS build folder (`tools/`), `docs/` and any `node_modules/` are no longer served (`tools/tailwind/package.json` was).
+- Cache entries can't be turned into PHP objects (`unserialize(..., ['allowed_classes' => false])`).
+- The landing page no longer has code to show authors' emails.
+
+### ✨ Wired up
+- **Ctrl+K now searches people (with @handles), jobs, events and referral offers live** (`master_search` existed but wasn't connected); results open the profile, or scroll to and highlight the job/event.
+- **End poll** button for the poll's author (and faculty/admins).
+
+### 🧪 Tests
+- API suite 233 (event creation is staff-only; removed endpoints return 404); browser suite 82 (Ctrl+K people search → profile, End poll, only the author sees it).
+
 ## [2.3.1] — 2026-11-24 — "One front door"
 
 Every API endpoint now goes through a shared kernel, so security doesn't depend on each of 121 files remembering the same checks.
@@ -245,7 +276,8 @@ Every feature was exercised end-to-end (185 API checks, 68 browser checks); ever
 - Initial AWS-deployable alumni portal with Terraform, Docker and CI/CD.
 - Premium UI theme; PostgreSQL/AWS setup docs; local verification scripts.
 
-[Unreleased]: https://github.com/shiroonigami23-ui/Alumni-Portal/compare/v2.3.1...HEAD
+[Unreleased]: https://github.com/shiroonigami23-ui/Alumni-Portal/compare/v2.3.2...HEAD
+[2.3.2]: https://github.com/shiroonigami23-ui/Alumni-Portal/releases/tag/v2.3.2
 [2.3.1]: https://github.com/shiroonigami23-ui/Alumni-Portal/releases/tag/v2.3.1
 [2.3.0]: https://github.com/shiroonigami23-ui/Alumni-Portal/releases/tag/v2.3.0
 [2.2.0]: https://github.com/shiroonigami23-ui/Alumni-Portal/releases/tag/v2.2.0

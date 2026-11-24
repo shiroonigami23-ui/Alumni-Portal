@@ -101,17 +101,12 @@ foreach ($manifest as $name => $e) {
     }
 }
 $endpoints = [
-    ['POST', 'api/admin_moderation.php'], ['POST', 'api/ban_user.php'], ['POST', 'api/kick_user.php'],
-    ['POST', 'api/approve_user.php'], ['POST', 'api/approve_user.php', ['action' => 'reject']], ['POST', 'api/process_fake_report.php'],
-    ['POST', 'api/restore_content.php'], ['POST', 'api/approve_announcement.php'], ['POST', 'api/approve_event.php'],
-    ['POST', 'api/admin_bulk_users.php'], ['POST', 'api/admin_transfer_alumni_email.php'],
-    ['POST', 'api/admin_user_actions.php'], ['POST', 'api/admin_user_actions.php', ['action' => 'set_role']],
+    ['POST', 'api/approve_user.php'], ['POST', 'api/approve_user.php', ['action' => 'reject']], ['POST', 'api/admin_user_actions.php'], ['POST', 'api/admin_user_actions.php', ['action' => 'set_role']],
     ['POST', 'api/admin_user_actions.php', ['action' => 'delete']], ['POST', 'api/admin_report_action.php'],
     ['POST', 'api/admin_report_action.php', ['action' => 'dismiss']], ['POST', 'api/generate_token.php'],
     ['POST', 'api/moderate_post.php', null, 'staff'], ['POST', 'api/moderation_queue.php', ['action' => 'approve']],
     ['POST', 'api/moderation_queue.php', ['action' => 'reject']],
-    ['POST', 'api/admin_insights.php', ['action' => 'broadcast']], ['POST', 'api/create_announcement.php'],
-    ['POST', 'api/mentorship.php?action=review_application', ['status' => 'approved']],
+    ['POST', 'api/admin_insights.php', ['action' => 'broadcast']], ['POST', 'api/mentorship.php?action=review_application', ['status' => 'approved']],
     ['POST', 'api/success_stories.php?action=approve', ['story_id' => 1]], ['POST', 'api/events.php?action=approve'],
     ['GET', 'api/admin_users.php'], ['GET', 'api/admin_stats.php'], ['GET', 'api/view_logs.php'], ['GET', 'api/get_reports.php'],
     ['GET', 'api/admin_export_users.php'], ['GET', 'api/admin_insights.php'], ['GET', "api/get_applicants.php?job_id=1", null, 'admin'],

@@ -131,6 +131,14 @@ The access level is the *floor*. Ownership ("is this **your** post?") and finer 
 
 Staff-level endpoints (`staff`, `admin`, `moderator`, role lists, and stricter `actions`) are **attacked automatically** by `tests/integration/authz.php` on every push — it reads your declaration, so there's no list to remember.
 
+### Keeping it fast
+
+Most request time is database round trips, not PHP. When you build a list, **don't query inside the loop**:
+call `prefetch_content_payloads($db, array_column($rows, 'content_file_path'))` before loading post/comment
+texts, combine counters into one query, and use `$api->role` / `$api->uid` instead of looking the caller up
+again. Check with `php tests/perf/bench.php` (two running copies, one per version) — run the database through
+`tests/perf/latency_proxy.py` to see what production will feel.
+
 ### Writing front-end code
 
 Pages build HTML with template strings. Every value that came from a person goes through the shared helpers in `assets/js/safe.js` (loaded on every page):

@@ -30,9 +30,7 @@ $auth = new Auth($db);
 
 try {
     $user_id = $auth->validateRequest();
-    $viewerStmt = $db->prepare("SELECT role, COALESCE(is_moderator, FALSE) AS is_moderator FROM users WHERE user_id = :uid LIMIT 1");
-    $viewerStmt->execute(['uid' => $user_id]);
-    $viewer = $viewerStmt->fetch(PDO::FETCH_ASSOC) ?: ['role' => '', 'is_moderator' => false];
+    $viewer = ['role' => $api->role, 'is_moderator' => $api->isModerator];   // already loaded by the API kernel
     $viewerRole = strtolower((string)($viewer['role'] ?? ''));
     $viewerIsAdmin = $viewerRole === 'admin';
 } catch (Throwable $e) {
@@ -231,6 +229,7 @@ try {
     $stmt->bindValue(':offset', $offset, PDO::PARAM_INT);
     $stmt->execute();
     $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    prefetch_content_payloads($db, array_merge(array_column($rows, 'content_file_path'), array_column($rows, 'previous_content_file_path'), array_column($rows, 'pending_edit_content_file_path')));   // one query for every item's text instead of one per item
 
     $posts = array_map(function (array $row) use ($db, $user_id) {
         $row['author_name'] = $row['author_name'] ?: 'RJIT Member';

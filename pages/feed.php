@@ -2227,4 +2227,4 @@ include 'includes/sidebar.php';
         }
     </script>
 
-<script src="assets/js/feed-extras.js?v=2" defer></script>
+<script src="assets/js/feed-extras.js?v=3" defer></script>

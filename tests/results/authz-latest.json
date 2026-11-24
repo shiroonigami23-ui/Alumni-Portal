@@ -1,24 +1,8 @@
 {
-    "generated": "2026-11-24T09:01:16+00:00",
-    "passed": 185,
-    "total": 185,
+    "generated": "2026-11-24T09:55:09+00:00",
+    "passed": 132,
+    "total": 132,
     "results": [
-        {
-            "as": "student",
-            "endpoint": "POST api\/ban_user.php",
-            "http": 403,
-            "refused": true,
-            "db_unchanged": true,
-            "pass": true
-        },
-        {
-            "as": "student",
-            "endpoint": "POST api\/kick_user.php",
-            "http": 403,
-            "refused": true,
-            "db_unchanged": true,
-            "pass": true
-        },
         {
             "as": "student",
             "endpoint": "POST api\/approve_user.php",
@@ -30,46 +14,6 @@
         {
             "as": "student",
             "endpoint": "POST api\/approve_user.php {\"action\":\"reject\"}",
-            "http": 403,
-            "refused": true,
-            "db_unchanged": true,
-            "pass": true
-        },
-        {
-            "as": "student",
-            "endpoint": "POST api\/process_fake_report.php",
-            "http": 403,
-            "refused": true,
-            "db_unchanged": true,
-            "pass": true
-        },
-        {
-            "as": "student",
-            "endpoint": "POST api\/restore_content.php",
-            "http": 403,
-            "refused": true,
-            "db_unchanged": true,
-            "pass": true
-        },
-        {
-            "as": "student",
-            "endpoint": "POST api\/approve_event.php",
-            "http": 403,
-            "refused": true,
-            "db_unchanged": true,
-            "pass": true
-        },
-        {
-            "as": "student",
-            "endpoint": "POST api\/admin_bulk_users.php",
-            "http": 403,
-            "refused": true,
-            "db_unchanged": true,
-            "pass": true
-        },
-        {
-            "as": "student",
-            "endpoint": "POST api\/admin_transfer_alumni_email.php",
             "http": 403,
             "refused": true,
             "db_unchanged": true,
@@ -237,22 +181,6 @@
         },
         {
             "as": "student",
-            "endpoint": "POST api\/admin_bulk_users.php",
-            "http": 403,
-            "refused": true,
-            "db_unchanged": true,
-            "pass": true
-        },
-        {
-            "as": "student",
-            "endpoint": "GET api\/admin_bulk_users.php",
-            "http": 403,
-            "refused": true,
-            "db_unchanged": true,
-            "pass": true
-        },
-        {
-            "as": "student",
             "endpoint": "POST api\/admin_export_users.php",
             "http": 403,
             "refused": true,
@@ -293,22 +221,6 @@
         },
         {
             "as": "student",
-            "endpoint": "POST api\/admin_transfer_alumni_email.php",
-            "http": 403,
-            "refused": true,
-            "db_unchanged": true,
-            "pass": true
-        },
-        {
-            "as": "student",
-            "endpoint": "GET api\/admin_transfer_alumni_email.php",
-            "http": 403,
-            "refused": true,
-            "db_unchanged": true,
-            "pass": true
-        },
-        {
-            "as": "student",
             "endpoint": "POST api\/admin_user_actions.php",
             "http": 403,
             "refused": true,
@@ -333,22 +245,6 @@
         },
         {
             "as": "student",
-            "endpoint": "POST api\/approve_event.php",
-            "http": 403,
-            "refused": true,
-            "db_unchanged": true,
-            "pass": true
-        },
-        {
-            "as": "student",
-            "endpoint": "GET api\/approve_event.php",
-            "http": 403,
-            "refused": true,
-            "db_unchanged": true,
-            "pass": true
-        },
-        {
-            "as": "student",
             "endpoint": "POST api\/approve_user.php",
             "http": 403,
             "refused": true,
@@ -365,7 +261,7 @@
         },
         {
             "as": "student",
-            "endpoint": "POST api\/ban_user.php",
+            "endpoint": "POST api\/events.php?action=create {\"action\":\"create\"}",
             "http": 403,
             "refused": true,
             "db_unchanged": true,
@@ -373,7 +269,7 @@
         },
         {
             "as": "student",
-            "endpoint": "GET api\/ban_user.php",
+            "endpoint": "GET api\/events.php?action=create",
             "http": 403,
             "refused": true,
             "db_unchanged": true,
@@ -398,22 +294,6 @@
         {
             "as": "student",
             "endpoint": "POST api\/get_reports.php",
-            "http": 403,
-            "refused": true,
-            "db_unchanged": true,
-            "pass": true
-        },
-        {
-            "as": "student",
-            "endpoint": "POST api\/kick_user.php",
-            "http": 403,
-            "refused": true,
-            "db_unchanged": true,
-            "pass": true
-        },
-        {
-            "as": "student",
-            "endpoint": "GET api\/kick_user.php",
             "http": 403,
             "refused": true,
             "db_unchanged": true,
@@ -462,38 +342,6 @@
         {
             "as": "student",
             "endpoint": "GET api\/post_job.php",
-            "http": 403,
-            "refused": true,
-            "db_unchanged": true,
-            "pass": true
-        },
-        {
-            "as": "student",
-            "endpoint": "POST api\/process_fake_report.php",
-            "http": 403,
-            "refused": true,
-            "db_unchanged": true,
-            "pass": true
-        },
-        {
-            "as": "student",
-            "endpoint": "GET api\/process_fake_report.php",
-            "http": 403,
-            "refused": true,
-            "db_unchanged": true,
-            "pass": true
-        },
-        {
-            "as": "student",
-            "endpoint": "POST api\/restore_content.php",
-            "http": 403,
-            "refused": true,
-            "db_unchanged": true,
-            "pass": true
-        },
-        {
-            "as": "student",
-            "endpoint": "GET api\/restore_content.php",
             "http": 403,
             "refused": true,
             "db_unchanged": true,
@@ -557,22 +405,6 @@
         },
         {
             "as": "alumni",
-            "endpoint": "POST api\/ban_user.php",
-            "http": 403,
-            "refused": true,
-            "db_unchanged": true,
-            "pass": true
-        },
-        {
-            "as": "alumni",
-            "endpoint": "POST api\/kick_user.php",
-            "http": 403,
-            "refused": true,
-            "db_unchanged": true,
-            "pass": true
-        },
-        {
-            "as": "alumni",
             "endpoint": "POST api\/approve_user.php",
             "http": 403,
             "refused": true,
@@ -582,46 +414,6 @@
         {
             "as": "alumni",
             "endpoint": "POST api\/approve_user.php {\"action\":\"reject\"}",
-            "http": 403,
-            "refused": true,
-            "db_unchanged": true,
-            "pass": true
-        },
-        {
-            "as": "alumni",
-            "endpoint": "POST api\/process_fake_report.php",
-            "http": 403,
-            "refused": true,
-            "db_unchanged": true,
-            "pass": true
-        },
-        {
-            "as": "alumni",
-            "endpoint": "POST api\/restore_content.php",
-            "http": 403,
-            "refused": true,
-            "db_unchanged": true,
-            "pass": true
-        },
-        {
-            "as": "alumni",
-            "endpoint": "POST api\/approve_event.php",
-            "http": 403,
-            "refused": true,
-            "db_unchanged": true,
-            "pass": true
-        },
-        {
-            "as": "alumni",
-            "endpoint": "POST api\/admin_bulk_users.php",
-            "http": 403,
-            "refused": true,
-            "db_unchanged": true,
-            "pass": true
-        },
-        {
-            "as": "alumni",
-            "endpoint": "POST api\/admin_transfer_alumni_email.php",
             "http": 403,
             "refused": true,
             "db_unchanged": true,
@@ -789,22 +581,6 @@
         },
         {
             "as": "alumni",
-            "endpoint": "POST api\/admin_bulk_users.php",
-            "http": 403,
-            "refused": true,
-            "db_unchanged": true,
-            "pass": true
-        },
-        {
-            "as": "alumni",
-            "endpoint": "GET api\/admin_bulk_users.php",
-            "http": 403,
-            "refused": true,
-            "db_unchanged": true,
-            "pass": true
-        },
-        {
-            "as": "alumni",
             "endpoint": "POST api\/admin_export_users.php",
             "http": 403,
             "refused": true,
@@ -845,22 +621,6 @@
         },
         {
             "as": "alumni",
-            "endpoint": "POST api\/admin_transfer_alumni_email.php",
-            "http": 403,
-            "refused": true,
-            "db_unchanged": true,
-            "pass": true
-        },
-        {
-            "as": "alumni",
-            "endpoint": "GET api\/admin_transfer_alumni_email.php",
-            "http": 403,
-            "refused": true,
-            "db_unchanged": true,
-            "pass": true
-        },
-        {
-            "as": "alumni",
             "endpoint": "POST api\/admin_user_actions.php",
             "http": 403,
             "refused": true,
@@ -885,22 +645,6 @@
         },
         {
             "as": "alumni",
-            "endpoint": "POST api\/approve_event.php",
-            "http": 403,
-            "refused": true,
-            "db_unchanged": true,
-            "pass": true
-        },
-        {
-            "as": "alumni",
-            "endpoint": "GET api\/approve_event.php",
-            "http": 403,
-            "refused": true,
-            "db_unchanged": true,
-            "pass": true
-        },
-        {
-            "as": "alumni",
             "endpoint": "POST api\/approve_user.php",
             "http": 403,
             "refused": true,
@@ -917,7 +661,7 @@
         },
         {
             "as": "alumni",
-            "endpoint": "POST api\/ban_user.php",
+            "endpoint": "POST api\/events.php?action=create {\"action\":\"create\"}",
             "http": 403,
             "refused": true,
             "db_unchanged": true,
@@ -925,7 +669,7 @@
         },
         {
             "as": "alumni",
-            "endpoint": "GET api\/ban_user.php",
+            "endpoint": "GET api\/events.php?action=create",
             "http": 403,
             "refused": true,
             "db_unchanged": true,
@@ -950,22 +694,6 @@
         {
             "as": "alumni",
             "endpoint": "POST api\/get_reports.php",
-            "http": 403,
-            "refused": true,
-            "db_unchanged": true,
-            "pass": true
-        },
-        {
-            "as": "alumni",
-            "endpoint": "POST api\/kick_user.php",
-            "http": 403,
-            "refused": true,
-            "db_unchanged": true,
-            "pass": true
-        },
-        {
-            "as": "alumni",
-            "endpoint": "GET api\/kick_user.php",
             "http": 403,
             "refused": true,
             "db_unchanged": true,
@@ -998,38 +726,6 @@
         {
             "as": "alumni",
             "endpoint": "GET api\/moderation_queue.php",
-            "http": 403,
-            "refused": true,
-            "db_unchanged": true,
-            "pass": true
-        },
-        {
-            "as": "alumni",
-            "endpoint": "POST api\/process_fake_report.php",
-            "http": 403,
-            "refused": true,
-            "db_unchanged": true,
-            "pass": true
-        },
-        {
-            "as": "alumni",
-            "endpoint": "GET api\/process_fake_report.php",
-            "http": 403,
-            "refused": true,
-            "db_unchanged": true,
-            "pass": true
-        },
-        {
-            "as": "alumni",
-            "endpoint": "POST api\/restore_content.php",
-            "http": 403,
-            "refused": true,
-            "db_unchanged": true,
-            "pass": true
-        },
-        {
-            "as": "alumni",
-            "endpoint": "GET api\/restore_content.php",
             "http": 403,
             "refused": true,
             "db_unchanged": true,
@@ -1070,46 +766,6 @@
         {
             "as": "alumni",
             "endpoint": "POST api\/view_logs.php",
-            "http": 403,
-            "refused": true,
-            "db_unchanged": true,
-            "pass": true
-        },
-        {
-            "as": "faculty",
-            "endpoint": "POST api\/ban_user.php",
-            "http": 403,
-            "refused": true,
-            "db_unchanged": true,
-            "pass": true
-        },
-        {
-            "as": "faculty",
-            "endpoint": "POST api\/restore_content.php",
-            "http": 403,
-            "refused": true,
-            "db_unchanged": true,
-            "pass": true
-        },
-        {
-            "as": "faculty",
-            "endpoint": "POST api\/approve_event.php",
-            "http": 403,
-            "refused": true,
-            "db_unchanged": true,
-            "pass": true
-        },
-        {
-            "as": "faculty",
-            "endpoint": "POST api\/admin_bulk_users.php",
-            "http": 403,
-            "refused": true,
-            "db_unchanged": true,
-            "pass": true
-        },
-        {
-            "as": "faculty",
-            "endpoint": "POST api\/admin_transfer_alumni_email.php",
             "http": 403,
             "refused": true,
             "db_unchanged": true,
@@ -1261,22 +917,6 @@
         },
         {
             "as": "faculty",
-            "endpoint": "POST api\/admin_bulk_users.php",
-            "http": 403,
-            "refused": true,
-            "db_unchanged": true,
-            "pass": true
-        },
-        {
-            "as": "faculty",
-            "endpoint": "GET api\/admin_bulk_users.php",
-            "http": 403,
-            "refused": true,
-            "db_unchanged": true,
-            "pass": true
-        },
-        {
-            "as": "faculty",
             "endpoint": "POST api\/admin_export_users.php",
             "http": 403,
             "refused": true,
@@ -1317,22 +957,6 @@
         },
         {
             "as": "faculty",
-            "endpoint": "POST api\/admin_transfer_alumni_email.php",
-            "http": 403,
-            "refused": true,
-            "db_unchanged": true,
-            "pass": true
-        },
-        {
-            "as": "faculty",
-            "endpoint": "GET api\/admin_transfer_alumni_email.php",
-            "http": 403,
-            "refused": true,
-            "db_unchanged": true,
-            "pass": true
-        },
-        {
-            "as": "faculty",
             "endpoint": "POST api\/admin_user_actions.php",
             "http": 403,
             "refused": true,
@@ -1350,38 +974,6 @@
         {
             "as": "faculty",
             "endpoint": "POST api\/admin_users.php",
-            "http": 403,
-            "refused": true,
-            "db_unchanged": true,
-            "pass": true
-        },
-        {
-            "as": "faculty",
-            "endpoint": "POST api\/approve_event.php",
-            "http": 403,
-            "refused": true,
-            "db_unchanged": true,
-            "pass": true
-        },
-        {
-            "as": "faculty",
-            "endpoint": "GET api\/approve_event.php",
-            "http": 403,
-            "refused": true,
-            "db_unchanged": true,
-            "pass": true
-        },
-        {
-            "as": "faculty",
-            "endpoint": "POST api\/ban_user.php",
-            "http": 403,
-            "refused": true,
-            "db_unchanged": true,
-            "pass": true
-        },
-        {
-            "as": "faculty",
-            "endpoint": "GET api\/ban_user.php",
             "http": 403,
             "refused": true,
             "db_unchanged": true,
@@ -1422,22 +1014,6 @@
         {
             "as": "faculty",
             "endpoint": "GET api\/moderation_queue.php",
-            "http": 403,
-            "refused": true,
-            "db_unchanged": true,
-            "pass": true
-        },
-        {
-            "as": "faculty",
-            "endpoint": "POST api\/restore_content.php",
-            "http": 403,
-            "refused": true,
-            "db_unchanged": true,
-            "pass": true
-        },
-        {
-            "as": "faculty",
-            "endpoint": "GET api\/restore_content.php",
             "http": 403,
             "refused": true,
             "db_unchanged": true,

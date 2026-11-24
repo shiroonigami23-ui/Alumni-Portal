@@ -167,8 +167,40 @@ async def interactions(b, results):
         await btn.click(); await pg.wait_for_timeout(1200)
         card = await pg.query_selector(f'.post-card:has-text("UI poll {stamp}")')
         rec('Vote on a poll and see results', card is not None and '1 vote' in (await card.inner_text()))
+        rec("Only the poll's author sees “End poll”", card is not None and await card.query_selector('.fx-end-poll') is None)
     else:
         rec('Vote on a poll and see results', False, 'poll not found in feed')
+        rec("Only the poll's author sees “End poll”", False, 'poll not found in feed')
+    # Ctrl+K live results: people by name / @handle
+    await pg.keyboard.press('Control+k'); await pg.wait_for_timeout(200)
+    await pg.keyboard.type('ananya'); await pg.wait_for_timeout(1200)
+    pal = await pg.inner_text('#vu-pal-list')
+    rec('Ctrl+K shows people with their @handle', 'people' in pal.lower() and '@ananya' in pal, pal[:120].replace('\n', ' | '))
+    await pg.keyboard.press('Enter')
+    try:
+        await pg.wait_for_url('**/profile.php?id=*', timeout=8000); went = True
+    except Exception:
+        went = False
+    rec('Enter opens that person’s profile', went, pg.url)
+    await ctx.close()
+    # ---- admin (the poll's author) ends the poll
+    ctx = await b.new_context(viewport={'width': 1440, 'height': 900}); await ctx.route('**/*', route)
+    await login(ctx, *ACCOUNTS['admin'])
+    pg = await ctx.new_page()
+    await pg.goto(BASE + 'feed.php', wait_until='networkidle'); await pg.wait_for_timeout(800)
+    await pg.select_option('#sortBy', 'newest'); await pg.wait_for_timeout(1200)
+    card = await pg.query_selector(f'.post-card:has-text("UI poll {stamp}")')
+    end = await card.query_selector('.fx-end-poll') if card else None
+    if end:
+        await end.click(); await pg.wait_for_timeout(400)
+        confirm = await pg.query_selector('#portalDialogConfirmBtn')
+        if confirm:
+            await confirm.click()
+        await pg.wait_for_timeout(1200)
+        card = await pg.query_selector(f'.post-card:has-text("UI poll {stamp}")')
+        rec('Author ends the poll; results become final', card is not None and 'Final results' in (await card.inner_text()))
+    else:
+        rec('Author ends the poll; results become final', False, 'no End poll button for the author')
     await ctx.close()
 
     # ---- privacy + @handles: alumnus goes private, student finds them by /@handle and asks to follow

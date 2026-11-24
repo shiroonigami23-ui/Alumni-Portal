@@ -53,44 +53,56 @@ class Auth {
             return self::$memo[$memoKey];
         }
 
-        $user_session = $this->session->isValid($token);
-        if (!$user_session) {
+        // One round-trip: session + account status + role + shadow ban (this runs on every API request).
+        $row = null;
+        try {
+            $st = $this->db->prepare("
+                SELECT s.user_id, s.expires_at, u.status, u.suspension_expires_at, u.role,
+                       COALESCE(u.is_moderator, FALSE) AS is_moderator, m.shadow_ban_until
+                FROM sessions s
+                JOIN users u ON u.user_id = s.user_id
+                LEFT JOIN moderation_strikes m ON m.user_id = s.user_id
+                WHERE s.session_token = :t
+                LIMIT 1
+            ");
+            $st->execute([':t' => $token]);
+            $row = $st->fetch(PDO::FETCH_ASSOC) ?: null;
+        } catch (Throwable $e) {
+            // Very old database without moderation_strikes: same lookup without it.
+            $st = $this->db->prepare("
+                SELECT s.user_id, s.expires_at, u.status, u.suspension_expires_at, u.role,
+                       COALESCE(u.is_moderator, FALSE) AS is_moderator, NULL AS shadow_ban_until
+                FROM sessions s JOIN users u ON u.user_id = s.user_id
+                WHERE s.session_token = :t LIMIT 1
+            ");
+            $st->execute([':t' => $token]);
+            $row = $st->fetch(PDO::FETCH_ASSOC) ?: null;
+        }
+        if (!$row || strtotime((string)$row['expires_at']) <= time()) {
             return self::$memo[$memoKey] = ['ok' => false, 'code' => 401, 'message' => 'Unauthorized. Invalid or expired token.', 'user_id' => null];
         }
-        $user_id = (int)$user_session['user_id'];
+        $user_id = (int)$row['user_id'];
 
         // Permanent ban & suspension (Section 6)
-        $u_stmt = $this->db->prepare("SELECT status, suspension_expires_at FROM users WHERE user_id = :uid");
-        $u_stmt->execute(['uid' => $user_id]);
-        $user = $u_stmt->fetch(PDO::FETCH_ASSOC);
-        if (!$user) {
-            return self::$memo[$memoKey] = ['ok' => false, 'code' => 401, 'message' => 'Unauthorized. Account not found.', 'user_id' => null];
-        }
-        if ($user['status'] === 'banned') {
+        if ($row['status'] === 'banned') {
             return self::$memo[$memoKey] = ['ok' => false, 'code' => 403, 'message' => 'Account is permanently banned.', 'user_id' => null];
         }
-        if ($user['status'] === 'suspended' && strtotime((string)$user['suspension_expires_at']) > time()) {
-            return self::$memo[$memoKey] = ['ok' => false, 'code' => 403, 'message' => 'Account is suspended until ' . $user['suspension_expires_at'], 'user_id' => null];
+        if ($row['status'] === 'suspended' && strtotime((string)$row['suspension_expires_at']) > time()) {
+            return self::$memo[$memoKey] = ['ok' => false, 'code' => 403, 'message' => 'Account is suspended until ' . $row['suspension_expires_at'], 'user_id' => null];
         }
 
         // Shadow ban: reported abuse threshold
-        try {
-            $s_stmt = $this->db->prepare("SELECT shadow_ban_until FROM moderation_strikes WHERE user_id = :uid");
-            $s_stmt->execute(['uid' => $user_id]);
-            $shadow_ban = $s_stmt->fetchColumn();
-            if ($shadow_ban && strtotime((string)$shadow_ban) > time()) {
-                $script = basename((string)($_SERVER['SCRIPT_NAME'] ?? ''));
-                $readBlockedScripts = ['get_feed.php', 'public_feed.php', 'search_posts.php', 'get_user_replies.php'];
-                if (in_array($method, ['POST', 'PUT', 'PATCH', 'DELETE'], true) || ($method === 'GET' && in_array($script, $readBlockedScripts, true))) {
-                    return self::$memo[$memoKey] = ['ok' => false, 'code' => 403, 'message' => "Your account is shadow banned until $shadow_ban.",
-                                                     'user_id' => null, 'is_shadow_banned' => true];
-                }
+        $shadow_ban = $row['shadow_ban_until'];
+        if ($shadow_ban && strtotime((string)$shadow_ban) > time()) {
+            $script = basename((string)($_SERVER['SCRIPT_NAME'] ?? ''));
+            $readBlockedScripts = ['get_feed.php', 'public_feed.php', 'search_posts.php', 'get_user_replies.php'];
+            if (in_array($method, ['POST', 'PUT', 'PATCH', 'DELETE'], true) || ($method === 'GET' && in_array($script, $readBlockedScripts, true))) {
+                return self::$memo[$memoKey] = ['ok' => false, 'code' => 403, 'message' => "Your account is shadow banned until $shadow_ban.",
+                                                 'user_id' => null, 'is_shadow_banned' => true];
             }
-        } catch (Throwable $e) {
-            error_log("Moderation strikes check failed: " . $e->getMessage());
         }
 
-        // Device ban
+        // Device ban (cached briefly; ban/unban clears the cache immediately)
         try {
             if ($this->isCurrentDeviceBanned()) {
                 return self::$memo[$memoKey] = ['ok' => false, 'code' => 403, 'message' => 'This device is banned from the platform.', 'user_id' => null];
@@ -99,7 +111,8 @@ class Auth {
             error_log("Device ban check failed: " . $e->getMessage());
         }
 
-        return self::$memo[$memoKey] = ['ok' => true, 'code' => 200, 'message' => '', 'user_id' => $user_id];
+        return self::$memo[$memoKey] = ['ok' => true, 'code' => 200, 'message' => '', 'user_id' => $user_id,
+                                         'role' => strtolower((string)$row['role']), 'is_moderator' => filter_var($row['is_moderator'], FILTER_VALIDATE_BOOLEAN)];
     }
 
     /** Old-style check: returns the user id or ends the request with 401/403. */
@@ -142,6 +155,20 @@ class Auth {
     {
         $fp = self::getClientFingerprint();
         $ip = self::getClientIp();
+        if (!class_exists('Cache')) {
+            @include_once __DIR__ . '/../helpers/Cache.php';
+        }
+        if (class_exists('Cache')) {
+            // Device bans change rarely; ban/unban calls Cache::bump('device_bans') so this is never stale.
+            return (bool)Cache::remember(Cache::key('device_bans', hash('sha256', $fp . '|' . $ip)), 120, function () use ($fp, $ip) {
+                return $this->deviceBanLookup($fp, $ip) ? 1 : 0;
+            });
+        }
+        return $this->deviceBanLookup($fp, $ip);
+    }
+
+    private function deviceBanLookup(string $fp, string $ip): bool
+    {
         $query = "
             SELECT 1
             FROM device_bans

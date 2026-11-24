@@ -247,7 +247,7 @@ include 'includes/sidebar.php';
         if (jobUrl(job.application_url)) {
             actions += `<a href="${jobUrl(job.application_url)}" target="_blank" rel="noopener noreferrer" class="inline-flex items-center px-3 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 text-sm">Company page ↗</a>`;
         }
-        return `<article class="job-card bg-white rounded-xl shadow-sm border border-gray-200 p-6 flex flex-col ${closed ? 'opacity-70' : ''}">
+        return `<article data-job-card="${Number(job.job_id)}" class="job-card bg-white rounded-xl shadow-sm border border-gray-200 p-6 flex flex-col ${closed ? 'opacity-70' : ''}">
             <div class="flex items-start gap-3">
                 <div class="h-12 w-12 rounded-xl text-white font-bold flex items-center justify-center shrink-0" style="background:linear-gradient(135deg,#2563eb,#7c3aed) !important">${jobEsc(String(job.company || '?').charAt(0).toUpperCase())}</div>
                 <div class="min-w-0 flex-1">
@@ -277,6 +277,7 @@ include 'includes/sidebar.php';
         const list = document.getElementById('jobsList');
         const empty = document.getElementById('jobsEmptyState');
         list.innerHTML = rows.map(jobCard).join('');
+        window.vuFocusFromUrl?.('job', (id) => `[data-job-card="${Number(id)}"]`);   // jobs.php?job=12 (from Ctrl+K)
         empty.classList.toggle('hidden', rows.length > 0);
         if (!rows.length && allJobs.length) {
             empty.querySelector('p.text-lg').textContent = 'No jobs match your filters';

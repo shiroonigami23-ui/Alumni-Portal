@@ -247,11 +247,8 @@ function api_endpoint(array $opts): ApiContext
     $who = $ctx->auth->authenticate();
     if ($who['ok']) {
         $ctx->uid = (int)$who['user_id'];
-        $st = $ctx->db->prepare("SELECT role, COALESCE(is_moderator, FALSE) FROM users WHERE user_id = :u");
-        $st->execute([':u' => $ctx->uid]);
-        $row = $st->fetch(PDO::FETCH_NUM) ?: ['', false];
-        $ctx->role = strtolower((string)$row[0]);
-        $ctx->isModerator = filter_var($row[1], FILTER_VALIDATE_BOOLEAN);
+        $ctx->role = (string)($who['role'] ?? '');          // from the same single auth query — no extra round-trip
+        $ctx->isModerator = (bool)($who['is_moderator'] ?? false);
     } elseif ($effective !== 'public') {
         $extra = !empty($who['is_shadow_banned']) ? ['is_shadow_banned' => true] : [];
         api_fail($who['code'], $who['message'], $extra);

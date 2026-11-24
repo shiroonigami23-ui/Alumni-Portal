@@ -12,7 +12,7 @@ function ap_static_allowed(string $rel): bool
         return false;
     }
     // Source, config, infra and internal folders are never web-visible
-    if (preg_match('#^(bootstrap|config|helpers|models|middleware|cron|scripts|tests|deployment|terraform|vendor|includes/[^/]+\.php)(/|$)#', $rel)) {
+    if (preg_match('#^(bootstrap|config|helpers|models|middleware|cron|scripts|tests|deployment|terraform|vendor|tools|docs|includes/[^/]+\.php)(/|$)|(^|/)node_modules(/|$)#', $rel)) {
         return false;
     }
     // Private user data in storage

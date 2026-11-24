@@ -79,9 +79,14 @@ if (!function_exists('privacy_ensure_schema')) {
         if ($a <= 0 || $b <= 0 || $a === $b) {
             return false;
         }
+        static $memo = [];
+        $k = min($a, $b) . ':' . max($a, $b);
+        if (isset($memo[$k])) {
+            return $memo[$k];
+        }
         $s = $db->prepare("SELECT 1 FROM blocks WHERE (blocker_user_id = :a AND blocked_user_id = :b) OR (blocker_user_id = :b AND blocked_user_id = :a) LIMIT 1");
         $s->execute([':a' => $a, ':b' => $b]);
-        return (bool)$s->fetchColumn();
+        return $memo[$k] = (bool)$s->fetchColumn();
     }
 
     /** 'self' | 'following' | 'requested' | 'none' */
@@ -90,22 +95,30 @@ if (!function_exists('privacy_ensure_schema')) {
         if ($viewer > 0 && $viewer === $owner) {
             return 'self';
         }
+        // memo per request; follow/unfollow in this request clears it via privacy_forget()
+        $k = "$viewer:$owner";
+        if (isset($GLOBALS['__privacy_follow'][$k])) {
+            return $GLOBALS['__privacy_follow'][$k];
+        }
         $s = $db->prepare("SELECT status FROM connections WHERE requester_user_id = :v AND addressee_user_id = :o LIMIT 1");
         $s->execute([':v' => $viewer, ':o' => $owner]);
         $st = (string)($s->fetchColumn() ?: '');
-        return $st === 'accepted' ? 'following' : ($st === 'pending' ? 'requested' : 'none');
+        return $GLOBALS['__privacy_follow'][$k] = $st === 'accepted' ? 'following' : ($st === 'pending' ? 'requested' : 'none');
     }
 
     /** Is the owner's account effectively private? (students never are) */
     function privacy_is_private(PDO $db, int $owner): bool
     {
+        if (isset($GLOBALS['__privacy_private'][$owner])) {
+            return $GLOBALS['__privacy_private'][$owner];
+        }
         $s = $db->prepare("SELECT u.role, COALESCE(p.is_private, FALSE) FROM users u LEFT JOIN profiles p ON p.user_id = u.user_id WHERE u.user_id = :u");
         $s->execute([':u' => $owner]);
         $row = $s->fetch(PDO::FETCH_NUM);
         if (!$row) {
             return false;
         }
-        return strtolower((string)$row[0]) !== 'student' && filter_var($row[1], FILTER_VALIDATE_BOOLEAN);
+        return $GLOBALS['__privacy_private'][$owner] = strtolower((string)$row[0]) !== 'student' && filter_var($row[1], FILTER_VALIDATE_BOOLEAN);
     }
 
     function privacy_can_view(PDO $db, int $viewer, string $viewerRole, int $owner): bool
@@ -218,5 +231,14 @@ if (!function_exists('privacy_require_post')) {
         http_response_code(404);
         echo json_encode(['success' => false, 'status' => 'error', 'message' => 'This post is no longer available.']);
         exit;
+    }
+}
+
+if (!function_exists('privacy_forget')) {
+    /** Clear the per-request privacy memo after changing follows or privacy in the same request. */
+    function privacy_forget(): void
+    {
+        $GLOBALS['__privacy_follow'] = [];
+        $GLOBALS['__privacy_private'] = [];
     }
 }

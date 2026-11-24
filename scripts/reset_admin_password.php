@@ -1,5 +1,9 @@
 <?php
 declare(strict_types=1);
+if (PHP_SAPI !== 'cli') {   // command-line only — never runnable from a web request, even if a server serves this folder by mistake
+    http_response_code(404);
+    exit;
+}
 
 require_once __DIR__ . '/../config/Database.php';
 

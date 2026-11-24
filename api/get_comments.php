@@ -65,6 +65,7 @@ try {
     $stmt = $db->prepare($query);
     $stmt->execute($params);
     $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    prefetch_content_payloads($db, array_column($rows, 'content_file_path'));   // one query for every item's text instead of one per item
 
     $data = [];
     foreach ($rows as $row) {

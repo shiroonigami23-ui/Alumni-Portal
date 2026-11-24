@@ -77,7 +77,7 @@ A summary of the controls is in the [README Security section](README.md#-securit
 | `tests/static/api_contract.php` | Every endpoint declares its access level before touching input or the database; no raw exception text in responses |
 | `tests/static/frontend_contract.py` | Every user value in page templates is escaped; no user text in `onclick` strings |
 | `tests/integration/authz.php` | A student, an alumnus and a faculty member attack every endpoint above their level (targets read from the declarations); refused **and** database unchanged |
-| `tests/integration/sqli_fuzz.php` | 2,744 SQL-injection requests across 98 endpoints, including time-based blind payloads |
+| `tests/integration/sqli_fuzz.php` | 2,212 SQL-injection requests across 79 endpoints, including time-based blind payloads |
 | `tests/ui/xss_sweep.py` | Payloads in every writable field (plus raw legacy rows), 37 pages opened in Chrome |
 | `tests/integration/security_limits.php` | Brute-force login lockout |
 

@@ -269,8 +269,8 @@ $r = http('POST', 'api/edit_comment.php', $S, ['comment_id' => $commentId, 'cont
 check('feed', 'Edit own comment', ok($r), $r);
 $r = http('POST', 'api/toggle_repost.php', $S, ['post_id' => $postId]);
 check('feed', 'Repost', ok($r), $r);
-$r = http('POST', 'api/share_post.php', $S, ['post_id' => $postId]);
-check('feed', 'Share', ok($r), $r);
+$r = http('POST', 'api/create_share_link.php', $S, ['post_id' => $postId]);
+check('feed', 'Share link', ok($r), $r);
 $r = http('POST', 'api/track_post_view.php', $S, ['post_id' => $postId]);
 check('feed', 'View is tracked', ok($r), $r);
 $r = http('POST', 'api/pin_post.php', $A, ['post_id' => $postId]);
@@ -349,18 +349,18 @@ check('jobs', 'Poster deletes the job', ok($r), $r);
 
 /* ------------------------------------------------------------------- events */
 $d = date('Y-m-d', strtotime('+10 days'));
-$r = http('POST', 'api/create_event.php', $AD, ['title' => "Alumni Meet $RUN", 'description' => 'Annual meet', 'event_date' => $d, 'event_time' => '18:00',
+$r = http('POST', 'api/events.php?action=create', $AD, ['title' => "Alumni Meet $RUN", 'description' => 'Annual meet', 'event_date' => $d, 'event_time' => '18:00',
     'end_date' => $d, 'end_time' => '21:00', 'location' => 'RJIT Auditorium', 'visibility' => 'public', 'rsvp_limit' => 100]);
 $eventId = find_id($r['json'], ['event_id', 'id']);
 check('events', 'Create an event', ok($r) && $eventId, $r);
-$r = http('GET', 'api/get_events.php', $S);
+$r = http('GET', 'api/events.php?action=list&filter=upcoming', $S);
 check('events', 'Events list shows it', ok($r) && str_contains($r['text'], "Alumni Meet $RUN"), $r);
-$r = http('POST', 'api/rsvp_event.php', $S, ['event_id' => $eventId, 'status' => 'going']);
+$r = http('POST', 'api/events.php?action=rsvp', $S, ['event_id' => $eventId, 'status' => 'going']);
 check('events', 'RSVP', ok($r), $r);
-$r = http('GET', "api/get_event_attendees.php?event_id=$eventId", $AD);
-check('events', 'Attendee list', ok($r), $r);
-$r = http('POST', 'api/cancel_rsvp.php', $S, ['event_id' => $eventId]);
+$r = http('POST', 'api/events.php?action=rsvp', $S, ['event_id' => $eventId, 'status' => 'cancelled']);
 check('events', 'Cancel RSVP', ok($r), $r);
+$r = http('POST', 'api/events.php?action=create', $S, ['title' => "Student event $RUN", 'event_date' => $d]);
+check('events', 'Only faculty/admins can create events', $r['code'] === 403, $r);
 $r = http('GET', 'api/get_upcoming_events_count.php', $S);
 check('events', 'Upcoming events count', ok($r), $r);
 
@@ -448,7 +448,7 @@ $r = http('POST', 'api/upload_file.php', $A, ['context' => 'posts'], ['attachmen
 check('uploads', 'PHP hidden in a JPEG is blocked (415)', $r['code'] === 415, $r);
 $r = http('POST', 'api/upload_file.php', $A, ['context' => 'posts'], ['attachment' => [$png, 'image/png', 'shell.php.png']]);
 check('uploads', 'Double extension is blocked (415)', $r['code'] === 415, $r);
-$r = http('POST', 'api/upload_verification.php', $A, [], ['document' => ["$tmp/fake.pdf", 'application/pdf', 'proof.pdf']]);
+$r = http('POST', 'api/upload_file.php', $A, ['context' => 'posts'], ['attachment' => ["$tmp/fake.pdf", 'application/pdf', 'proof.pdf']]);
 check('uploads', 'Fake PDF is blocked (415)', $r['code'] === 415, $r);
 
 /* ---------------------------------------------------------------- security */
@@ -768,10 +768,10 @@ $bi = imagecreatetruecolor(13000, 10);
 imagepng($bi, $bomb);
 $r = http('POST', 'api/upload_avatar.php', $S, [], ['avatar' => [$bomb, 'image/png', 'big.png']]);
 check('uploads', 'Gigapixel "image bombs" are refused', $r['code'] === 415, $r);
-$r = http('POST', 'api/upload_verification.php', $S, [], ['document' => [$png, 'image/png', 'x.png']]);
-check('uploads', "Verification upload can't lock out an active account", $r['code'] === 409, $r);
-$r = http('POST', 'api/admin_moderation.php', $S, ['target_id' => $aid, 'action' => 'ban']);
-check('security', 'Old unguarded ban endpoint is retired', $r['code'] === 410, $r);
+foreach (['admin_moderation', 'ban_user', 'admin_bulk_users', 'admin_transfer_alumni_email', 'upload_verification'] as $gone) {
+    $r = http('POST', "api/$gone.php", $AD, ['target_id' => $aid, 'action' => 'ban']);
+    check('security', "Removed endpoint $gone is gone (404)", $r['code'] === 404, $r);
+}
 
 /* --------------------------------------------------------------- export */
 $r = http('GET', 'api/export_data.php', $A);

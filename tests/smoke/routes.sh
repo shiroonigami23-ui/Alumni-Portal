@@ -33,7 +33,7 @@ check /pages/feed.php 301 /feed.php
 check /alumni_portal/feed.php 301 /feed.php
 echo "Hidden internals"
 for p in config/Database.php bootstrap/routes.php helpers/Logger.php includes/header.php api/_feed_schema.php \
-         api/test.php storage/log.txt storage/verification/x.pdf deployment/db.sql nope.php; do check "/$p" 404; done
+         api/test.php api/_kernel.php api/ban_user.php api/admin_moderation.php tools/tailwind/package.json docs/ALUMNI_PORTAL_FULL_TECHNICAL_WRITEUP.md storage/log.txt storage/verification/x.pdf deployment/db.sql nope.php; do check "/$p" 404; done
 echo "Static assets"
 for p in assets/css/variety-ui.css sw.js manifest.webmanifest offline.html assets/icons/app-icon-192.png healthz; do check "/$p" 200; done
 echo "Security"

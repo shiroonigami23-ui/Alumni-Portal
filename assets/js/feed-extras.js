@@ -175,7 +175,12 @@
   }
 
   /* ---------------------------------------------------------------- polls */
-  function pollHtml(p) {
+  const pollCache = {};   // poll_id -> { poll, canEnd } so a vote or "End poll" can re-render it
+  function me() {
+    try { return JSON.parse(localStorage.getItem("user_data") || "{}"); } catch (e) { return {}; }
+  }
+  function pollHtml(p, canEnd) {
+    pollCache[p.poll_id] = { poll: p, canEnd: !!canEnd };
     const total = p.total_votes || 0;
     const showResults = p.my_vote || !p.is_open;
     const endsAt = p.expires_at ? (window.parsePortalDate ? window.parsePortalDate(p.expires_at) : new Date(p.expires_at)) : null;
@@ -195,14 +200,20 @@
               : `<button type="button" class="fx-vote w-full text-left rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-800 hover:border-blue-500 hover:bg-blue-50" data-poll="${p.poll_id}" data-option="${o.option_id}">${esc(o.text)}</button>`;
           }).join("")}
         </div>
-        <p class="text-xs text-gray-500 mt-2">${total} vote${total === 1 ? "" : "s"} · ${status}</p>
+        <div class="flex items-center justify-between mt-2">
+          <p class="text-xs text-gray-500">${Number(total)} vote${total === 1 ? "" : "s"} · ${esc(status)}</p>
+          ${canEnd && p.is_open ? `<button type="button" class="fx-end-poll text-xs font-medium text-gray-500 hover:text-red-600" data-poll="${Number(p.poll_id)}">End poll</button>` : ""}
+        </div>
       </div>`;
   }
 
   function decoratePost(el, post) {
     if (!el || !post || !post.poll || el.querySelector(".fx-poll")) return;
+    const u = me();
+    const myId = Number(u.user_id || u.id || 0);
+    const canEnd = (myId && Number(post.user_id) === myId) || ["admin", "faculty"].includes(String(u.role || "").toLowerCase());
     const wrap = document.createElement("div");
-    wrap.innerHTML = pollHtml(post.poll);
+    wrap.innerHTML = pollHtml(post.poll, canEnd);
     const block = el.querySelector("[data-post-content-block]");
     if (block) {
       block.appendChild(wrap.firstElementChild); // right under the post text, above the like/comment bar
@@ -219,10 +230,31 @@
     box.querySelectorAll(".fx-vote").forEach((b) => (b.disabled = true));
     const r = await window.makeApiCall("vote_poll.php", "POST", { poll_id: Number(v.dataset.poll), option_id: Number(v.dataset.option) });
     if (r && r.success && r.poll) {
-      box.outerHTML = pollHtml(r.poll);
+      box.outerHTML = pollHtml(r.poll, (pollCache[r.poll.poll_id] || {}).canEnd);
     } else {
       notify((r && r.message) || "Could not record your vote.", "error");
       box.querySelectorAll(".fx-vote").forEach((b) => (b.disabled = false));
+    }
+  });
+
+  document.addEventListener("click", async (e) => {
+    const btn = e.target.closest(".fx-end-poll");
+    if (!btn) return;
+    const id = Number(btn.dataset.poll);
+    const ok = window.appConfirm
+      ? await window.appConfirm("Voting stops now and everyone sees the final results. This can't be undone.", { title: "End this poll?", confirmText: "End poll", icon: "bar-chart-3" })
+      : window.confirm("End this poll now?");
+    if (!ok) return;
+    btn.disabled = true;
+    const r = await window.makeApiCall("end_poll.php", "POST", { poll_id: id });
+    const cached = pollCache[id];
+    if (r && r.success !== false && !r.unauthorized && cached) {
+      cached.poll.is_open = false;
+      btn.closest(".fx-poll").outerHTML = pollHtml(cached.poll, cached.canEnd);
+      notify("Poll ended — results are final.");
+    } else {
+      btn.disabled = false;
+      notify((r && r.message) || "Could not end the poll.", "error");
     }
   });
 

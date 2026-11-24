@@ -27,9 +27,9 @@ $basePrefix = $isAdminPath ? '../' : '';
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Roboto+Slab:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="<?php echo $basePrefix; ?>assets/css/variety-ui.css">
+    <link rel="stylesheet" href="<?php echo $basePrefix; ?>assets/css/variety-ui.css?v=3">
     <script src="<?php echo $basePrefix; ?>assets/js/safe.js?v=1"></script>
-    <script src="<?php echo $basePrefix; ?>assets/js/variety-ui.js" defer></script>
+    <script src="<?php echo $basePrefix; ?>assets/js/variety-ui.js?v=3" defer></script>
     <script src="<?php echo $basePrefix; ?>assets/js/motion.js" defer></script>
 
     <!-- Custom Styles -->

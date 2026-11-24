@@ -1,3 +1,5 @@
+> **Historical snapshot (early 2026).** Several endpoints named below were merged or removed later (for example `create_event`/`get_events` → `events.php`). The current API is documented in the [README](../README.md#-api-overview) and [CHANGELOG](../CHANGELOG.md).
+
 ﻿# Alumni Portal: Complete Technical Verification and AWS Readiness Report
 
 Generated on: 2026-02-20 00:48:00

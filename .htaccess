@@ -16,7 +16,8 @@ FileETag None
     RewriteRule (^|/)\.(?!well-known/) - [R=404,L]
 
     # Internal source / infra folders
-    RewriteRule ^(bootstrap|config|helpers|models|middleware|cron|scripts|tests|deployment|terraform|vendor)(/|$) - [R=404,L]
+    RewriteRule ^(bootstrap|config|helpers|models|middleware|cron|scripts|tests|deployment|terraform|vendor|tools|docs)(/|$) - [R=404,L]
+    RewriteRule (^|/)node_modules(/|$) - [R=404,L]
     RewriteRule ^includes/.+\.php$ - [R=404,L]
 
     # Private user data in storage

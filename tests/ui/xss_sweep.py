@@ -111,7 +111,7 @@ def seed():
     do('job', 'POST', 'post_job.php', t, {'job_title': 'SDE ' + P('jobtitle'), 'company_name': 'Acme ' + P('jobco'), 'location': P('jobloc'),
         'job_type': 'full-time', 'description': 'Great role, apply now please. ' + P('jobdesc'), 'requirements': P('jobreq')})
     d = time.strftime('%Y-%m-%d', time.localtime(time.time() + 86400 * 5))
-    do('event', 'POST', 'create_event.php', adm, {'title': 'Meet ' + P('event'), 'description': P('eventdesc'), 'event_date': d, 'event_time': '18:00',
+    do('event', 'POST', 'events.php?action=create', adm, {'title': 'Meet ' + P('event'), 'description': P('eventdesc'), 'event_date': d, 'event_time': '18:00',
         'end_date': d, 'end_time': '20:00', 'location': P('eventloc'), 'visibility': 'public'})
     do('referral', 'POST', 'referrals.php', t, {'action': 'create_offer', 'company': 'Acme ' + P('refco'), 'roles': P('refroles'), 'locations': P('refloc'), 'slots': 2})
     do('story', 'POST', 'success_stories.php?action=create', t, {'title': 'Story ' + P('storytitle'), 'content': ('My long journey from campus to company. ' * 3) + P('story')})

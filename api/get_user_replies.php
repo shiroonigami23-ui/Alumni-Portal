@@ -38,6 +38,7 @@ try {
     ");
     $stmt->execute([':uid' => $userId, ':viewer_uid' => $viewerId, ':viewer_role' => $viewerRole]);
     $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    prefetch_content_payloads($db, array_column($rows, 'content_file_path'));   // one query for every item's text instead of one per item
 
     $items = [];
     foreach ($rows as $row) {

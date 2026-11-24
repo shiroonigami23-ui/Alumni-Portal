@@ -66,7 +66,7 @@ final class Cache
             switch (self::driver()) {
                 case 'redis':
                     $v = self::$redis->get($key);
-                    return $v === false ? $default : (self::$local[$key] = unserialize($v));
+                    return $v === false ? $default : (self::$local[$key] = unserialize($v, ['allowed_classes' => false]));
                 case 'apcu':
                     $v = apcu_fetch($key, $ok);
                     return $ok ? (self::$local[$key] = $v) : $default;
@@ -76,7 +76,7 @@ final class Cache
                     if ($raw === false) {
                         return $default;
                     }
-                    [$exp, $val] = unserialize($raw);
+                    [$exp, $val] = unserialize($raw, ['allowed_classes' => false]);
                     if ($exp && $exp < time()) {
                         @unlink($f);
                         return $default;

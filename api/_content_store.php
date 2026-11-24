@@ -67,6 +67,41 @@ function store_content_payload(PDO $db, ?int $ownerUserId, array $payload, strin
     return make_content_pointer($token);
 }
 
+/**
+ * Load many payloads in ONE query (lists: feed, comments, replies). Afterwards load_content_payload() answers
+ * from memory for these pointers instead of one database round trip per item.
+ */
+function prefetch_content_payloads(PDO $db, array $pointers): void
+{
+    $tokens = [];
+    foreach ($pointers as $p) {
+        $t = extract_content_token(trim((string)$p));
+        if ($t !== null && !array_key_exists($t, $GLOBALS['__content_prefetch'] ?? [])) {
+            $tokens[$t] = true;
+        }
+    }
+    if (!$tokens) {
+        return;
+    }
+    ensure_content_store_schema($db);
+    foreach (array_chunk(array_keys($tokens), 500) as $chunk) {
+        $ph = [];
+        $params = [];
+        foreach ($chunk as $i => $t) {
+            $ph[] = ":t$i";
+            $params[":t$i"] = $t;
+        }
+        $st = $db->prepare("SELECT public_token, payload FROM content_payloads WHERE public_token IN (" . implode(',', $ph) . ")");
+        $st->execute($params);
+        foreach ($chunk as $t) {
+            $GLOBALS['__content_prefetch'][$t] = false;      // missing rows answer "empty" without another query
+        }
+        while ($r = $st->fetch(PDO::FETCH_NUM)) {
+            $GLOBALS['__content_prefetch'][$r[0]] = $r[1];
+        }
+    }
+}
+
 function load_content_payload(PDO $db, ?string $pointer): array
 {
     $pointer = trim((string)$pointer);
@@ -76,10 +111,14 @@ function load_content_payload(PDO $db, ?string $pointer): array
 
     $token = extract_content_token($pointer);
     if ($token !== null) {
-        ensure_content_store_schema($db);
-        $stmt = $db->prepare("SELECT payload FROM content_payloads WHERE public_token = :token LIMIT 1");
-        $stmt->execute([':token' => $token]);
-        $rawPayload = $stmt->fetchColumn();
+        if (array_key_exists($token, $GLOBALS['__content_prefetch'] ?? [])) {
+            $rawPayload = $GLOBALS['__content_prefetch'][$token];   // loaded by prefetch_content_payloads()
+        } else {
+            ensure_content_store_schema($db);
+            $stmt = $db->prepare("SELECT payload FROM content_payloads WHERE public_token = :token LIMIT 1");
+            $stmt->execute([':token' => $token]);
+            $rawPayload = $stmt->fetchColumn();
+        }
         $decoded = json_decode((string)$rawPayload, true);
         if (is_array($decoded)) {
             return [
@@ -114,6 +153,9 @@ function update_content_payload(PDO $db, ?string $pointer, array $payload, ?int 
 {
     $pointer = trim((string)$pointer);
     $token = extract_content_token($pointer);
+    if ($token !== null) {
+        unset($GLOBALS['__content_prefetch'][$token]);   // never serve a stale in-memory copy
+    }
     $json = json_encode($payload, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
 
     if ($token !== null) {
@@ -152,6 +194,7 @@ function delete_content_payload(PDO $db, ?string $pointer): void
 
     $token = extract_content_token($pointer);
     if ($token !== null) {
+        unset($GLOBALS['__content_prefetch'][$token]);
         ensure_content_store_schema($db);
         $stmt = $db->prepare("DELETE FROM content_payloads WHERE public_token = :token");
         $stmt->execute([':token' => $token]);

@@ -5,7 +5,7 @@
 <h3>The campus hub where RJIT students, alumni and faculty meet, mentor, hire and grow together.</h3>
 
 [![CI](https://github.com/shiroonigami23-ui/Alumni-Portal/actions/workflows/ci.yml/badge.svg)](https://github.com/shiroonigami23-ui/Alumni-Portal/actions/workflows/ci.yml)
-![Tests](https://img.shields.io/badge/tests-230%20API%20%7C%2078%20UI%20%7C%20185%20authz%20%7C%202744%20SQLi%20%7C%2037%20XSS-22c55e)
+![Tests](https://img.shields.io/badge/tests-233%20API%20%7C%2082%20UI%20%7C%20132%20authz%20%7C%202212%20SQLi%20%7C%2037%20XSS-22c55e)
 [![License: MIT](https://img.shields.io/badge/License-MIT-22c55e.svg)](LICENSE)
 ![PHP](https://img.shields.io/badge/PHP-8.2+-777BB4?logo=php&logoColor=white)
 ![PostgreSQL](https://img.shields.io/badge/PostgreSQL-13%2B-4169E1?logo=postgresql&logoColor=white)
@@ -45,7 +45,7 @@
 - 🔒 **Real privacy.** Private accounts were only private on paper: their posts showed up in feeds, search and the timeline API. Now everything follows one rule set (`api/_privacy.php`): followers only, follow **requests** you approve, email/phone visibility you control, roll numbers hidden from other members.
 - 🏷️ **Twitter-style @handles**, separate from your display name: unique regardless of case (enforced by the database), auto-created for every account, `/@handle` links, `@mentions` that link in posts, a live availability check with suggestions, and old handles redirect for 30 days.
 - 🚫 **Block** people (they disappear from your feed, search, chats and profile), plus **Download my data** as one JSON file.
-- 🛡️ **Security sweep.** Fixed a **ban-anyone endpoint** any signed-in member could call, **stored XSS** on 7 pages (including the public landing page and the notification bell), a reflected XSS via `profile.php?id=`, and an upload that locked active accounts out. All of it is now covered by tests: an authorization sweep, a 2,744-request SQL-injection fuzz and a browser XSS sweep run in CI.
+- 🛡️ **Security sweep.** Fixed a **ban-anyone endpoint** any signed-in member could call, **stored XSS** on 7 pages (including the public landing page and the notification bell), a reflected XSS via `profile.php?id=`, and an upload that locked active accounts out. All of it is now covered by tests: an authorization sweep, a 2,212-request SQL-injection fuzz and a browser XSS sweep run in CI.
 - 📷 **Uploads strip photo location (EXIF/GPS) losslessly**, refuse "image bombs", and say *"too large (max 2 MB)"* instead of a confusing error. Animated GIF avatars work.
 - ✅ **Friendly validation everywhere.** Profile fields have length/format checks (no more 500s), links get `https://` added, and bad IDs get a clear 400.
 
@@ -457,8 +457,8 @@ Security is centralised in `bootstrap/security.php`, which runs **before every p
 | **Stored files** | Every upload gets a random 192-bit token under a UNIQUE key, so names can never collide. The user's file name is only a cleaned display label (no folders, control characters or header tricks; Unicode names download correctly). |
 | **Output escaping** | All user text is escaped before it touches the page (`assets/js/safe.js`: `escapeHtml`, `safeUrl`, `linkifyText`). Links are limited to http(s)/mailto/tel, including against `java\tscript:`-style tricks, and GIF URLs must be https from known GIF hosts. Checked by a browser XSS sweep that plants payloads in every field, including raw legacy rows. |
 | **API kernel** | Every endpoint starts with `api_endpoint(['access' => 'member' \| 'staff' \| 'admin' \| …])` (`api/_kernel.php`). The kernel signs the caller in and enforces the level **before** the endpoint's own code runs, validates input, and turns internal errors into a calm message plus a reference code (`ERR-3f9a2c1b`) that's only explained in the server log. CI fails any endpoint without a declaration. |
-| **Authorization** | A sweep reads those declarations and has a student, an alumnus and a faculty member attack every staff/admin/moderator endpoint and action (185 attempts); each must be refused **and** the database must be unchanged. Legacy endpoints that skipped checks return `410 Gone` with the replacement. |
-| **SQL** | 100% parameterised queries; identifiers are whitelisted. Every `id`/`*_id` parameter must be a whole number (checked centrally). A fuzz sends 2,744 injection payloads to 98 endpoints on every CI run. |
+| **Authorization** | A sweep reads those declarations and has a student, an alumnus and a faculty member attack every staff/admin/moderator endpoint and action (132 attempts); each must be refused **and** the database must be unchanged. Legacy endpoints that skipped checks return `410 Gone` with the replacement. |
+| **SQL** | 100% parameterised queries; identifiers are whitelisted. Every `id`/`*_id` parameter must be a whole number (checked centrally). A fuzz sends 2,212 injection payloads to 79 endpoints on every CI run. |
 | **Privacy** | One rule set (`api/_privacy.php`) for feeds, search, profiles, comments, likes, shares and polls: private accounts are visible to followers only, blocks are mutual and total, and email, phone and roll number are shown only where allowed. |
 | **Identity** | Emails are lower-cased by a database trigger and unique regardless of case; @handles are unique regardless of case (DB index), with reserved and staff-lookalike names refused. |
 | **Storage** | `storage/` can never execute PHP, serves media/documents only, and private areas (verification documents, exports, logs, caches) are never web-visible. Uploaded files are served with a sandbox CSP. |
@@ -499,13 +499,14 @@ Three automated suites; the latest results are committed in [`tests/results/`](t
 | Suite | What it checks | Run |
 |---|---|---|
 | **Routes & security** | 63 checks: every old and clean URL, redirects, hidden internals, assets, CORS, CSP | `bash tests/smoke/routes.sh` (no DB needed) |
-| **End-to-end API** — [results](tests/results/integration-latest.md) | 230 checks as admin, alumnus and student: sign-up and invite codes, profile, settings, password change, uploads, feed create/edit/delete, comments, reactions, reposts, pins, messages send/edit/delete, connections, jobs, events, mentorship, notifications, referrals, atlas, admin tools, upload/permission security, likes/comment reactions, For-you/Trending/Following feeds, reports, 1:1 calls, mentor approval → mentor group → group chat → group voice space → leave, polls, scheduled posts (incl. a real cron publish), live sessions, success stories, resources, every cron job, **private profiles and follow requests, blocking, @handles, profile validation, EXIF stripping, image bombs, data export, case-insensitive sign-in** | `php tests/integration/run.php http://127.0.0.1:8099` |
-| **Real browser** — [results](tests/results/ui-latest.md) | 78 checks: every page for every role in Chrome (fails on any JS error, failed request or blank page) **plus click-through flows** — drafts survive reload, create a poll from the composer, vote, schedule a post, Ctrl+K navigation, the live handle checker, `/@handle` links, the private-profile locked card, request → approve from Settings | `python3 tests/ui/browser_smoke.py --base http://127.0.0.1:8099` |
+| **End-to-end API** — [results](tests/results/integration-latest.md) | 233 checks as admin, alumnus and student: sign-up and invite codes, profile, settings, password change, uploads, feed create/edit/delete, comments, reactions, reposts, pins, messages send/edit/delete, connections, jobs, events, mentorship, notifications, referrals, atlas, admin tools, upload/permission security, likes/comment reactions, For-you/Trending/Following feeds, reports, 1:1 calls, mentor approval → mentor group → group chat → group voice space → leave, polls, scheduled posts (incl. a real cron publish), live sessions, success stories, resources, every cron job, **private profiles and follow requests, blocking, @handles, profile validation, EXIF stripping, image bombs, data export, case-insensitive sign-in** | `php tests/integration/run.php http://127.0.0.1:8099` |
+| **Real browser** — [results](tests/results/ui-latest.md) | 82 checks: every page for every role in Chrome (fails on any JS error, failed request or blank page) **plus click-through flows** — drafts survive reload, create a poll from the composer, vote, schedule a post, Ctrl+K navigation and live people search, ending a poll, the live handle checker, `/@handle` links, the private-profile locked card, request → approve from Settings | `python3 tests/ui/browser_smoke.py --base http://127.0.0.1:8099` |
 | **Brute-force lockout** | Wrong passwords lock the account with a friendly message | `php tests/integration/security_limits.php` |
-| **Authorization sweep** — [results](tests/results/authz-latest.json) | 185 attempts, targets read from each endpoint's own declaration: a student, an alumnus and a faculty member call every endpoint above their level; each must be refused **and** a DB fingerprint must be unchanged | `php tests/integration/authz.php` |
-| **API contract** — [manifest](tests/results/api-manifest.json) | Every one of the 121 endpoints declares who may call it before touching input or the database, and never sends raw exception text (no database needed) | `php tests/static/api_contract.php` |
+| **Authorization sweep** — [results](tests/results/authz-latest.json) | 132 attempts, targets read from each endpoint's own declaration: a student, an alumnus and a faculty member call every endpoint above their level; each must be refused **and** a DB fingerprint must be unchanged | `php tests/integration/authz.php` |
+| **Speed** — [results](tests/results/perf-latest.md) | Before/after latency with production-like database latency; median request 24 → 12.6 ms, feed 106 → 31 ms | `php tests/perf/bench.php` (+ `tests/perf/latency_proxy.py`) |
+| **API contract** — [manifest](tests/results/api-manifest.json) | Every one of the 98 endpoints declares who may call it before touching input or the database, and never sends raw exception text (no database needed) | `php tests/static/api_contract.php` |
 | **Front-end contract** | Every user value in page templates goes through `escapeHtml` / `safeUrl` / `Number`; no user text inside `onclick` strings | `python3 tests/static/frontend_contract.py` |
-| **SQL-injection fuzz** — [results](tests/results/sqli-latest.json) | 2,744 requests: 7 classic payloads (quote-breaking, UNION, time-based `pg_sleep`) × 35 parameters × 98 endpoints × 2 roles; fails on any 500, leaked DB error, SQL syntax error in the server log or injected delay | `SERVER_LOG=/tmp/srv.log php tests/integration/sqli_fuzz.php` |
+| **SQL-injection fuzz** — [results](tests/results/sqli-latest.json) | 2,212 requests: 7 classic payloads (quote-breaking, UNION, time-based `pg_sleep`) × 35 parameters × 79 endpoints × 2 roles; fails on any 500, leaked DB error, SQL syntax error in the server log or injected delay | `SERVER_LOG=/tmp/srv.log php tests/integration/sqli_fuzz.php` |
 | **Stored-XSS sweep** — [results](tests/results/xss-latest.json) | Plants a payload in every user-writable field (and raw legacy DB rows), then opens 37 pages as admin and student in Chrome and checks nothing ran | `DB_NAME=… python3 tests/ui/xss_sweep.py` |
 
 CI runs lint, the API and front-end contracts, routes, the full PostgreSQL end-to-end suite, the authorization sweep, the SQL-injection fuzz and the lockout test, plus a Chrome job with the UI suite and the XSS sweep, on every push. For a local run against a test database:
@@ -546,21 +547,21 @@ All endpoints live in `api/` and return JSON. Authenticate with `Authorization: 
 | Area | Endpoints (selection) |
 |---|---|
 | Auth | `login`, `register_student`, `register_alumni`, `register_faculty`, `request_reset`, `reset_password`, `change_password`, `me`, `csrf_token` |
-| Feed | `get_feed`, `create_post`, `edit_post`, `delete_post`, `react_to_post`, `create_comment` (also replies), `toggle_repost`, `share_post`, `create_poll`, `vote_poll`, `schedule_post`, `pin_post`, `search_gifs` |
+| Feed | `get_feed`, `create_post`, `edit_post`, `delete_post`, `react_to_post`, `create_comment` (also replies), `toggle_repost`, `create_share_link`, `create_poll`, `vote_poll`, `schedule_post`, `pin_post`, `search_gifs` |
 | People | `search_directory`, `get_user_profile` (`?user_id=` or `?username=`), `update_profile` (validated; 422 with per-field errors), `upload_avatar`, `upload_cover`, `export_data` |
 | Privacy & follows | `update_privacy` (GET / POST `is_private`, `show_email`, `show_contact`, `open_to_mentor`, `open_to_refer`, `open_to_work`); `connect_user` (toggle follow, or `action=approve\|decline\|remove_follower\|requests\|state`); `block_user` (`block`, `unblock`, `list`) |
 | Handles | `username` (GET current, `?check=name` live availability + suggestions, `?resolve=name`; POST `{username}` to change) |
 | Mentorship | `mentorship?action=…` (list mentors, request, accept, groups, moderation) |
 | Messages | `get_conversations`, `get_messages`, `send_message`, `edit_message`, `delete_message`, `start_call` |
-| Careers & events | `get_jobs`, `post_job`, `apply_job`, `get_applicants`, `get_events`, `create_event`, `rsvp_event`, `get_event_attendees` |
+| Careers & events | `get_jobs`, `post_job`, `apply_job`, `get_applicants`; `events?action=list\|rsvp`, `events?action=create` (faculty/admin) |
 | Polls & scheduling | `create_poll`, `vote_poll`, `end_poll`; `schedule_post`, `scheduled_posts` (list, `cancel`, `reschedule`) |
 | Live & Library | `toggle_stream` (`start` jitsi/youtube, `stop`), `get_active_streams`; `success_stories?action=list\|create\|approve\|reject\|view`; `resources?action=list\|create\|download\|delete` |
 | Referrals & Atlas | `referrals?action=list\|stats\|my_requests\|offer_requests`, POST `create_offer\|update_offer\|request\|respond\|withdraw`; `alumni_atlas` |
 | Jobs (poster) | `manage_job` (`update`, `close`, `reopen`, `delete`) |
-| Search | `master_search` (people, jobs, events, referral offers — used by Ctrl+K) |
+| Search | `master_search` (people incl. @handles, jobs, events, referral offers — live results in Ctrl+K) |
 | Admin | `admin_insights` (GET + `set_banner`, `clear_banner`, `broadcast`), `admin_export_users` (CSV), `admin_stats`, `admin_users`, `admin_user_actions`, `admin_report_action`, `moderation_queue`, `approve_user`, `generate_token` |
 | Public | `site_banner`, `public_feed`, `healthz` |
-| Retired (410 + replacement) | `add_comment`, `add_reply`, `manage-post`, `join_event`, `search_alumni`, `upload`, `admin_moderation`, `create_announcement`, `approve_announcement` |
+| Removed in 2.3.2 | 23 unused or duplicate endpoints, including the old unguarded ban endpoint and unused admin tools (bulk user actions, login-email transfer, content restore). See the CHANGELOG. |
 
 Clean forms like `/api/get_feed` work too.
 

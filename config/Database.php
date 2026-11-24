@@ -45,7 +45,9 @@ class Database
                 if ($this->driver === 'mysql') {
                     $dsn = "mysql:host=" . $this->host . ";port=" . $port . ";dbname=" . $this->db_name . ";charset=utf8mb4";
                 } else {
-                    $dsn = "pgsql:host=" . $this->host . ";port=" . $port . ";dbname=" . $this->db_name;
+                    // TimeZone=UTC as a connection option: set once when the connection opens, not one extra
+                    // round trip on every request. All timestamps are stored/compared in UTC (the UI shows IST).
+                    $dsn = "pgsql:host=" . $this->host . ";port=" . $port . ";dbname=" . $this->db_name . ";options='-c TimeZone=UTC'";
                 }
                 $options = [
                     PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
@@ -60,11 +62,6 @@ class Database
                     $options[PDO::PGSQL_ATTR_DISABLE_PREPARES] = true;
                 }
                 $this->conn = new PDO($dsn, $this->username, $this->password, $options);
-                if ($this->driver !== 'mysql') {
-                    // All timestamps are stored/compared in UTC (the frontend formats them to IST).
-                    // Without this, a server running in local time would shift every date by its offset.
-                    $this->conn->exec("SET TIME ZONE 'UTC'");
-                }
                 if ($this->conn->inTransaction()) {
                     $this->conn->rollBack(); // never inherit a half-finished transaction from a reused connection
                 }
