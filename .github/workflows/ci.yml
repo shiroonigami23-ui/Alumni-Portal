@@ -17,7 +17,7 @@ jobs:
       matrix:
         php: ['8.2', '8.3']
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: shivammathur/setup-php@v2
         with:
           php-version: ${{ matrix.php }}
@@ -30,7 +30,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: lint
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: shivammathur/setup-php@v2
         with:
           php-version: '8.2'
@@ -61,7 +61,7 @@ jobs:
       DB_PASSWORD: postgres
       RATE_LIMIT_DISABLED: 'true'
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: shivammathur/setup-php@v2
         with:
           php-version: '8.2'
@@ -121,7 +121,7 @@ jobs:
       DB_PASSWORD: postgres
       RATE_LIMIT_DISABLED: 'true'
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: shivammathur/setup-php@v2
         with:
           php-version: '8.2'
@@ -154,7 +154,7 @@ jobs:
     name: Repo hygiene
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: No runtime data or secrets committed
         run: |
           bad=$(git ls-files | grep -E '^storage/(messages|exports|resumes|verification|logs|comments|posts|jobs|events|announcements)/|^storage/log\.txt$|(^|/)\.env$|\.pem$|\.key$' || true)
