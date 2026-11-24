@@ -130,17 +130,17 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
-      - name: Install Playwright + Chromium
-        run: pip install playwright==1.48.0 && python -m playwright install --with-deps chromium
+      - name: Install Playwright (drives the runner's Google Chrome)
+        run: pip install playwright && google-chrome --version
       - name: Install database + start app
         run: |
           php scripts/install_db.php --demo --admin-password='Admin@12345'
           PHP_CLI_SERVER_WORKERS=4 php -S 127.0.0.1:8099 router.php > /tmp/server.log 2>&1 &
           for i in $(seq 1 20); do curl -fsS http://127.0.0.1:8099/healthz && break; sleep 0.5; done
       - name: Every page × every role + click-through flows
-        run: python tests/ui/browser_smoke.py
+        run: python tests/ui/browser_smoke.py --chrome /usr/bin/google-chrome
       - name: Stored-XSS sweep (payload in every field, every page)
-        run: python tests/ui/xss_sweep.py
+        run: python tests/ui/xss_sweep.py --chrome /usr/bin/google-chrome
       - uses: actions/upload-artifact@v4
         if: always()
         with:

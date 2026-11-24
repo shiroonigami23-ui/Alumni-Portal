@@ -92,6 +92,10 @@ async def visit(ctx, role, path, results):
 
 async def login(ctx, email, password):
     page = await ctx.new_page()
+    seen = []
+    page.on('console', lambda m: seen.append(f'{m.type}: {m.text[:200]}'))
+    page.on('pageerror', lambda e: seen.append(f'pageerror: {e}'))
+    page.on('response', lambda r: seen.append(f'{r.status} {r.url[-70:]}') if '/api/' in r.url else None)
     await page.goto(BASE + 'login.php', wait_until='networkidle')
     await page.fill('#email', email)
     await page.fill('#password', password)
@@ -102,6 +106,9 @@ async def login(ctx, email, password):
         ok = True
     except Exception:
         ok = False
+        print(f'    login failed for {email} at {page.url}; browser said:')
+        for line in seen[-25:]:
+            print('      ' + line)
     await page.close()
     return ok
 
@@ -227,6 +234,10 @@ async def main():
             ok = await login(ctx, email, pw)
             results.append({'role': role, 'page': 'login via UI', 'pass': ok, 'ms': None, 'errors': [] if ok else ['login failed'], 'failed_requests': [], 'blank': False})
             print(f"{role}: login {'ok' if ok else 'FAILED'}")
+            if not ok:
+                # Logged-out pages would "pass" silently (no token → no API calls), so don't pretend.
+                await ctx.close()
+                continue
             for path in PAGES['common'] + (PAGES['admin'] if role == 'admin' else []):
                 await visit(ctx, role, path, results)
             await ctx.close()
