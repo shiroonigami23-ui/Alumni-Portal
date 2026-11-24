@@ -1,7 +1,7 @@
 {
-    "generated": "2026-11-24T09:55:09+00:00",
-    "passed": 132,
-    "total": 132,
+    "generated": "2026-11-24T10:29:53+00:00",
+    "passed": 201,
+    "total": 201,
     "results": [
         {
             "as": "student",
@@ -206,7 +206,7 @@
         {
             "as": "student",
             "endpoint": "GET api\/admin_report_action.php",
-            "http": 403,
+            "http": 405,
             "refused": true,
             "db_unchanged": true,
             "pass": true
@@ -230,7 +230,215 @@
         {
             "as": "student",
             "endpoint": "GET api\/admin_user_actions.php",
+            "http": 405,
+            "refused": true,
+            "db_unchanged": true,
+            "pass": true
+        },
+        {
+            "as": "student",
+            "endpoint": "POST api\/admin_user_actions.php?action=ban_user {\"action\":\"ban_user\"}",
             "http": 403,
+            "refused": true,
+            "db_unchanged": true,
+            "pass": true
+        },
+        {
+            "as": "student",
+            "endpoint": "GET api\/admin_user_actions.php?action=ban_user",
+            "http": 405,
+            "refused": true,
+            "db_unchanged": true,
+            "pass": true
+        },
+        {
+            "as": "student",
+            "endpoint": "POST api\/admin_user_actions.php?action=unban_user {\"action\":\"unban_user\"}",
+            "http": 403,
+            "refused": true,
+            "db_unchanged": true,
+            "pass": true
+        },
+        {
+            "as": "student",
+            "endpoint": "GET api\/admin_user_actions.php?action=unban_user",
+            "http": 405,
+            "refused": true,
+            "db_unchanged": true,
+            "pass": true
+        },
+        {
+            "as": "student",
+            "endpoint": "POST api\/admin_user_actions.php?action=restrict_posting {\"action\":\"restrict_posting\"}",
+            "http": 403,
+            "refused": true,
+            "db_unchanged": true,
+            "pass": true
+        },
+        {
+            "as": "student",
+            "endpoint": "GET api\/admin_user_actions.php?action=restrict_posting",
+            "http": 405,
+            "refused": true,
+            "db_unchanged": true,
+            "pass": true
+        },
+        {
+            "as": "student",
+            "endpoint": "POST api\/admin_user_actions.php?action=restrict_messaging {\"action\":\"restrict_messaging\"}",
+            "http": 403,
+            "refused": true,
+            "db_unchanged": true,
+            "pass": true
+        },
+        {
+            "as": "student",
+            "endpoint": "GET api\/admin_user_actions.php?action=restrict_messaging",
+            "http": 405,
+            "refused": true,
+            "db_unchanged": true,
+            "pass": true
+        },
+        {
+            "as": "student",
+            "endpoint": "POST api\/admin_user_actions.php?action=shadow_ban {\"action\":\"shadow_ban\"}",
+            "http": 403,
+            "refused": true,
+            "db_unchanged": true,
+            "pass": true
+        },
+        {
+            "as": "student",
+            "endpoint": "GET api\/admin_user_actions.php?action=shadow_ban",
+            "http": 405,
+            "refused": true,
+            "db_unchanged": true,
+            "pass": true
+        },
+        {
+            "as": "student",
+            "endpoint": "POST api\/admin_user_actions.php?action=lift_posting_restriction {\"action\":\"lift_posting_restriction\"}",
+            "http": 403,
+            "refused": true,
+            "db_unchanged": true,
+            "pass": true
+        },
+        {
+            "as": "student",
+            "endpoint": "GET api\/admin_user_actions.php?action=lift_posting_restriction",
+            "http": 405,
+            "refused": true,
+            "db_unchanged": true,
+            "pass": true
+        },
+        {
+            "as": "student",
+            "endpoint": "POST api\/admin_user_actions.php?action=lift_messaging_restriction {\"action\":\"lift_messaging_restriction\"}",
+            "http": 403,
+            "refused": true,
+            "db_unchanged": true,
+            "pass": true
+        },
+        {
+            "as": "student",
+            "endpoint": "GET api\/admin_user_actions.php?action=lift_messaging_restriction",
+            "http": 405,
+            "refused": true,
+            "db_unchanged": true,
+            "pass": true
+        },
+        {
+            "as": "student",
+            "endpoint": "POST api\/admin_user_actions.php?action=lift_shadow_ban {\"action\":\"lift_shadow_ban\"}",
+            "http": 403,
+            "refused": true,
+            "db_unchanged": true,
+            "pass": true
+        },
+        {
+            "as": "student",
+            "endpoint": "GET api\/admin_user_actions.php?action=lift_shadow_ban",
+            "http": 405,
+            "refused": true,
+            "db_unchanged": true,
+            "pass": true
+        },
+        {
+            "as": "student",
+            "endpoint": "POST api\/admin_user_actions.php?action=promote_moderator {\"action\":\"promote_moderator\"}",
+            "http": 403,
+            "refused": true,
+            "db_unchanged": true,
+            "pass": true
+        },
+        {
+            "as": "student",
+            "endpoint": "GET api\/admin_user_actions.php?action=promote_moderator",
+            "http": 405,
+            "refused": true,
+            "db_unchanged": true,
+            "pass": true
+        },
+        {
+            "as": "student",
+            "endpoint": "POST api\/admin_user_actions.php?action=revoke_moderator {\"action\":\"revoke_moderator\"}",
+            "http": 403,
+            "refused": true,
+            "db_unchanged": true,
+            "pass": true
+        },
+        {
+            "as": "student",
+            "endpoint": "GET api\/admin_user_actions.php?action=revoke_moderator",
+            "http": 405,
+            "refused": true,
+            "db_unchanged": true,
+            "pass": true
+        },
+        {
+            "as": "student",
+            "endpoint": "POST api\/admin_user_actions.php?action=reset_password {\"action\":\"reset_password\"}",
+            "http": 403,
+            "refused": true,
+            "db_unchanged": true,
+            "pass": true
+        },
+        {
+            "as": "student",
+            "endpoint": "GET api\/admin_user_actions.php?action=reset_password",
+            "http": 405,
+            "refused": true,
+            "db_unchanged": true,
+            "pass": true
+        },
+        {
+            "as": "student",
+            "endpoint": "POST api\/admin_user_actions.php?action=change_email {\"action\":\"change_email\"}",
+            "http": 403,
+            "refused": true,
+            "db_unchanged": true,
+            "pass": true
+        },
+        {
+            "as": "student",
+            "endpoint": "GET api\/admin_user_actions.php?action=change_email",
+            "http": 405,
+            "refused": true,
+            "db_unchanged": true,
+            "pass": true
+        },
+        {
+            "as": "student",
+            "endpoint": "POST api\/admin_user_actions.php?action=bulk {\"action\":\"bulk\"}",
+            "http": 403,
+            "refused": true,
+            "db_unchanged": true,
+            "pass": true
+        },
+        {
+            "as": "student",
+            "endpoint": "GET api\/admin_user_actions.php?action=bulk",
+            "http": 405,
             "refused": true,
             "db_unchanged": true,
             "pass": true
@@ -254,22 +462,6 @@
         {
             "as": "student",
             "endpoint": "GET api\/approve_user.php",
-            "http": 403,
-            "refused": true,
-            "db_unchanged": true,
-            "pass": true
-        },
-        {
-            "as": "student",
-            "endpoint": "POST api\/events.php?action=create {\"action\":\"create\"}",
-            "http": 403,
-            "refused": true,
-            "db_unchanged": true,
-            "pass": true
-        },
-        {
-            "as": "student",
-            "endpoint": "GET api\/events.php?action=create",
             "http": 403,
             "refused": true,
             "db_unchanged": true,
@@ -606,7 +798,7 @@
         {
             "as": "alumni",
             "endpoint": "GET api\/admin_report_action.php",
-            "http": 403,
+            "http": 405,
             "refused": true,
             "db_unchanged": true,
             "pass": true
@@ -630,7 +822,215 @@
         {
             "as": "alumni",
             "endpoint": "GET api\/admin_user_actions.php",
+            "http": 405,
+            "refused": true,
+            "db_unchanged": true,
+            "pass": true
+        },
+        {
+            "as": "alumni",
+            "endpoint": "POST api\/admin_user_actions.php?action=ban_user {\"action\":\"ban_user\"}",
             "http": 403,
+            "refused": true,
+            "db_unchanged": true,
+            "pass": true
+        },
+        {
+            "as": "alumni",
+            "endpoint": "GET api\/admin_user_actions.php?action=ban_user",
+            "http": 405,
+            "refused": true,
+            "db_unchanged": true,
+            "pass": true
+        },
+        {
+            "as": "alumni",
+            "endpoint": "POST api\/admin_user_actions.php?action=unban_user {\"action\":\"unban_user\"}",
+            "http": 403,
+            "refused": true,
+            "db_unchanged": true,
+            "pass": true
+        },
+        {
+            "as": "alumni",
+            "endpoint": "GET api\/admin_user_actions.php?action=unban_user",
+            "http": 405,
+            "refused": true,
+            "db_unchanged": true,
+            "pass": true
+        },
+        {
+            "as": "alumni",
+            "endpoint": "POST api\/admin_user_actions.php?action=restrict_posting {\"action\":\"restrict_posting\"}",
+            "http": 403,
+            "refused": true,
+            "db_unchanged": true,
+            "pass": true
+        },
+        {
+            "as": "alumni",
+            "endpoint": "GET api\/admin_user_actions.php?action=restrict_posting",
+            "http": 405,
+            "refused": true,
+            "db_unchanged": true,
+            "pass": true
+        },
+        {
+            "as": "alumni",
+            "endpoint": "POST api\/admin_user_actions.php?action=restrict_messaging {\"action\":\"restrict_messaging\"}",
+            "http": 403,
+            "refused": true,
+            "db_unchanged": true,
+            "pass": true
+        },
+        {
+            "as": "alumni",
+            "endpoint": "GET api\/admin_user_actions.php?action=restrict_messaging",
+            "http": 405,
+            "refused": true,
+            "db_unchanged": true,
+            "pass": true
+        },
+        {
+            "as": "alumni",
+            "endpoint": "POST api\/admin_user_actions.php?action=shadow_ban {\"action\":\"shadow_ban\"}",
+            "http": 403,
+            "refused": true,
+            "db_unchanged": true,
+            "pass": true
+        },
+        {
+            "as": "alumni",
+            "endpoint": "GET api\/admin_user_actions.php?action=shadow_ban",
+            "http": 405,
+            "refused": true,
+            "db_unchanged": true,
+            "pass": true
+        },
+        {
+            "as": "alumni",
+            "endpoint": "POST api\/admin_user_actions.php?action=lift_posting_restriction {\"action\":\"lift_posting_restriction\"}",
+            "http": 403,
+            "refused": true,
+            "db_unchanged": true,
+            "pass": true
+        },
+        {
+            "as": "alumni",
+            "endpoint": "GET api\/admin_user_actions.php?action=lift_posting_restriction",
+            "http": 405,
+            "refused": true,
+            "db_unchanged": true,
+            "pass": true
+        },
+        {
+            "as": "alumni",
+            "endpoint": "POST api\/admin_user_actions.php?action=lift_messaging_restriction {\"action\":\"lift_messaging_restriction\"}",
+            "http": 403,
+            "refused": true,
+            "db_unchanged": true,
+            "pass": true
+        },
+        {
+            "as": "alumni",
+            "endpoint": "GET api\/admin_user_actions.php?action=lift_messaging_restriction",
+            "http": 405,
+            "refused": true,
+            "db_unchanged": true,
+            "pass": true
+        },
+        {
+            "as": "alumni",
+            "endpoint": "POST api\/admin_user_actions.php?action=lift_shadow_ban {\"action\":\"lift_shadow_ban\"}",
+            "http": 403,
+            "refused": true,
+            "db_unchanged": true,
+            "pass": true
+        },
+        {
+            "as": "alumni",
+            "endpoint": "GET api\/admin_user_actions.php?action=lift_shadow_ban",
+            "http": 405,
+            "refused": true,
+            "db_unchanged": true,
+            "pass": true
+        },
+        {
+            "as": "alumni",
+            "endpoint": "POST api\/admin_user_actions.php?action=promote_moderator {\"action\":\"promote_moderator\"}",
+            "http": 403,
+            "refused": true,
+            "db_unchanged": true,
+            "pass": true
+        },
+        {
+            "as": "alumni",
+            "endpoint": "GET api\/admin_user_actions.php?action=promote_moderator",
+            "http": 405,
+            "refused": true,
+            "db_unchanged": true,
+            "pass": true
+        },
+        {
+            "as": "alumni",
+            "endpoint": "POST api\/admin_user_actions.php?action=revoke_moderator {\"action\":\"revoke_moderator\"}",
+            "http": 403,
+            "refused": true,
+            "db_unchanged": true,
+            "pass": true
+        },
+        {
+            "as": "alumni",
+            "endpoint": "GET api\/admin_user_actions.php?action=revoke_moderator",
+            "http": 405,
+            "refused": true,
+            "db_unchanged": true,
+            "pass": true
+        },
+        {
+            "as": "alumni",
+            "endpoint": "POST api\/admin_user_actions.php?action=reset_password {\"action\":\"reset_password\"}",
+            "http": 403,
+            "refused": true,
+            "db_unchanged": true,
+            "pass": true
+        },
+        {
+            "as": "alumni",
+            "endpoint": "GET api\/admin_user_actions.php?action=reset_password",
+            "http": 405,
+            "refused": true,
+            "db_unchanged": true,
+            "pass": true
+        },
+        {
+            "as": "alumni",
+            "endpoint": "POST api\/admin_user_actions.php?action=change_email {\"action\":\"change_email\"}",
+            "http": 403,
+            "refused": true,
+            "db_unchanged": true,
+            "pass": true
+        },
+        {
+            "as": "alumni",
+            "endpoint": "GET api\/admin_user_actions.php?action=change_email",
+            "http": 405,
+            "refused": true,
+            "db_unchanged": true,
+            "pass": true
+        },
+        {
+            "as": "alumni",
+            "endpoint": "POST api\/admin_user_actions.php?action=bulk {\"action\":\"bulk\"}",
+            "http": 403,
+            "refused": true,
+            "db_unchanged": true,
+            "pass": true
+        },
+        {
+            "as": "alumni",
+            "endpoint": "GET api\/admin_user_actions.php?action=bulk",
+            "http": 405,
             "refused": true,
             "db_unchanged": true,
             "pass": true
@@ -654,22 +1054,6 @@
         {
             "as": "alumni",
             "endpoint": "GET api\/approve_user.php",
-            "http": 403,
-            "refused": true,
-            "db_unchanged": true,
-            "pass": true
-        },
-        {
-            "as": "alumni",
-            "endpoint": "POST api\/events.php?action=create {\"action\":\"create\"}",
-            "http": 403,
-            "refused": true,
-            "db_unchanged": true,
-            "pass": true
-        },
-        {
-            "as": "alumni",
-            "endpoint": "GET api\/events.php?action=create",
             "http": 403,
             "refused": true,
             "db_unchanged": true,
@@ -766,30 +1150,6 @@
         {
             "as": "alumni",
             "endpoint": "POST api\/view_logs.php",
-            "http": 403,
-            "refused": true,
-            "db_unchanged": true,
-            "pass": true
-        },
-        {
-            "as": "faculty",
-            "endpoint": "POST api\/admin_user_actions.php",
-            "http": 403,
-            "refused": true,
-            "db_unchanged": true,
-            "pass": true
-        },
-        {
-            "as": "faculty",
-            "endpoint": "POST api\/admin_user_actions.php {\"action\":\"set_role\"}",
-            "http": 403,
-            "refused": true,
-            "db_unchanged": true,
-            "pass": true
-        },
-        {
-            "as": "faculty",
-            "endpoint": "POST api\/admin_user_actions.php {\"action\":\"delete\"}",
             "http": 403,
             "refused": true,
             "db_unchanged": true,
@@ -942,7 +1302,7 @@
         {
             "as": "faculty",
             "endpoint": "GET api\/admin_report_action.php",
-            "http": 403,
+            "http": 405,
             "refused": true,
             "db_unchanged": true,
             "pass": true
@@ -957,7 +1317,7 @@
         },
         {
             "as": "faculty",
-            "endpoint": "POST api\/admin_user_actions.php",
+            "endpoint": "POST api\/admin_user_actions.php?action=ban_user {\"action\":\"ban_user\"}",
             "http": 403,
             "refused": true,
             "db_unchanged": true,
@@ -965,8 +1325,200 @@
         },
         {
             "as": "faculty",
-            "endpoint": "GET api\/admin_user_actions.php",
+            "endpoint": "GET api\/admin_user_actions.php?action=ban_user",
+            "http": 405,
+            "refused": true,
+            "db_unchanged": true,
+            "pass": true
+        },
+        {
+            "as": "faculty",
+            "endpoint": "POST api\/admin_user_actions.php?action=unban_user {\"action\":\"unban_user\"}",
             "http": 403,
+            "refused": true,
+            "db_unchanged": true,
+            "pass": true
+        },
+        {
+            "as": "faculty",
+            "endpoint": "GET api\/admin_user_actions.php?action=unban_user",
+            "http": 405,
+            "refused": true,
+            "db_unchanged": true,
+            "pass": true
+        },
+        {
+            "as": "faculty",
+            "endpoint": "POST api\/admin_user_actions.php?action=restrict_posting {\"action\":\"restrict_posting\"}",
+            "http": 403,
+            "refused": true,
+            "db_unchanged": true,
+            "pass": true
+        },
+        {
+            "as": "faculty",
+            "endpoint": "GET api\/admin_user_actions.php?action=restrict_posting",
+            "http": 405,
+            "refused": true,
+            "db_unchanged": true,
+            "pass": true
+        },
+        {
+            "as": "faculty",
+            "endpoint": "POST api\/admin_user_actions.php?action=restrict_messaging {\"action\":\"restrict_messaging\"}",
+            "http": 403,
+            "refused": true,
+            "db_unchanged": true,
+            "pass": true
+        },
+        {
+            "as": "faculty",
+            "endpoint": "GET api\/admin_user_actions.php?action=restrict_messaging",
+            "http": 405,
+            "refused": true,
+            "db_unchanged": true,
+            "pass": true
+        },
+        {
+            "as": "faculty",
+            "endpoint": "POST api\/admin_user_actions.php?action=shadow_ban {\"action\":\"shadow_ban\"}",
+            "http": 403,
+            "refused": true,
+            "db_unchanged": true,
+            "pass": true
+        },
+        {
+            "as": "faculty",
+            "endpoint": "GET api\/admin_user_actions.php?action=shadow_ban",
+            "http": 405,
+            "refused": true,
+            "db_unchanged": true,
+            "pass": true
+        },
+        {
+            "as": "faculty",
+            "endpoint": "POST api\/admin_user_actions.php?action=lift_posting_restriction {\"action\":\"lift_posting_restriction\"}",
+            "http": 403,
+            "refused": true,
+            "db_unchanged": true,
+            "pass": true
+        },
+        {
+            "as": "faculty",
+            "endpoint": "GET api\/admin_user_actions.php?action=lift_posting_restriction",
+            "http": 405,
+            "refused": true,
+            "db_unchanged": true,
+            "pass": true
+        },
+        {
+            "as": "faculty",
+            "endpoint": "POST api\/admin_user_actions.php?action=lift_messaging_restriction {\"action\":\"lift_messaging_restriction\"}",
+            "http": 403,
+            "refused": true,
+            "db_unchanged": true,
+            "pass": true
+        },
+        {
+            "as": "faculty",
+            "endpoint": "GET api\/admin_user_actions.php?action=lift_messaging_restriction",
+            "http": 405,
+            "refused": true,
+            "db_unchanged": true,
+            "pass": true
+        },
+        {
+            "as": "faculty",
+            "endpoint": "POST api\/admin_user_actions.php?action=lift_shadow_ban {\"action\":\"lift_shadow_ban\"}",
+            "http": 403,
+            "refused": true,
+            "db_unchanged": true,
+            "pass": true
+        },
+        {
+            "as": "faculty",
+            "endpoint": "GET api\/admin_user_actions.php?action=lift_shadow_ban",
+            "http": 405,
+            "refused": true,
+            "db_unchanged": true,
+            "pass": true
+        },
+        {
+            "as": "faculty",
+            "endpoint": "POST api\/admin_user_actions.php?action=promote_moderator {\"action\":\"promote_moderator\"}",
+            "http": 403,
+            "refused": true,
+            "db_unchanged": true,
+            "pass": true
+        },
+        {
+            "as": "faculty",
+            "endpoint": "GET api\/admin_user_actions.php?action=promote_moderator",
+            "http": 405,
+            "refused": true,
+            "db_unchanged": true,
+            "pass": true
+        },
+        {
+            "as": "faculty",
+            "endpoint": "POST api\/admin_user_actions.php?action=revoke_moderator {\"action\":\"revoke_moderator\"}",
+            "http": 403,
+            "refused": true,
+            "db_unchanged": true,
+            "pass": true
+        },
+        {
+            "as": "faculty",
+            "endpoint": "GET api\/admin_user_actions.php?action=revoke_moderator",
+            "http": 405,
+            "refused": true,
+            "db_unchanged": true,
+            "pass": true
+        },
+        {
+            "as": "faculty",
+            "endpoint": "POST api\/admin_user_actions.php?action=reset_password {\"action\":\"reset_password\"}",
+            "http": 403,
+            "refused": true,
+            "db_unchanged": true,
+            "pass": true
+        },
+        {
+            "as": "faculty",
+            "endpoint": "GET api\/admin_user_actions.php?action=reset_password",
+            "http": 405,
+            "refused": true,
+            "db_unchanged": true,
+            "pass": true
+        },
+        {
+            "as": "faculty",
+            "endpoint": "POST api\/admin_user_actions.php?action=change_email {\"action\":\"change_email\"}",
+            "http": 403,
+            "refused": true,
+            "db_unchanged": true,
+            "pass": true
+        },
+        {
+            "as": "faculty",
+            "endpoint": "GET api\/admin_user_actions.php?action=change_email",
+            "http": 405,
+            "refused": true,
+            "db_unchanged": true,
+            "pass": true
+        },
+        {
+            "as": "faculty",
+            "endpoint": "POST api\/admin_user_actions.php?action=bulk {\"action\":\"bulk\"}",
+            "http": 403,
+            "refused": true,
+            "db_unchanged": true,
+            "pass": true
+        },
+        {
+            "as": "faculty",
+            "endpoint": "GET api\/admin_user_actions.php?action=bulk",
+            "http": 405,
             "refused": true,
             "db_unchanged": true,
             "pass": true

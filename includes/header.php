@@ -591,11 +591,16 @@ $basePrefix = $isAdminPath ? '../' : '';
             refreshHeaderUser();
         });
 
+        // One me.php call per page, shared: pages `await window.portalUser` instead of trusting
+        // a cached copy in localStorage (which can belong to whoever signed in last).
+        let resolvePortalUser;
+        window.portalUser = new Promise((res) => { resolvePortalUser = res; });
         async function refreshHeaderUser() {
             try {
                 const response = await makeApiCall('me.php');
-                if (!response || !response.success || !response.data) return;
+                if (!response || !response.success || !response.data) { resolvePortalUser(null); return; }
                 const user = response.data;
+                resolvePortalUser(user);
                 localStorage.setItem('user_data', JSON.stringify(user));
                 document.getElementById('userName').textContent = user.full_name || user.name || (user.email ? String(user.email).split('@')[0] : 'Member');
                 const avatar = sanitizeCachedAvatarUrl(user.profile_picture || user.profile_picture_url || '');
@@ -624,6 +629,7 @@ $basePrefix = $isAdminPath ? '../' : '';
                 }
             } catch (e) {
                 console.error('Unable to refresh header user', e);
+                resolvePortalUser(null);
             }
         }
 

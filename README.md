@@ -5,7 +5,7 @@
 <h3>The campus hub where RJIT students, alumni and faculty meet, mentor, hire and grow together.</h3>
 
 [![CI](https://github.com/shiroonigami23-ui/Alumni-Portal/actions/workflows/ci.yml/badge.svg)](https://github.com/shiroonigami23-ui/Alumni-Portal/actions/workflows/ci.yml)
-![Tests](https://img.shields.io/badge/tests-233%20API%20%7C%2082%20UI%20%7C%20132%20authz%20%7C%202212%20SQLi%20%7C%2037%20XSS-22c55e)
+![Tests](https://img.shields.io/badge/tests-274%20API%20%7C%2094%20UI%20%7C%20201%20authz%20%7C%202212%20SQLi%20%7C%2037%20XSS-22c55e)
 [![License: MIT](https://img.shields.io/badge/License-MIT-22c55e.svg)](LICENSE)
 ![PHP](https://img.shields.io/badge/PHP-8.2+-777BB4?logo=php&logoColor=white)
 ![PostgreSQL](https://img.shields.io/badge/PostgreSQL-13%2B-4169E1?logo=postgresql&logoColor=white)
@@ -36,6 +36,8 @@
 </div>
 
 ## 🆕 What's new in 2.3
+
+> **2.3.3:** admin tools are back **with real buttons** — restore hidden posts (now immune to re-hiding), penalise false reporters, approve/decline alumni-proposed events, suspend for N days (lifts itself), change a sign-in email, bulk approve/ban — and the busiest pages got **37 % faster** by merging queries (profile 11 → 4 queries, feed 8 → 4). Details in the [CHANGELOG](CHANGELOG.md).
 
 | | |
 |:---:|:---:|
@@ -176,7 +178,7 @@ It runs on plain **PHP 8 + PostgreSQL** (with an optional Redis cache), works on
 ### 💼 Careers & events
 - Job board with search and filters, “Applied ✓” state, poster tools (applicants, edit, close/reopen, delete) *(rebuilt)*
 - Résumés stored privately in the database behind unguessable links
-- Events with RSVP, attendee lists, approval workflow
+- Events with RSVP and attendee lists; **alumni propose, staff approve** from a *Pending approval* tab (organiser notified); *My events* shows each one's status
 - Live-stream sessions and success stories
 
 ### 🛠️ Admin & moderation
@@ -185,9 +187,10 @@ It runs on plain **PHP 8 + PostgreSQL** (with an optional Redis cache), works on
 - **CSV export** of members (formula-injection safe) *(new)*
 - **Alumni invite codes** that verify alumni instantly at sign-up *(now working)*
 - Admin dashboard with live stats
-- User management: ban, suspend, shadow-ban, device ban, mute DMs
-- Reports, announcements approval, alumni token generation
-- Bulk user actions and activity logs
+- User management: ban, **suspend for 1–30 days** (lifts itself; faculty can suspend students/alumni), shadow-ban, device ban, mute DMs, **change sign-in email**
+- **Bulk select** in Users → approve / reject sign-ups, ban, unban (one query, admins never touched)
+- Reports with each reporter's track record: **restore a hidden post** (then immune to auto-hiding), **mark a report false** (3 = strike + posting block)
+- Announcements approval, alumni token generation, activity logs
 
 </td>
 </tr>
@@ -457,7 +460,7 @@ Security is centralised in `bootstrap/security.php`, which runs **before every p
 | **Stored files** | Every upload gets a random 192-bit token under a UNIQUE key, so names can never collide. The user's file name is only a cleaned display label (no folders, control characters or header tricks; Unicode names download correctly). |
 | **Output escaping** | All user text is escaped before it touches the page (`assets/js/safe.js`: `escapeHtml`, `safeUrl`, `linkifyText`). Links are limited to http(s)/mailto/tel, including against `java\tscript:`-style tricks, and GIF URLs must be https from known GIF hosts. Checked by a browser XSS sweep that plants payloads in every field, including raw legacy rows. |
 | **API kernel** | Every endpoint starts with `api_endpoint(['access' => 'member' \| 'staff' \| 'admin' \| …])` (`api/_kernel.php`). The kernel signs the caller in and enforces the level **before** the endpoint's own code runs, validates input, and turns internal errors into a calm message plus a reference code (`ERR-3f9a2c1b`) that's only explained in the server log. CI fails any endpoint without a declaration. |
-| **Authorization** | A sweep reads those declarations and has a student, an alumnus and a faculty member attack every staff/admin/moderator endpoint and action (132 attempts); each must be refused **and** the database must be unchanged. Legacy endpoints that skipped checks return `410 Gone` with the replacement. |
+| **Authorization** | A sweep reads those declarations and has a student, an alumnus and a faculty member attack every staff/admin/moderator endpoint and action (201 attempts); each must be refused **and** the database must be unchanged. Legacy endpoints that skipped checks return `410 Gone` with the replacement. |
 | **SQL** | 100% parameterised queries; identifiers are whitelisted. Every `id`/`*_id` parameter must be a whole number (checked centrally). A fuzz sends 2,212 injection payloads to 79 endpoints on every CI run. |
 | **Privacy** | One rule set (`api/_privacy.php`) for feeds, search, profiles, comments, likes, shares and polls: private accounts are visible to followers only, blocks are mutual and total, and email, phone and roll number are shown only where allowed. |
 | **Identity** | Emails are lower-cased by a database trigger and unique regardless of case; @handles are unique regardless of case (DB index), with reserved and staff-lookalike names refused. |
@@ -472,6 +475,20 @@ Found a vulnerability? Please follow **[SECURITY.md](SECURITY.md)** — don't op
 ---
 
 ## ⚡ Performance
+
+**2.3.3 — merged queries.** With a realistic 0.5 ms database link (`tests/perf/latency_proxy.py`), median 150 requests, see [perf-latest](tests/results/perf-latest.md):
+
+| Endpoint | 2.3.2 | 2.3.3 | Queries |
+|---|---:|---:|---|
+| Profile | 37.1 ms | **15.9 ms** | 11 → 4 |
+| Success stories | 30.1 ms | **11.6 ms** | 8 → 2 |
+| Ctrl+K search | 20.6 ms | **12.0 ms** | 5 → 2 |
+| Feed (For you) | 31.8 ms | **19.2 ms** | 8 → 4 |
+| All endpoints, median / p95 | 19.4 / 37.2 ms | **12.2 / 23.3 ms** | −37 % |
+
+How: one query returns the profile with its counters, follow and block state (`LEFT JOIN LATERAL`); lists that belong to a page come back as JSON columns (`json_agg`) instead of extra round trips; the feed's total rides along with the page (`COUNT(*) OVER ()`); and no endpoint looks up the caller's role again — `api_user_role()` reuses the sign-in query.
+
+**2.1 — caching and connections.**
 
 Measured locally: PHP 8.3 + PostgreSQL 16, average of 30 requests per endpoint, before and after 2.1.
 
@@ -499,10 +516,10 @@ Three automated suites; the latest results are committed in [`tests/results/`](t
 | Suite | What it checks | Run |
 |---|---|---|
 | **Routes & security** | 63 checks: every old and clean URL, redirects, hidden internals, assets, CORS, CSP | `bash tests/smoke/routes.sh` (no DB needed) |
-| **End-to-end API** — [results](tests/results/integration-latest.md) | 233 checks as admin, alumnus and student: sign-up and invite codes, profile, settings, password change, uploads, feed create/edit/delete, comments, reactions, reposts, pins, messages send/edit/delete, connections, jobs, events, mentorship, notifications, referrals, atlas, admin tools, upload/permission security, likes/comment reactions, For-you/Trending/Following feeds, reports, 1:1 calls, mentor approval → mentor group → group chat → group voice space → leave, polls, scheduled posts (incl. a real cron publish), live sessions, success stories, resources, every cron job, **private profiles and follow requests, blocking, @handles, profile validation, EXIF stripping, image bombs, data export, case-insensitive sign-in** | `php tests/integration/run.php http://127.0.0.1:8099` |
-| **Real browser** — [results](tests/results/ui-latest.md) | 82 checks: every page for every role in Chrome (fails on any JS error, failed request or blank page) **plus click-through flows** — drafts survive reload, create a poll from the composer, vote, schedule a post, Ctrl+K navigation and live people search, ending a poll, the live handle checker, `/@handle` links, the private-profile locked card, request → approve from Settings | `python3 tests/ui/browser_smoke.py --base http://127.0.0.1:8099` |
+| **End-to-end API** — [results](tests/results/integration-latest.md) | 274 checks as admin, faculty, alumnus and student: sign-up and invite codes, profile, settings, password change, uploads, feed create/edit/delete, comments, reactions, reposts, pins, messages send/edit/delete, connections, jobs, events, mentorship, notifications, referrals, atlas, admin tools, upload/permission security, likes/comment reactions, For-you/Trending/Following feeds, reports, 1:1 calls, mentor approval → mentor group → group chat → group voice space → leave, polls, scheduled posts (incl. a real cron publish), live sessions, success stories, resources, every cron job, **report abuse loop (auto-hide → false-report strikes → restore → immunity), event propose → approve/decline, suspend/unsuspend, email change, bulk actions,** **private profiles and follow requests, blocking, @handles, profile validation, EXIF stripping, image bombs, data export, case-insensitive sign-in** | `php tests/integration/run.php http://127.0.0.1:8099` |
+| **Real browser** — [results](tests/results/ui-latest.md) | 94 checks: every page for every role in Chrome (fails on any JS error, failed request or blank page) **plus click-through flows** — drafts survive reload, create a poll from the composer, vote, schedule a post, Ctrl+K navigation and live people search, ending a poll, the live handle checker, `/@handle` links, the private-profile locked card, request → approve from Settings, **alumni propose an event → admin approves it from the Pending tab**, Users-page suspend/email buttons and the bulk bar | `python3 tests/ui/browser_smoke.py --base http://127.0.0.1:8099` |
 | **Brute-force lockout** | Wrong passwords lock the account with a friendly message | `php tests/integration/security_limits.php` |
-| **Authorization sweep** — [results](tests/results/authz-latest.json) | 132 attempts, targets read from each endpoint's own declaration: a student, an alumnus and a faculty member call every endpoint above their level; each must be refused **and** a DB fingerprint must be unchanged | `php tests/integration/authz.php` |
+| **Authorization sweep** — [results](tests/results/authz-latest.json) | 201 attempts, targets read from each endpoint's own declaration: a student, an alumnus and a faculty member call every endpoint above their level; each must be refused **and** a DB fingerprint must be unchanged | `php tests/integration/authz.php` |
 | **Speed** — [results](tests/results/perf-latest.md) | Before/after latency with production-like database latency; median request 24 → 12.6 ms, feed 106 → 31 ms | `php tests/perf/bench.php` (+ `tests/perf/latency_proxy.py`) |
 | **API contract** — [manifest](tests/results/api-manifest.json) | Every one of the 98 endpoints declares who may call it before touching input or the database, and never sends raw exception text (no database needed) | `php tests/static/api_contract.php` |
 | **Front-end contract** | Every user value in page templates goes through `escapeHtml` / `safeUrl` / `Number`; no user text inside `onclick` strings | `python3 tests/static/frontend_contract.py` |
@@ -553,15 +570,15 @@ All endpoints live in `api/` and return JSON. Authenticate with `Authorization: 
 | Handles | `username` (GET current, `?check=name` live availability + suggestions, `?resolve=name`; POST `{username}` to change) |
 | Mentorship | `mentorship?action=…` (list mentors, request, accept, groups, moderation) |
 | Messages | `get_conversations`, `get_messages`, `send_message`, `edit_message`, `delete_message`, `start_call` |
-| Careers & events | `get_jobs`, `post_job`, `apply_job`, `get_applicants`; `events?action=list\|rsvp`, `events?action=create` (faculty/admin) |
+| Careers & events | `get_jobs`, `post_job`, `apply_job`, `get_applicants`; `events?action=list\|rsvp\|mine`, `events?action=create` (alumni → pending; faculty/admin → live), `events?action=pending\|approve\|reject` (faculty/admin) |
 | Polls & scheduling | `create_poll`, `vote_poll`, `end_poll`; `schedule_post`, `scheduled_posts` (list, `cancel`, `reschedule`) |
 | Live & Library | `toggle_stream` (`start` jitsi/youtube, `stop`), `get_active_streams`; `success_stories?action=list\|create\|approve\|reject\|view`; `resources?action=list\|create\|download\|delete` |
 | Referrals & Atlas | `referrals?action=list\|stats\|my_requests\|offer_requests`, POST `create_offer\|update_offer\|request\|respond\|withdraw`; `alumni_atlas` |
 | Jobs (poster) | `manage_job` (`update`, `close`, `reopen`, `delete`) |
 | Search | `master_search` (people incl. @handles, jobs, events, referral offers — live results in Ctrl+K) |
-| Admin | `admin_insights` (GET + `set_banner`, `clear_banner`, `broadcast`), `admin_export_users` (CSV), `admin_stats`, `admin_users`, `admin_user_actions`, `admin_report_action`, `moderation_queue`, `approve_user`, `generate_token` |
+| Admin | `admin_insights` (GET + `set_banner`, `clear_banner`, `broadcast`), `admin_export_users` (CSV), `admin_stats`, `admin_users`, `admin_user_actions` (ban, shadow-ban, mute, moderator, reset password, **`suspend`/`unsuspend`** — faculty too, **`change_email`**, **`bulk`**), `admin_report_action` (`dismiss`, `resolve`, **`restore_post`**, **`penalize_reporter`**), `get_reports`, `moderation_queue`, `approve_user`, `generate_token` |
 | Public | `site_banner`, `public_feed`, `healthz` |
-| Removed in 2.3.2 | 23 unused or duplicate endpoints, including the old unguarded ban endpoint and unused admin tools (bulk user actions, login-email transfer, content restore). See the CHANGELOG. |
+| Removed in 2.3.2 | Duplicate and retired endpoints, including the old unguarded ban endpoint. The admin jobs some of them did (bulk actions, email change, restore, false-report penalties, event approval) live on as actions of the endpoints above, with a UI (2.3.3). |
 
 Clean forms like `/api/get_feed` work too.
 

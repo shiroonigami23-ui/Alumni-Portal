@@ -122,17 +122,16 @@ try {
         $orderBy = "ORDER BY $hype DESC, p.created_at DESC";
     } elseif (!$profileMode && $filter !== 'reposts' && $sort === 'for_you') {
         // Personalised: hype × affinity (people you follow, your branch, company, batch)
-        $me = $db->prepare("SELECT branch, current_company, graduation_year FROM profiles WHERE user_id = :u");
-        $me->execute(['u' => $user_id]);
-        $mine = $me->fetch(PDO::FETCH_ASSOC) ?: [];
-        $params['fy_branch'] = (string)($mine['branch'] ?? '');
-        $params['fy_company'] = strtolower(trim((string)($mine['current_company'] ?? '')));
-        $params['fy_year'] = (int)($mine['graduation_year'] ?? 0);
+        // The viewer's own branch / company / batch are read inside the same query (uncorrelated
+        // sub-selects run once), so personalisation costs no extra round trip.
+        $fyBranch = "(SELECT fy.branch FROM profiles fy WHERE fy.user_id = :viewer_uid)";
+        $fyCompany = "(SELECT LOWER(TRIM(COALESCE(fy.current_company, ''))) FROM profiles fy WHERE fy.user_id = :viewer_uid)";
+        $fyYear = "(SELECT COALESCE(fy.graduation_year, 0) FROM profiles fy WHERE fy.user_id = :viewer_uid)";
         $orderBy = "ORDER BY $hype * (1
             + 1.5 * (CASE WHEN EXISTS (SELECT 1 FROM connections fc WHERE fc.status = 'accepted' AND fc.requester_user_id = :viewer_uid AND fc.addressee_user_id = p.user_id) THEN 1 ELSE 0 END)
-            + 0.5 * (CASE WHEN :fy_branch <> '' AND pr.branch = :fy_branch THEN 1 ELSE 0 END)
-            + 0.4 * (CASE WHEN :fy_company <> '' AND LOWER(TRIM(COALESCE(pr.current_company, ''))) = :fy_company THEN 1 ELSE 0 END)
-            + 0.3 * (CASE WHEN :fy_year > 0 AND pr.graduation_year BETWEEN :fy_year - 1 AND :fy_year + 1 THEN 1 ELSE 0 END)
+            + 0.5 * (CASE WHEN COALESCE($fyBranch, '') <> '' AND pr.branch = $fyBranch THEN 1 ELSE 0 END)
+            + 0.4 * (CASE WHEN COALESCE($fyCompany, '') <> '' AND LOWER(TRIM(COALESCE(pr.current_company, ''))) = $fyCompany THEN 1 ELSE 0 END)
+            + 0.3 * (CASE WHEN COALESCE($fyYear, 0) > 0 AND pr.graduation_year BETWEEN $fyYear - 1 AND $fyYear + 1 THEN 1 ELSE 0 END)
             + 0.8 * (CASE WHEN p.post_type = 'announcement' THEN 1 ELSE 0 END)
         ) DESC, p.created_at DESC";
     }
@@ -146,14 +145,18 @@ try {
         $orderBy = "ORDER BY p.created_at ASC";
     }
 
-    $countSql = "SELECT COUNT(*) FROM posts p $where";
-    $countStmt = $db->prepare($countSql);
-    foreach ($params as $key => $value) {
-        if (strpos($countSql, ':' . $key) === false) { continue; }
-        $countStmt->bindValue(':' . $key, $value);
-    }
-    $countStmt->execute();
-    $total = (int)$countStmt->fetchColumn();
+    // The total comes back with the page (COUNT(*) OVER ()); a separate count query only
+    // runs when the requested page is past the end and so returned no rows.
+    $countTotal = function () use ($db, $where, $params): int {
+        $countSql = "SELECT COUNT(*) FROM posts p $where";
+        $countStmt = $db->prepare($countSql);
+        foreach ($params as $key => $value) {
+            if (strpos($countSql, ':' . $key) === false) { continue; }
+            $countStmt->bindValue(':' . $key, $value);
+        }
+        $countStmt->execute();
+        return (int)$countStmt->fetchColumn();
+    };
 
     $isPinnedExpr = $profileMode
         ? "(pp.post_id IS NOT NULL)"
@@ -202,7 +205,8 @@ try {
                     FROM reposts rp
                     WHERE rp.post_id = p.post_id
                       AND rp.user_id = :viewer_id
-                ) AS user_has_reposted
+                ) AS user_has_reposted,
+                COUNT(*) OVER () AS feed_total
             FROM posts p
             JOIN users u ON p.user_id = u.user_id
             LEFT JOIN profiles pr ON p.user_id = pr.user_id
@@ -229,6 +233,9 @@ try {
     $stmt->bindValue(':offset', $offset, PDO::PARAM_INT);
     $stmt->execute();
     $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    $total = $rows ? (int)$rows[0]['feed_total'] : ($offset > 0 ? $countTotal() : 0);
+    foreach ($rows as &$r0) { unset($r0['feed_total']); }
+    unset($r0);
     prefetch_content_payloads($db, array_merge(array_column($rows, 'content_file_path'), array_column($rows, 'previous_content_file_path'), array_column($rows, 'pending_edit_content_file_path')));   // one query for every item's text instead of one per item
 
     $posts = array_map(function (array $row) use ($db, $user_id) {

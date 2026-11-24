@@ -1,71 +1,71 @@
 # UI smoke test results
 
-**82 / 82 passed** · 2026-11-24 15:27 · Chrome via Playwright, signed in as each role.
+**94 / 94 passed** · 2026-11-24 16:02 · Chrome via Playwright, signed in as each role.
 
 Each page is opened in a real browser; a check fails on any JavaScript error, failed same-origin request, or blank page.
 
 | | Role | Page | Load | Problems |
 |---|---|---|---|---|
-| ✅ | guest | `/` | 1595 ms |  |
-| ✅ | guest | `/login.php` | 1390 ms |  |
-| ✅ | guest | `/register.php` | 1380 ms |  |
-| ✅ | guest | `/forgot-password.php` | 1325 ms |  |
-| ✅ | guest | `/terms.php` | 1397 ms |  |
-| ✅ | guest | `/policy.php` | 1522 ms |  |
-| ✅ | guest | `/conduct.php` | 1403 ms |  |
-| ✅ | guest | `/old-link-404` | 1295 ms |  |
+| ✅ | guest | `/` | 1679 ms |  |
+| ✅ | guest | `/login.php` | 1415 ms |  |
+| ✅ | guest | `/register.php` | 1367 ms |  |
+| ✅ | guest | `/forgot-password.php` | 1298 ms |  |
+| ✅ | guest | `/terms.php` | 1416 ms |  |
+| ✅ | guest | `/policy.php` | 1431 ms |  |
+| ✅ | guest | `/conduct.php` | 1374 ms |  |
+| ✅ | guest | `/old-link-404` | 1283 ms |  |
 | ✅ | admin | `login via UI` |  |  |
-| ✅ | admin | `/dashboard.php` | 1797 ms |  |
-| ✅ | admin | `/feed.php` | 1571 ms |  |
-| ✅ | admin | `/profile.php` | 1752 ms |  |
-| ✅ | admin | `/settings.php` | 1571 ms |  |
-| ✅ | admin | `/messages.php` | 1475 ms |  |
-| ✅ | admin | `/discovery.php` | 1506 ms |  |
-| ✅ | admin | `/atlas.php` | 1906 ms |  |
-| ✅ | admin | `/referrals.php` | 1532 ms |  |
-| ✅ | admin | `/jobs.php` | 1507 ms |  |
-| ✅ | admin | `/events.php` | 1432 ms |  |
-| ✅ | admin | `/mentorship.php` | 1549 ms |  |
-| ✅ | admin | `/live.php` | 1436 ms |  |
-| ✅ | admin | `/library.php` | 1469 ms |  |
-| ✅ | admin | `/help.php` | 1358 ms |  |
-| ✅ | admin | `/admin/insights.php` | 1503 ms |  |
-| ✅ | admin | `/admin/dashboard.php` | 1540 ms |  |
-| ✅ | admin | `/admin/users.php` | 1687 ms |  |
-| ✅ | admin | `/admin/reports.php` | 1534 ms |  |
-| ✅ | admin | `/admin/tokens.php` | 1455 ms |  |
-| ✅ | admin | `/admin/system-settings.php` | 1461 ms |  |
-| ✅ | admin | `/moderation.php` | 1525 ms |  |
+| ✅ | admin | `/dashboard.php` | 1778 ms |  |
+| ✅ | admin | `/feed.php` | 1701 ms |  |
+| ✅ | admin | `/profile.php` | 1767 ms |  |
+| ✅ | admin | `/settings.php` | 1537 ms |  |
+| ✅ | admin | `/messages.php` | 1518 ms |  |
+| ✅ | admin | `/discovery.php` | 1631 ms |  |
+| ✅ | admin | `/atlas.php` | 2000 ms |  |
+| ✅ | admin | `/referrals.php` | 1457 ms |  |
+| ✅ | admin | `/jobs.php` | 1460 ms |  |
+| ✅ | admin | `/events.php` | 1539 ms |  |
+| ✅ | admin | `/mentorship.php` | 1566 ms |  |
+| ✅ | admin | `/live.php` | 1441 ms |  |
+| ✅ | admin | `/library.php` | 1451 ms |  |
+| ✅ | admin | `/help.php` | 1393 ms |  |
+| ✅ | admin | `/admin/insights.php` | 1510 ms |  |
+| ✅ | admin | `/admin/dashboard.php` | 1633 ms |  |
+| ✅ | admin | `/admin/users.php` | 1571 ms |  |
+| ✅ | admin | `/admin/reports.php` | 1556 ms |  |
+| ✅ | admin | `/admin/tokens.php` | 1464 ms |  |
+| ✅ | admin | `/admin/system-settings.php` | 1439 ms |  |
+| ✅ | admin | `/moderation.php` | 1493 ms |  |
 | ✅ | alumni | `login via UI` |  |  |
-| ✅ | alumni | `/dashboard.php` | 1678 ms |  |
-| ✅ | alumni | `/feed.php` | 1619 ms |  |
-| ✅ | alumni | `/profile.php` | 1607 ms |  |
-| ✅ | alumni | `/settings.php` | 1577 ms |  |
-| ✅ | alumni | `/messages.php` | 1447 ms |  |
-| ✅ | alumni | `/discovery.php` | 1485 ms |  |
-| ✅ | alumni | `/atlas.php` | 1852 ms |  |
-| ✅ | alumni | `/referrals.php` | 1454 ms |  |
-| ✅ | alumni | `/jobs.php` | 1551 ms |  |
-| ✅ | alumni | `/events.php` | 1465 ms |  |
-| ✅ | alumni | `/mentorship.php` | 1631 ms |  |
-| ✅ | alumni | `/live.php` | 1478 ms |  |
-| ✅ | alumni | `/library.php` | 1462 ms |  |
-| ✅ | alumni | `/help.php` | 1370 ms |  |
+| ✅ | alumni | `/dashboard.php` | 1690 ms |  |
+| ✅ | alumni | `/feed.php` | 1744 ms |  |
+| ✅ | alumni | `/profile.php` | 1569 ms |  |
+| ✅ | alumni | `/settings.php` | 1655 ms |  |
+| ✅ | alumni | `/messages.php` | 1485 ms |  |
+| ✅ | alumni | `/discovery.php` | 1616 ms |  |
+| ✅ | alumni | `/atlas.php` | 2036 ms |  |
+| ✅ | alumni | `/referrals.php` | 1492 ms |  |
+| ✅ | alumni | `/jobs.php` | 1575 ms |  |
+| ✅ | alumni | `/events.php` | 1489 ms |  |
+| ✅ | alumni | `/mentorship.php` | 1656 ms |  |
+| ✅ | alumni | `/live.php` | 1561 ms |  |
+| ✅ | alumni | `/library.php` | 1607 ms |  |
+| ✅ | alumni | `/help.php` | 1399 ms |  |
 | ✅ | student | `login via UI` |  |  |
-| ✅ | student | `/dashboard.php` | 1620 ms |  |
-| ✅ | student | `/feed.php` | 1679 ms |  |
-| ✅ | student | `/profile.php` | 1552 ms |  |
-| ✅ | student | `/settings.php` | 1542 ms |  |
-| ✅ | student | `/messages.php` | 1505 ms |  |
-| ✅ | student | `/discovery.php` | 1516 ms |  |
-| ✅ | student | `/atlas.php` | 1842 ms |  |
-| ✅ | student | `/referrals.php` | 1513 ms |  |
-| ✅ | student | `/jobs.php` | 1494 ms |  |
-| ✅ | student | `/events.php` | 1462 ms |  |
-| ✅ | student | `/mentorship.php` | 1564 ms |  |
-| ✅ | student | `/live.php` | 1437 ms |  |
-| ✅ | student | `/library.php` | 1442 ms |  |
-| ✅ | student | `/help.php` | 1387 ms |  |
+| ✅ | student | `/dashboard.php` | 1787 ms |  |
+| ✅ | student | `/feed.php` | 1686 ms |  |
+| ✅ | student | `/profile.php` | 1681 ms |  |
+| ✅ | student | `/settings.php` | 1563 ms |  |
+| ✅ | student | `/messages.php` | 1525 ms |  |
+| ✅ | student | `/discovery.php` | 1527 ms |  |
+| ✅ | student | `/atlas.php` | 2013 ms |  |
+| ✅ | student | `/referrals.php` | 1478 ms |  |
+| ✅ | student | `/jobs.php` | 1565 ms |  |
+| ✅ | student | `/events.php` | 1509 ms |  |
+| ✅ | student | `/mentorship.php` | 1591 ms |  |
+| ✅ | student | `/live.php` | 1530 ms |  |
+| ✅ | student | `/library.php` | 1461 ms |  |
+| ✅ | student | `/help.php` | 1378 ms |  |
 | ✅ | flow | `Feed draft survives a reload` |  |  |
 | ✅ | flow | `Discard draft clears the composer` |  |  |
 | ✅ | flow | `Create a post with a poll from the composer` |  |  |
@@ -88,3 +88,15 @@ Each page is opened in a real browser; a check fails on any JavaScript error, fa
 | ✅ | flow | `Owner approves the request from Settings` |  |  |
 | ✅ | flow | `Approved follower sees the full profile` |  |  |
 | ✅ | flow | `No JavaScript errors in privacy / handle flows` |  |  |
+| ✅ | flow | `Alumni see "Propose an event"` |  |  |
+| ✅ | flow | `Proposal is "sent for approval"` |  |  |
+| ✅ | flow | `My events shows it as "Awaiting approval"` |  |  |
+| ✅ | flow | `Alumni have no Pending approval tab` |  |  |
+| ✅ | flow | `Staff see the Pending approval tab with a count` |  |  |
+| ✅ | flow | `Admin approves it from the queue` |  |  |
+| ✅ | flow | `Approved event appears in Upcoming` |  |  |
+| ✅ | flow | `Users table offers Suspend… and Change email…` |  |  |
+| ✅ | flow | `Selecting rows shows the bulk bar` |  |  |
+| ✅ | flow | `Admins have no selection checkbox` |  |  |
+| ✅ | flow | `Reports page shows reporter history` |  |  |
+| ✅ | flow | `No JavaScript errors in events / admin flows` |  |  |

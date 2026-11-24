@@ -45,16 +45,14 @@ $attachmentName = trim((string)($data->attachment_name ?? ''));
 if (($receiver_id > 0 || $group_id > 0) && ($messageText !== '' || $attachmentUrl !== '')) {
     
     // 1. Get Roles for Hierarchy Logic
-    $stmt = $db->prepare("SELECT role FROM users WHERE user_id = :sid");
-    $stmt->execute(['sid' => $sender_id]);
+    $stmt = api_role_stmt($db, $sender_id);
     $sender_role = $stmt->fetchColumn();
     moderation_assert_messaging_allowed($db, (int)$sender_id, 'Messaging is currently restricted for this account.');
 
     $receiver_role = null;
     $receiver_private = false;
     if ($receiver_id > 0) {
-        $stmt = $db->prepare("SELECT role FROM users WHERE user_id = :rid");
-        $stmt->execute(['rid' => $receiver_id]);
+        $stmt = api_role_stmt($db, $receiver_id);
         $receiver_role = $stmt->fetchColumn();
         if (!$receiver_role) {
             http_response_code(404);

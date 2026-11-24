@@ -30,8 +30,7 @@ if (!$job) {
 }
 
 // Get user role to allow Admins to peek too
-$u_stmt = $db->prepare("SELECT role FROM users WHERE user_id = :uid");
-$u_stmt->execute(['uid' => $user_id]);
+$u_stmt = api_role_stmt($db, $user_id);
 $user_role = $u_stmt->fetchColumn();
 
 // ARCHITECT RULE: Only the poster or an admin can view sensitive applicant data

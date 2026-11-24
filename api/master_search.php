@@ -25,10 +25,7 @@ if (mb_strlen($term) < 2) {
 $like = '%' . str_replace(['\\', '%', '_'], ['\\\\', '\\%', '\\_'], $term) . '%';
 $op = db_is_pgsql($db) ? 'ILIKE' : 'LIKE';
 
-$isAdmin = false;
-$r = $db->prepare("SELECT role FROM users WHERE user_id = :u");
-$r->execute(['u' => $viewer]);
-$isAdmin = $r->fetchColumn() === 'admin';
+$isAdmin = api_user_role($db, (int)$viewer) === 'admin';
 
 $run = function (string $sql, array $params) use ($db) {
     try {
@@ -59,19 +56,39 @@ $results['users'] = $run("
     ORDER BY CASE WHEN p.full_name $op :q4 THEN 0 ELSE 1 END, p.full_name
     LIMIT 5", ['q1' => $like, 'q2' => $like, 'q3' => $like, 'q4' => $term . '%', 'qh' => str_replace(['\\', '%', '_'], ['\\\\', '\\%', '\\_'], ltrim(strtolower($term), '@')) . '%', 'me' => (int)$viewer, 'adm' => $isAdmin ? 1 : 0]);
 
-$results['jobs'] = $run("
-    SELECT job_id, company_name, job_title, location
-    FROM jobs WHERE COALESCE(status, 'open') = 'open' AND (job_title $op :q1 OR company_name $op :q2)
-    ORDER BY created_at DESC LIMIT 5", ['q1' => $like, 'q2' => $like]);
-
-$results['events'] = $run("
-    SELECT event_id, title, start_datetime
-    FROM events WHERE title $op :q1 AND status = 'approved'
-    ORDER BY start_datetime DESC LIMIT 5", ['q1' => $like]);
-
-$results['referrals'] = $run("
-    SELECT offer_id, company, roles FROM referral_offers
-    WHERE status = 'open' AND (company $op :q1 OR roles $op :q2)
-    ORDER BY created_at DESC LIMIT 5", ['q1' => $like, 'q2' => $like]);
+if ($isPg) {
+    // Jobs, events and referral offers in one round trip: each sub-select returns a JSON array.
+    $row = $run("
+        SELECT
+            (SELECT COALESCE(json_agg(j), '[]'::json) FROM (
+                SELECT job_id, company_name, job_title, location FROM jobs
+                WHERE COALESCE(status, 'open') = 'open' AND (job_title ILIKE :q1 OR company_name ILIKE :q2)
+                ORDER BY created_at DESC LIMIT 5) j) AS jobs,
+            (SELECT COALESCE(json_agg(e), '[]'::json) FROM (
+                SELECT event_id, title, start_datetime::text AS start_datetime FROM events
+                WHERE title ILIKE :q3 AND status = 'approved'
+                ORDER BY start_datetime DESC LIMIT 5) e) AS events,
+            (SELECT COALESCE(json_agg(r), '[]'::json) FROM (
+                SELECT offer_id, company, roles FROM referral_offers
+                WHERE status = 'open' AND (company ILIKE :q4 OR roles ILIKE :q5)
+                ORDER BY created_at DESC LIMIT 5) r) AS referrals",
+        ['q1' => $like, 'q2' => $like, 'q3' => $like, 'q4' => $like, 'q5' => $like])[0] ?? [];
+    foreach (['jobs', 'events', 'referrals'] as $k) {
+        $results[$k] = json_decode((string)($row[$k] ?? '[]'), true) ?: [];
+    }
+} else {
+    $results['jobs'] = $run("
+        SELECT job_id, company_name, job_title, location
+        FROM jobs WHERE COALESCE(status, 'open') = 'open' AND (job_title $op :q1 OR company_name $op :q2)
+        ORDER BY created_at DESC LIMIT 5", ['q1' => $like, 'q2' => $like]);
+    $results['events'] = $run("
+        SELECT event_id, title, start_datetime
+        FROM events WHERE title $op :q1 AND status = 'approved'
+        ORDER BY start_datetime DESC LIMIT 5", ['q1' => $like]);
+    $results['referrals'] = $run("
+        SELECT offer_id, company, roles FROM referral_offers
+        WHERE status = 'open' AND (company $op :q1 OR roles $op :q2)
+        ORDER BY created_at DESC LIMIT 5", ['q1' => $like, 'q2' => $like]);
+}
 
 echo json_encode(['success' => true, 'results' => $results]);

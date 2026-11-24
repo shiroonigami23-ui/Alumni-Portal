@@ -23,8 +23,7 @@ $data = json_decode((string)file_get_contents('php://input'), true) ?: [];
 $stream = new Stream($db);
 
 if (($data['action'] ?? 'stop') === 'start') {
-    $r = $db->prepare("SELECT role FROM users WHERE user_id = :u");
-    $r->execute(['u' => $userId]);
+    $r = api_role_stmt($db, $userId);
     if (!in_array($r->fetchColumn(), ['alumni', 'faculty', 'admin'], true)) {
         $out(['success' => false, 'message' => 'Live sessions can be hosted by alumni, faculty and admins.'], 403);
     }

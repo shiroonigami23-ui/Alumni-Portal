@@ -5,6 +5,56 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and 
 
 ## [Unreleased]
 
+## [2.3.3] — 2026-11-24 — "Brought back, with buttons"
+
+2.3.2 removed some admin tools because nothing in the app used them. That was the wrong fix:
+they were real jobs with no screen, not dead code. They're back, done properly — with a UI,
+server-side checks, notifications, audit logging and tests — and the true duplicates stay gone.
+
+### ↩️ Restored, now with a UI
+- **Restore a hidden post** (Admin → Reports → *Restore post*). The old restore never worked (it
+  wrote to a column that didn't exist). Restoring publishes the post, dismisses its open reports,
+  tells the author, and makes the post **immune to being auto-hidden again** by reports.
+- **Penalise false reporters** (Admin → Reports → *False report*). Each report card shows the
+  reporter's warnings, strikes and past rejected reports. Three false reports = a strike and a
+  24-hour posting block per strike. Admin/faculty reports can't be penalised.
+- **Event approval.** Alumni can **propose** events again ("Sent for approval"); faculty and admins
+  get a **Pending approval** tab with a count, Approve / Decline (with an optional reason) — the
+  organiser is notified either way. *My events* shows each of yours as Live / Awaiting approval /
+  Not approved. Unapproved events can't be RSVP'd.
+- **Suspend for N days** (1–30) from Admin → Users and from a profile. Faculty can suspend students
+  and alumni; nobody can suspend an admin. Suspensions now **lift by themselves** — before, a
+  suspended account stayed locked out forever because sign-in ignored the end date.
+- **Change sign-in email** (Admin → Users → *Change email…*): case-insensitive duplicate check,
+  old password-reset links stop working, the user is notified.
+- **Bulk actions**: tick rows in Admin → Users (or *select all*) → Approve / Reject sign-ups,
+  Ban, Unban — one set-based query for up to 500 accounts; admins are never touched.
+
+### ⚡ Faster — fewer, smarter queries (0.5 ms simulated DB latency; `tests/results/perf-latest.md`)
+- **Profile 37 → 16 ms** (11 → 4 queries): profile, counters, follow state and block state in one
+  query; skills, badges and pinned posts as JSON in one more.
+- **Feed 32 → 19 ms** (8 → 4): total comes from `COUNT(*) OVER ()` on the page itself, your
+  branch/company/batch are read inside the ranking query, polls + options + your vote in one query.
+- **Ctrl+K search 21 → 12 ms** (5 → 2): jobs, events and referral offers as three JSON columns of one query.
+- **Success stories 30 → 12 ms** (8 → 2): story texts load in one batch.
+- **Mentorship status 29 → 23 ms**: active match and pending-request fallback merged with `UNION ALL`.
+- **Admin reports**: reporter track records computed once per reporter in a CTE (was a sub-query per row); newest 500, open first.
+- 22 endpoints stopped running their own `SELECT role FROM users` — `api_user_role()` (`api/_roles.php`)
+  answers from the sign-in query the kernel already ran. Overall median **19.4 → 12.2 ms (−37 %)**.
+
+### 🐛 Fixed
+- Pages decided what to show from a cached copy of the user in `localStorage`, which could belong to
+  whoever signed in last; the header now shares one live `me.php` result (`await window.portalUser`).
+- Events: the RSVP button sent `attending`, which the API rejected; event locations are escaped.
+
+### 🧪 Tests
+- API **274 checks** (was 233): the full report-abuse loop (5 reports hide → author told → false-report
+  strikes block posting → restore → immune), event propose/approve/decline/notify, suspend →
+  can't sign in → unsuspend, faculty limits, email change + sign-in, bulk approve/reject.
+- Browser **94 checks** (was 82): alumni propose an event in the UI, admin approves it from the
+  Pending tab, it appears in Upcoming; Users page suspend/email buttons and the bulk bar.
+- Authorization sweep **201 attempts** (was 132) — it picks up the new action levels on its own.
+
 ## [2.3.2] — 2026-11-24 — "Lighter and faster"
 
 ### ⚡ Faster (measured with production-like database latency — see `tests/results/perf-latest.md`)

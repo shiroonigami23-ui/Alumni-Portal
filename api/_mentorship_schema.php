@@ -1,4 +1,5 @@
 <?php
+require_once __DIR__ . '/_roles.php';
 
 function ensureMentorshipSchema(PDO $db): void
 {
@@ -128,8 +129,7 @@ function ensureMentorshipSchema(PDO $db): void
 
 function getUserRole(PDO $db, int $userId): string
 {
-    $stmt = $db->prepare("SELECT role FROM users WHERE user_id = :uid LIMIT 1");
-    $stmt->execute([':uid' => $userId]);
+    $stmt = api_role_stmt($db, $userId);
     return strtolower((string)($stmt->fetchColumn() ?: ''));
 }
 
@@ -369,70 +369,57 @@ function getCurrentActiveMatch(PDO $db, int $menteeId): ?array
 {
     ensureCurrentMentorshipState($db, $menteeId);
 
+    // One round trip: the active match if there is one, otherwise the newest accepted
+    // request that hasn't become a match yet (priority column picks the right row).
     $stmt = $db->prepare("
-        SELECT
-            mm.match_id,
-            mm.mentor_id,
-            mm.mentee_id,
-            mm.group_id,
-            mm.joined_at,
-            COALESCE(NULLIF(TRIM(p.full_name), ''), split_part(u.email, '@', 1)) AS mentor_name,
-            u.role AS mentor_role
-        FROM mentorship_matches mm
-        JOIN users u ON u.user_id = mm.mentor_id
-        LEFT JOIN profiles p ON p.user_id = u.user_id
-        WHERE mm.mentee_id = :uid
-          AND mm.status = 'active'
-        ORDER BY mm.joined_at DESC, mm.match_id DESC
+        (SELECT 0 AS priority, mm.match_id, mm.mentor_id, mm.mentee_id, mm.group_id, mm.joined_at,
+                COALESCE(NULLIF(TRIM(p.full_name), ''), split_part(u.email, '@', 1)) AS mentor_name,
+                u.role AS mentor_role
+         FROM mentorship_matches mm
+         JOIN users u ON u.user_id = mm.mentor_id
+         LEFT JOIN profiles p ON p.user_id = u.user_id
+         WHERE mm.mentee_id = :uid AND mm.status = 'active'
+         ORDER BY mm.joined_at DESC, mm.match_id DESC
+         LIMIT 1)
+        UNION ALL
+        (SELECT 1 AS priority, 0 AS match_id, r.mentor_id, r.mentee_id, g.group_id,
+                COALESCE(r.updated_at, r.created_at) AS joined_at,
+                COALESCE(NULLIF(TRIM(p.full_name), ''), split_part(u.email, '@', 1)) AS mentor_name,
+                u.role AS mentor_role
+         FROM mentorship_requests r
+         JOIN users u ON u.user_id = r.mentor_id
+         LEFT JOIN profiles p ON p.user_id = u.user_id
+         LEFT JOIN mentorship_groups g ON g.mentor_user_id = r.mentor_id
+         JOIN mentorship_profiles mp ON mp.mentor_user_id = r.mentor_id
+         WHERE r.mentee_id = :uid2
+           AND r.status = 'accepted'
+           AND mp.is_active = TRUE
+           AND mp.approval_status = 'approved'
+           AND u.role <> 'admin'
+           AND NOT EXISTS (SELECT 1 FROM mentorship_matches mm WHERE mm.mentee_id = r.mentee_id AND mm.mentor_id = r.mentor_id)
+         ORDER BY COALESCE(r.updated_at, r.created_at) DESC, r.request_id DESC
+         LIMIT 1)
+        ORDER BY priority
         LIMIT 1
     ");
-    $stmt->execute([':uid' => $menteeId]);
+    $stmt->execute([':uid' => $menteeId, ':uid2' => $menteeId]);
     $row = $stmt->fetch(PDO::FETCH_ASSOC);
-    if ($row) {
-        return $row;
-    }
-
-    $fallbackStmt = $db->prepare("
-        SELECT
-            r.mentor_id,
-            r.mentee_id,
-            g.group_id,
-            COALESCE(r.updated_at, r.created_at) AS joined_at,
-            COALESCE(NULLIF(TRIM(p.full_name), ''), split_part(u.email, '@', 1)) AS mentor_name,
-            u.role AS mentor_role
-        FROM mentorship_requests r
-        JOIN users u ON u.user_id = r.mentor_id
-        LEFT JOIN profiles p ON p.user_id = u.user_id
-        LEFT JOIN mentorship_groups g ON g.mentor_user_id = r.mentor_id
-        JOIN mentorship_profiles mp ON mp.mentor_user_id = r.mentor_id
-        WHERE r.mentee_id = :uid
-          AND r.status = 'accepted'
-          AND mp.is_active = TRUE
-          AND mp.approval_status = 'approved'
-          AND u.role <> 'admin'
-          AND NOT EXISTS (
-              SELECT 1
-              FROM mentorship_matches mm
-              WHERE mm.mentee_id = r.mentee_id
-                AND mm.mentor_id = r.mentor_id
-          )
-        ORDER BY COALESCE(r.updated_at, r.created_at) DESC, r.request_id DESC
-        LIMIT 1
-    ");
-    $fallbackStmt->execute([':uid' => $menteeId]);
-    $fallback = $fallbackStmt->fetch(PDO::FETCH_ASSOC);
-    if (!$fallback) {
+    if (!$row) {
         return null;
     }
-
+    $isMatch = (int)$row['priority'] === 0;
+    unset($row['priority']);
+    if ($isMatch) {
+        return $row;
+    }
     return [
         'match_id' => 0,
-        'mentor_id' => (int)$fallback['mentor_id'],
-        'mentee_id' => (int)$fallback['mentee_id'],
-        'group_id' => (int)($fallback['group_id'] ?? 0),
-        'joined_at' => $fallback['joined_at'],
-        'mentor_name' => $fallback['mentor_name'],
-        'mentor_role' => $fallback['mentor_role']
+        'mentor_id' => (int)$row['mentor_id'],
+        'mentee_id' => (int)$row['mentee_id'],
+        'group_id' => (int)($row['group_id'] ?? 0),
+        'joined_at' => $row['joined_at'],
+        'mentor_name' => $row['mentor_name'],
+        'mentor_role' => $row['mentor_role']
     ];
 }
 

@@ -212,6 +212,7 @@ function api_endpoint(array $opts): ApiContext
     });
 
     $ctx = new ApiContext();
+    $GLOBALS['__api_ctx'] = $ctx;
     $ctx->method = strtoupper((string)($_SERVER['REQUEST_METHOD'] ?? 'GET'));
     if (!empty($opts['methods']) && $ctx->method !== 'OPTIONS' && !in_array($ctx->method, array_map('strtoupper', $opts['methods']), true)) {
         header('Allow: ' . implode(', ', array_map('strtoupper', $opts['methods'])));
@@ -320,3 +321,5 @@ function api_error_message(Throwable $e, string $fallback = 'Something went wron
     }
     return rtrim($fallback, '. ') . '. (ref ' . api_error_ref($e) . ')';
 }
+
+require_once __DIR__ . '/_roles.php';   // api_user_role() — shared by endpoints, helpers and cron

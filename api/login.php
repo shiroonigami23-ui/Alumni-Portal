@@ -74,9 +74,26 @@ if (!empty($data->email) && !empty($data->password)) {
             }
         }
 
-        if ($user->status === 'banned' || $user->status === 'suspended') {
+        if ($user->status === 'suspended') {
+            // Timed suspensions lift themselves: one conditional UPDATE decides it atomically.
+            $lift = $db->prepare("UPDATE users SET status = 'active', suspension_expires_at = NULL, updated_at = CURRENT_TIMESTAMP
+                                  WHERE user_id = :uid AND status = 'suspended' AND suspension_expires_at IS NOT NULL AND suspension_expires_at <= NOW()
+                                  RETURNING user_id");
+            $lift->execute(['uid' => $user->user_id]);
+            if ($lift->fetchColumn()) {
+                $user->status = 'active';
+            } else {
+                $until = $db->prepare("SELECT suspension_expires_at FROM users WHERE user_id = :uid");
+                $until->execute(['uid' => $user->user_id]);
+                $when = $until->fetchColumn();
+                http_response_code(403);
+                echo json_encode(["success" => false, "message" => $when ? "Account is suspended until " . gmdate('j M Y, H:i', strtotime((string)$when)) . " UTC." : "Account is suspended."]);
+                exit();
+            }
+        }
+        if ($user->status === 'banned') {
             http_response_code(403);
-            echo json_encode(array("success" => false, "message" => "Account is " . $user->status));
+            echo json_encode(array("success" => false, "message" => "Account is banned"));
             exit();
         }
 

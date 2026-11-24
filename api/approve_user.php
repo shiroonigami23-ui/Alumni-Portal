@@ -17,8 +17,7 @@ $auth = new Auth($db);
 $requestor_id = $auth->validateRequest();
 
 // 1. Check Requestor's Role
-$stmt = $db->prepare("SELECT role FROM users WHERE user_id = :id");
-$stmt->execute(['id' => $requestor_id]);
+$stmt = api_role_stmt($db, $requestor_id);
 $requestor = $stmt->fetch(PDO::FETCH_ASSOC);
 
 $data = json_decode(file_get_contents("php://input"));

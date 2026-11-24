@@ -119,8 +119,7 @@ function clear_missing_local_asset(?string $path): string
 try {
     // Re-using $pdo from above
 
-    $roleStmt = $pdo->prepare("SELECT role FROM users WHERE user_id = :uid");
-    $roleStmt->execute(['uid' => $user_id]);
+    $roleStmt = api_role_stmt($pdo, $user_id);
     $currentUserRole = $roleStmt->fetchColumn();
     if (!$currentUserRole) {
         http_response_code(401);

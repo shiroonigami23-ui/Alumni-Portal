@@ -1,4 +1,5 @@
 <?php
+require_once __DIR__ . '/_roles.php';
 
 require_once __DIR__ . '/../config/DbCompat.php';
 
@@ -61,8 +62,7 @@ function ensure_user_moderation_schema(PDO $db): void
 
 function moderation_get_user_role(PDO $db, int $userId): string
 {
-    $stmt = $db->prepare("SELECT role FROM users WHERE user_id = :uid LIMIT 1");
-    $stmt->execute(['uid' => $userId]);
+    $stmt = api_role_stmt($db, $userId);
     return (string)($stmt->fetchColumn() ?: '');
 }
 
@@ -243,4 +243,30 @@ function moderation_clear_restriction(PDO $db, int $targetUserId, string $kind, 
         'uid' => $targetUserId,
         'aid' => $adminUserId,
     ]);
+}
+
+/**
+ * Columns for reviewing reported posts: a post an admin restored is immune to being auto-hidden again
+ * by reports (admins can still remove it by hand).
+ */
+function ensure_report_review_schema(PDO $db): void
+{
+    static $done = false;
+    if ($done) {
+        return;
+    }
+    $done = true;
+    $run = function () use ($db) {
+        $db->exec("ALTER TABLE posts ADD COLUMN IF NOT EXISTS is_restored BOOLEAN NOT NULL DEFAULT FALSE");
+        $db->exec("ALTER TABLE posts ADD COLUMN IF NOT EXISTS restored_at TIMESTAMP NULL");
+        $db->exec("ALTER TABLE posts ADD COLUMN IF NOT EXISTS restored_by BIGINT NULL REFERENCES users(user_id) ON DELETE SET NULL");
+    };
+    if (!function_exists('schema_once')) {
+        @include_once __DIR__ . '/../helpers/Cache.php';
+    }
+    if (function_exists('schema_once')) {
+        schema_once('report_review_schema', $run, __FILE__);
+    } else {
+        $run();
+    }
 }

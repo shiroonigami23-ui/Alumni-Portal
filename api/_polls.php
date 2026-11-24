@@ -63,6 +63,37 @@ function polls_for_posts(PDO $db, array $postIds, int $viewerId): array
         return [];
     }
     $in = implode(',', $postIds); // ints only
+    if (function_exists('db_is_pgsql') && db_is_pgsql($db)) {
+        // Polls, their options (in order) and the viewer's vote: one round trip instead of three.
+        try {
+            $s = $db->prepare("
+                SELECT pl.poll_id, pl.post_id, pl.question, pl.expires_at::text AS expires_at,
+                       (pl.is_active AND (pl.expires_at IS NULL OR pl.expires_at > NOW())) AS is_open,
+                       (SELECT pv.option_id FROM poll_votes pv WHERE pv.poll_id = pl.poll_id AND pv.user_id = :u LIMIT 1) AS my_vote,
+                       COALESCE((SELECT json_agg(json_build_object('option_id', o.option_id, 'text', o.option_text, 'votes', o.vote_count)
+                                                 ORDER BY o.option_order, o.option_id)
+                                 FROM poll_options o WHERE o.poll_id = pl.poll_id), '[]'::json) AS options
+                FROM polls pl WHERE pl.post_id IN ($in)");
+            $s->execute(['u' => $viewerId]);
+            $out = [];
+            foreach ($s->fetchAll(PDO::FETCH_ASSOC) as $p) {
+                $options = array_map(fn ($o) => ['option_id' => (int)$o['option_id'], 'text' => $o['text'], 'votes' => (int)$o['votes']],
+                                     json_decode((string)$p['options'], true) ?: []);
+                $out[(int)$p['post_id']] = [
+                    'poll_id' => (int)$p['poll_id'],
+                    'question' => $p['question'],
+                    'options' => $options,
+                    'total_votes' => array_sum(array_column($options, 'votes')),
+                    'my_vote' => $p['my_vote'] !== null ? (int)$p['my_vote'] : null,
+                    'expires_at' => $p['expires_at'],
+                    'is_open' => filter_var($p['is_open'], FILTER_VALIDATE_BOOLEAN),
+                ];
+            }
+            return $out;
+        } catch (Throwable $e) {
+            return [];
+        }
+    }
     try {
         $polls = $db->query("SELECT poll_id, post_id, question, expires_at,
                                     (is_active AND (expires_at IS NULL OR expires_at > NOW())) AS is_open

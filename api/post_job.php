@@ -12,8 +12,7 @@ $db = (new Database())->getConnection();
 $auth = new Auth($db);
 $user_id = (int)$auth->validateRequest();
 
-$stmt = $db->prepare("SELECT role FROM users WHERE user_id = :id");
-$stmt->execute(['id' => $user_id]);
+$stmt = api_role_stmt($db, $user_id);
 if (!in_array($stmt->fetchColumn(), ['alumni', 'faculty', 'admin'], true)) {
     http_response_code(403);
     echo json_encode(['success' => false, 'message' => 'Only alumni and faculty can post jobs.']);

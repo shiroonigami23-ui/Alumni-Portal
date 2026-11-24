@@ -26,8 +26,7 @@ ensure_community_schema($db);
 
 try {
     $user_id = $auth->validateRequest();
-    $role_stmt = $db->prepare("SELECT role FROM users WHERE user_id = :uid");
-    $role_stmt->execute(['uid' => $user_id]);
+    $role_stmt = api_role_stmt($db, $user_id);
     $role = (string)$role_stmt->fetchColumn();
     if ($role !== 'admin') {
         respond(["success" => false, "message" => "Unauthorized. Admin access only."], 403);

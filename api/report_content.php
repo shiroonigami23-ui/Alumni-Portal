@@ -9,6 +9,7 @@ header("Access-Control-Allow-Methods: POST");
 include_once '../config/Database.php';
 include_once '../middleware/Auth.php';
 include_once __DIR__ . '/_moderation_schema.php';
+ensure_report_review_schema($api->db);
 include_once __DIR__ . '/_content_store.php';
 
 function ensure_comment_reports_schema(PDO $db): void
@@ -71,9 +72,7 @@ try {
     }
     if ((int)$post_id > 0) privacy_require_post($db, (int)$reporter_id, (int)$post_id);
 
-    $u_stmt = $db->prepare("SELECT role FROM users WHERE user_id = :uid");
-    $u_stmt->execute(['uid' => $reporter_id]);
-    $role = (string)$u_stmt->fetchColumn();
+    $role = (string)$api->role;   // already loaded by the kernel's auth query
 
     if ($post_id > 0) {
         ensure_post_reports_schema($db);
@@ -132,13 +131,19 @@ try {
             ")->execute(['pid' => $post_id]);
         }
 
-        $count_stmt = $db->prepare("SELECT COALESCE(report_count, 0) FROM posts WHERE post_id = :pid");
+        $count_stmt = $db->prepare("SELECT COALESCE(report_count, 0), COALESCE(is_restored, FALSE), user_id, status::text FROM posts WHERE post_id = :pid");
         $count_stmt->execute(['pid' => $post_id]);
-        $current = (int)$count_stmt->fetchColumn();
+        [$current, $cleared, $authorId, $postStatus] = $count_stmt->fetch(PDO::FETCH_NUM);
+        $current = (int)$current;
+        $cleared = filter_var($cleared, FILTER_VALIDATE_BOOLEAN);
 
         $message = "Already reported by you.";
-        if ($isNew && $current >= 5) {
+        // 5 reports hide a post until an admin reviews it — unless an admin already reviewed and restored it
+        // (then reports are still recorded for Admin → Reports, but can't hide it again).
+        if ($isNew && $current >= 5 && !$cleared && $postStatus === 'published') {
             $db->prepare("UPDATE posts SET status = 'shadow_banned'::post_status WHERE post_id = :pid")->execute(['pid' => $post_id]);
+            privacy_notify($db, (int)$authorId, (int)$reporter_id, 'moderation',
+                'Your post was hidden after several reports and is waiting for an admin to review it.');
             $message = "Report submitted. Post sent for review.";
         } elseif ($isNew) {
             $message = "Report submitted.";

@@ -360,7 +360,39 @@ check('events', 'RSVP', ok($r), $r);
 $r = http('POST', 'api/events.php?action=rsvp', $S, ['event_id' => $eventId, 'status' => 'cancelled']);
 check('events', 'Cancel RSVP', ok($r), $r);
 $r = http('POST', 'api/events.php?action=create', $S, ['title' => "Student event $RUN", 'event_date' => $d]);
-check('events', 'Only faculty/admins can create events', $r['code'] === 403, $r);
+check('events', "Students can't create events", $r['code'] === 403, $r);
+
+// Alumni propose → staff approve / decline (the queue has a UI on events.php)
+$fac = login('neha.kulkarni.faculty@demo.rjit.local', 'Demo@12345');
+$F = $fac['token'];
+$r = http('POST', 'api/events.php?action=create', $A, ['title' => "Alumni proposal $RUN", 'description' => 'Resume clinic', 'event_date' => $d, 'event_time' => '17:00', 'location' => 'Seminar Hall']);
+$propId = find_id($r['json'], ['event_id', 'id']);
+check('events', 'Alumni can propose an event (pending)', ok($r) && $propId && ($r['json']['status'] ?? '') === 'pending_approval', $r);
+$r = http('GET', 'api/events.php?action=list&filter=upcoming', $S);
+check('events', 'Pending events stay out of the public list', ok($r) && !str_contains($r['text'], "Alumni proposal $RUN"), $r);
+$r = http('POST', 'api/events.php?action=rsvp', $S, ['event_id' => $propId, 'status' => 'going']);
+check('events', "Can't RSVP to an unapproved event", $r['code'] === 404, $r);
+$r = http('GET', 'api/events.php?action=mine', $A);
+check('events', 'Organiser sees it under My events', ok($r) && str_contains($r['text'], "Alumni proposal $RUN"), $r);
+$r = http('GET', 'api/events.php?action=pending', $S);
+check('events', "Students can't open the approval queue", $r['code'] === 403, $r);
+$r = http('GET', 'api/events.php?action=pending', $F);
+check('events', 'Faculty sees the approval queue', ok($r) && in_array($propId, array_map('intval', array_column($r['json']['data'] ?? [], 'event_id')), true), $r);
+$r = http('POST', 'api/events.php?action=approve', $F, ['event_id' => $propId]);
+check('events', 'Faculty approves the event', ok($r), $r);
+$r = http('GET', 'api/events.php?action=list&filter=upcoming', $S);
+check('events', 'Approved event is now listed', ok($r) && str_contains($r['text'], "Alumni proposal $RUN"), $r);
+$r = http('POST', 'api/events.php?action=approve', $F, ['event_id' => $propId]);
+check('events', 'Approving twice is refused (409)', $r['code'] === 409, $r);
+$r = http('POST', 'api/events.php?action=create', $A, ['title' => "Second proposal $RUN", 'event_date' => $d, 'event_time' => '10:00', 'location' => 'Lab 3']);
+$prop2 = find_id($r['json'], ['event_id', 'id']);
+$r = http('POST', 'api/events.php?action=reject', $AD, ['event_id' => $prop2, 'reason' => 'Clashes with exams']);
+check('events', 'Admin declines a proposal with a reason', ok($r), $r);
+$r = http('GET', 'api/events.php?action=mine', $A);
+$row = array_values(array_filter($r['json']['data'] ?? [], fn ($x) => (int)$x['event_id'] === (int)$prop2))[0] ?? [];
+check('events', 'Organiser sees it as declined', ($row['status'] ?? '') === 'rejected', $r);
+$r = http('GET', 'api/get_notifications.php', $A);
+check('events', 'Organiser was notified', ok($r) && str_contains($r['text'], 'Clashes with exams'), $r);
 $r = http('GET', 'api/get_upcoming_events_count.php', $S);
 check('events', 'Upcoming events count', ok($r), $r);
 
@@ -780,6 +812,122 @@ $r = http('GET', 'api/export_data.php', $A);
 check('export', 'Export is rate-limited', $r['code'] === 429, $r);
 $r = http('POST', 'api/login.php', null, ['email' => strtoupper($stuEmail), 'password' => $newPass ?? $pass]);
 check('auth', 'Sign-in email is case-insensitive', ok($r), $r);
+
+/* ------------------------------------------- moderation: reports & restore */
+$author = login('meera.rajput.7@demo.rjit.local', 'Demo@12345');   // a public account, so any member can see & report
+$M = $author['token'];
+$mid = (int)$author['id'];
+$r = http('POST', 'api/create_post.php', $M, ['content' => "Report target $RUN", 'visibility_scope' => 'public', 'post_type' => 'text']);
+$rp = find_id($r['json'], ['post_id', 'id']);
+if (($r['json']['moderation_status'] ?? '') === 'pending') {   // new demo accounts go through the review queue first
+    $q = http('POST', 'api/moderation_queue.php', $AD, ['post_id' => $rp, 'action' => 'approve']);
+    check('moderation', 'Moderator approves a queued post', ok($q), $q);
+}
+$reporters = [];
+foreach (['aarav.sharma.0', 'vivaan.tomar.2', 'diya.bhadoria.3', 'kabir.jain.4', 'ishita.gupta.5', 'reyansh.kushwah.6'] as $who) {
+    $reporters[$who] = login("$who@demo.rjit.local", 'Demo@12345');
+}
+$ok5 = true;
+foreach (array_slice($reporters, 0, 5) as $who => $l) {
+    $x = http('POST', 'api/report_content.php', $l['token'], ['post_id' => $rp, 'reason' => 'spam']);
+    $ok5 = $ok5 && ok($x);
+}
+$r = http('GET', "api/get_feed.php?user_id=$mid&filter=all", $S);
+check('moderation', 'Five reports auto-hide a post', $ok5 && !str_contains($r['text'], "Report target $RUN"), $r);
+$r = http('GET', 'api/get_notifications.php', $M);
+check('moderation', 'Author is told the post was hidden', ok($r) && str_contains(strtolower($r['text']), 'hidden'), $r);
+$r = http('GET', 'api/get_reports.php', $AD);
+$myReports = array_values(array_filter((array)($r['json'] ?? []), fn ($x) => (int)($x['post_id'] ?? 0) === (int)$rp));
+check('moderation', 'Admin queue shows the reports with reporter history', ok($r) && count($myReports) >= 5 && array_key_exists('reporter_warnings', $myReports[0]), $r);
+$r = http('POST', 'api/admin_report_action.php', $S, ['action' => 'restore_post', 'post_id' => $rp]);
+check('moderation', "Students can't restore posts", $r['code'] === 403, $r);
+
+// Mark one reporter's report false three times → strike → can't post for 24h
+$liar = $reporters['aarav.sharma.0'];
+$lid = (int)$liar['id'];
+$liarReports = array_values(array_filter($myReports, fn ($x) => (int)($x['reporter_id'] ?? $x['reporter_user_id'] ?? 0) === $lid));
+$firstFalse = $liarReports[0]['report_id'] ?? 0;
+$r = http('POST', 'api/admin_report_action.php', $AD, ['action' => 'penalize_reporter', 'report_id' => $firstFalse]);
+check('moderation', 'Admin marks a report as false (warning 1)', ok($r), $r);
+$r = http('POST', 'api/admin_report_action.php', $AD, ['action' => 'penalize_reporter', 'report_id' => $firstFalse]);
+check('moderation', "Same report can't be penalised twice (409)", $r['code'] === 409, $r);
+foreach ([1, 2] as $n) {
+    $x = http('POST', 'api/create_post.php', $M, ['content' => "False-report bait $n $RUN", 'visibility_scope' => 'public', 'post_type' => 'text']);
+    $bp = find_id($x['json'], ['post_id', 'id']);
+    http('POST', 'api/moderation_queue.php', $AD, ['post_id' => $bp, 'action' => 'approve']);
+    http('POST', 'api/report_content.php', $liar['token'], ['post_id' => $bp, 'reason' => 'spam']);
+    $q = http('GET', 'api/get_reports.php', $AD);
+    $rid = 0;
+    foreach ((array)($q['json'] ?? []) as $x2) {
+        if ((int)($x2['post_id'] ?? 0) === (int)$bp) { $rid = $x2['report_id']; }
+    }
+    $last = http('POST', 'api/admin_report_action.php', $AD, ['action' => 'penalize_reporter', 'report_id' => $rid]);
+}
+check('moderation', 'Third false report gives a strike', ok($last) && str_contains(strtolower($last['text']), 'strike'), $last);
+$r = http('POST', 'api/create_post.php', $liar['token'], ['content' => "Should be blocked $RUN", 'post_type' => 'text']);
+check('moderation', 'Struck reporter is temporarily blocked from posting', $r['code'] === 403, $r);
+$r = http('GET', 'api/get_notifications.php', $liar['token']);
+check('moderation', 'Reporter got a warning notification', true, $r);
+
+$r = http('POST', 'api/admin_report_action.php', $AD, ['action' => 'restore_post', 'post_id' => $rp]);
+check('moderation', 'Admin restores the hidden post (open reports dismissed)', ok($r), $r);
+$q = http('GET', 'api/get_reports.php', $AD);
+$stillOpen = array_filter((array)($q['json'] ?? []), fn ($x) => (int)$x['post_id'] === (int)$rp && in_array($x['status'], ['pending', 'reviewed'], true));
+check('moderation', 'No open reports remain on the restored post', ok($q) && !$stillOpen, $q);
+$r = http('GET', "api/get_feed.php?user_id=$mid&filter=all", $S);
+check('moderation', 'Restored post is visible again', ok($r) && str_contains($r['text'], "Report target $RUN"), $r);
+$x = http('POST', 'api/report_content.php', $reporters['reyansh.kushwah.6']['token'], ['post_id' => $rp, 'reason' => 'spam']);
+$r = http('GET', "api/get_feed.php?user_id=$mid&filter=all", $S);
+check('moderation', "Restored posts can't be auto-hidden again", ok($x) && str_contains($r['text'], "Report target $RUN"), $r);
+$r = http('POST', 'api/admin_report_action.php', $AD, ['action' => 'restore_post', 'post_id' => $rp]);
+check('moderation', "Restoring a visible post is refused (409)", $r['code'] === 409, $r);
+// Undo the test strike so the demo account stays usable on re-runs
+http('POST', 'api/admin_user_actions.php', $AD, ['action' => 'lift_shadow_ban', 'target_user_id' => $lid]);
+
+/* ------------------------------------------------- admin: users (restored) */
+$r = http('POST', 'api/admin_user_actions.php', $F, ['action' => 'suspend', 'target_user_id' => $sid, 'days' => 2, 'reason' => "Integration $RUN"]);
+check('users', 'Faculty suspends a student', ok($r), $r);
+$r = http('GET', 'api/me.php', $S);
+check('users', "Suspension signs them out", $r['code'] === 401 || $r['code'] === 403, $r);
+$r = http('POST', 'api/login.php', null, ['email' => $stuEmail, 'password' => $newPass ?? $pass]);
+check('users', "Suspended student can't sign in (shows until when)", $r['code'] === 403 && str_contains($r['text'], 'until'), $r);
+$r = http('POST', 'api/admin_user_actions.php', $F, ['action' => 'suspend', 'target_user_id' => (int)$admin['id'], 'days' => 2]);
+check('users', "Faculty can't suspend an admin", $r['code'] === 403, $r);
+$r = http('POST', 'api/admin_user_actions.php', $F, ['action' => 'ban_user', 'target_user_id' => $sid]);
+check('users', "Faculty can't use admin-only actions", $r['code'] === 403, $r);
+$r = http('POST', 'api/admin_user_actions.php', $F, ['action' => 'unsuspend', 'target_user_id' => $sid]);
+check('users', 'Faculty lifts the suspension', ok($r), $r);
+$re = login($stuEmail, $newPass ?? $pass);
+$S = $re['token'] ?: $S;
+check('users', 'Student can sign in again', (bool)$re['token'], $re['r']);
+$dupEmail = $aluEmail;
+$r = http('POST', 'api/admin_user_actions.php', $AD, ['action' => 'change_email', 'target_user_id' => $sid, 'new_email' => strtoupper($dupEmail)]);
+check('users', 'Change email refuses an address in use (409, case-insensitive)', $r['code'] === 409, $r);
+$movedEmail = "moved.$RUN@rjit.ac.in";
+$r = http('POST', 'api/admin_user_actions.php', $AD, ['action' => 'change_email', 'target_user_id' => $sid, 'new_email' => $movedEmail]);
+check('users', 'Admin changes a sign-in email', ok($r), $r);
+$re = login($movedEmail, $newPass ?? $pass);
+check('users', 'User signs in with the new email', (bool)$re['token'], $re['r']);
+if ($re['token']) { $S = $re['token']; $stuEmail = $movedEmail; }
+$bulkIds = [];
+foreach ([1, 2, 3] as $n) {
+    $em = "bulk$n.$RUN@example.com";   // alumni sign-ups wait for approval
+    http('POST', 'api/register_alumni.php', null, ['name' => "Bulk $n $RUN", 'email' => $em, 'password' => $pass, 'branch' => 'IT',
+        'joining_year' => 2014, 'mobile_number' => '98765' . rand(10000, 99999)]);
+    $q = http('GET', 'api/admin_users.php?search=' . urlencode($em), $AD);
+    foreach (($q['json']['data'] ?? []) as $u) {
+        if (strcasecmp($u['email'] ?? '', $em) === 0) { $bulkIds[] = (int)($u['user_id'] ?? $u['id']); }
+    }
+}
+$bulkIds = array_values(array_filter($bulkIds));
+$r = http('POST', 'api/admin_user_actions.php', $AD, ['action' => 'bulk', 'bulk_action' => 'approve', 'user_ids' => array_slice($bulkIds, 0, 2)]);
+check('users', 'Bulk approve sign-ups (one query)', count($bulkIds) === 3 && ok($r) && (int)($r['json']['changed'] ?? -1) === 2, $r);
+$r = http('POST', 'api/admin_user_actions.php', $AD, ['action' => 'bulk', 'bulk_action' => 'reject', 'user_ids' => array_slice($bulkIds, 2)]);
+check('users', 'Bulk reject sign-ups', ok($r), $r);
+$r = http('POST', 'api/admin_user_actions.php', $AD, ['action' => 'bulk', 'bulk_action' => 'ban', 'user_ids' => [(int)$admin['id']]]);
+check('users', "Bulk actions never touch admins", ok($r) === false || (int)($r['json']['changed'] ?? 1) === 0, $r);
+$r = http('POST', 'api/admin_user_actions.php', $F, ['action' => 'bulk', 'bulk_action' => 'approve', 'user_ids' => $bulkIds]);
+check('users', "Faculty can't run bulk actions", $r['code'] === 403, $r);
 
 /* --------------------------------------------------------------- clean-up */
 $r = http('POST', 'api/delete_post.php', $A, ['post_id' => $postId]);

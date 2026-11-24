@@ -14,8 +14,7 @@ $auth = new Auth($db);
 $user_id = $auth->validateRequest();
 
 // Blueprint Security: Only Admin can view logs
-$stmt = $db->prepare("SELECT role FROM users WHERE user_id = :uid");
-$stmt->execute(['uid' => $user_id]);
+$stmt = api_role_stmt($db, $user_id);
 if ($stmt->fetchColumn() !== 'admin') {
     http_response_code(403);
     echo json_encode(["message" => "Admin access only."]);

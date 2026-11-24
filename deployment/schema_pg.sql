@@ -184,6 +184,9 @@ CREATE TABLE IF NOT EXISTS posts (
     share_count INT NOT NULL DEFAULT 0,
     repost_count INT NOT NULL DEFAULT 0,
     report_count INT NOT NULL DEFAULT 0,
+    is_restored BOOLEAN NOT NULL DEFAULT FALSE,
+    restored_at TIMESTAMP NULL,
+    restored_by BIGINT NULL,
     publish_at TIMESTAMP NULL,
     created_at TIMESTAMP NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMP NOT NULL DEFAULT NOW()

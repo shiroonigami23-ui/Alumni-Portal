@@ -1,14 +1,14 @@
 {
-    "generated": "2026-11-24T09:54:58+00:00",
+    "generated": "2026-11-24T10:29:27+00:00",
     "endpoints": 98,
     "violations": 0,
     "by_access": {
-        "admin": 9,
+        "admin": 8,
         "member": 73,
         "moderator": 1,
         "public": 12,
         "roles:alumni|faculty|admin": 2,
-        "staff": 1
+        "staff": 2
     },
     "endpoints_detail": {
         "admin_export_users.php": {
@@ -46,8 +46,22 @@
         "admin_user_actions.php": {
             "file": "api/admin_user_actions.php",
             "declared": true,
-            "access": "admin",
-            "actions": [],
+            "access": "staff",
+            "actions": {
+                "ban_user": "admin",
+                "unban_user": "admin",
+                "restrict_posting": "admin",
+                "restrict_messaging": "admin",
+                "shadow_ban": "admin",
+                "lift_posting_restriction": "admin",
+                "lift_messaging_restriction": "admin",
+                "lift_shadow_ban": "admin",
+                "promote_moderator": "admin",
+                "revoke_moderator": "admin",
+                "reset_password": "admin",
+                "change_email": "admin",
+                "bulk": "admin"
+            },
             "retired": false,
             "problems": []
         },
@@ -231,9 +245,7 @@
             "file": "api/events.php",
             "declared": true,
             "access": "member",
-            "actions": {
-                "create": "staff"
-            },
+            "actions": [],
             "retired": false,
             "problems": []
         },

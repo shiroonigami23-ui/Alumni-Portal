@@ -28,8 +28,7 @@ function atlas_clean(string $s, int $max = 80): string
 }
 
 try {
-    $roleStmt = $db->prepare("SELECT role FROM users WHERE user_id = :uid");
-    $roleStmt->execute(['uid' => $viewerId]);
+    $roleStmt = api_role_stmt($db, $viewerId);
     $isAdmin = ((string)$roleStmt->fetchColumn()) === 'admin';
 
     $branch = atlas_clean((string)($_GET['branch'] ?? ''));

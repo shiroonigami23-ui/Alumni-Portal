@@ -22,8 +22,7 @@ $auth = new Auth($db);
 try {
     $admin_id = $auth->validateRequest();
 
-    $check = $db->prepare("SELECT role FROM users WHERE user_id = :uid");
-    $check->execute(['uid' => $admin_id]);
+    $check = api_role_stmt($db, $admin_id);
     if ($check->fetchColumn() !== 'admin') {
         respond(["success" => false, "message" => "Only Admin can generate alumni tokens."], 403);
     }

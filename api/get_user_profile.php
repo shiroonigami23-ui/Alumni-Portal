@@ -77,7 +77,6 @@ if ($user_id <= 0) {
     exit;
 }
 
-$techHelper = new TechStackHelper($db);
 
 try {
     // Get user profile
@@ -95,14 +94,39 @@ try {
                      COALESCE(p.show_email, TRUE) AS show_email, COALESCE(p.show_contact, FALSE) AS show_contact,
                      COALESCE(p.open_to_mentor, FALSE) AS open_to_mentor, COALESCE(p.open_to_refer, FALSE) AS open_to_refer,
                      COALESCE(p.open_to_work, FALSE) AS open_to_work, p.pronouns,
-                     p.roll_number, p.year_of_study
+                     p.roll_number, p.year_of_study,
+                     c.posts_count, c.connections_count, c.followers_count, c.following_count,
+                     (SELECT status FROM connections WHERE requester_user_id = :me AND addressee_user_id = u.user_id LIMIT 1) AS viewer_follow_status,
+                     EXISTS (SELECT 1 FROM blocks b
+                             WHERE (b.blocker_user_id = :me2 AND b.blocked_user_id = u.user_id)
+                                OR (b.blocker_user_id = u.user_id AND b.blocked_user_id = :me3)) AS pair_blocked
               FROM users u
               LEFT JOIN profiles p ON u.user_id = p.user_id
+              -- every counter in the same round trip
+              LEFT JOIN LATERAL (
+                  SELECT
+                      (SELECT COUNT(*) FROM posts WHERE user_id = u.user_id AND status = 'published') AS posts_count,
+                      COUNT(*) AS connections_count,
+                      COUNT(*) FILTER (WHERE cc.addressee_user_id = u.user_id) AS followers_count,
+                      COUNT(*) FILTER (WHERE cc.requester_user_id = u.user_id) AS following_count
+                  FROM connections cc
+                  WHERE cc.status = 'accepted' AND (cc.requester_user_id = u.user_id OR cc.addressee_user_id = u.user_id)
+              ) c ON TRUE
               WHERE u.user_id = :user_id";
     
+    // Profile, counters, follow state and block state: one query (was five).
     $stmt = $db->prepare($query);
-    $stmt->execute(['user_id' => $user_id]);
+    $stmt->execute(['user_id' => $user_id, 'me' => (int)$current_user, 'me2' => (int)$current_user, 'me3' => (int)$current_user]);
     $profile = $stmt->fetch(PDO::FETCH_ASSOC);
+    if ($profile && $current_user && (int)$current_user !== $user_id) {
+        // Seed the shared privacy memos so the checks below don't query again.
+        $pairKey = min((int)$current_user, $user_id) . ':' . max((int)$current_user, $user_id);
+        $GLOBALS['__privacy_blocked'][$pairKey] = filter_var($profile['pair_blocked'], FILTER_VALIDATE_BOOLEAN);
+        $fs = (string)($profile['viewer_follow_status'] ?? '');
+        $GLOBALS['__privacy_follow'][(int)$current_user . ':' . $user_id] = $fs === 'accepted' ? 'following' : ($fs === 'pending' ? 'requested' : 'none');
+        $GLOBALS['__privacy_private'][$user_id] = strtolower((string)$profile['role']) !== 'student'
+            && filter_var($profile['is_private'], FILTER_VALIDATE_BOOLEAN);
+    }
     
     $viewerRole = strtolower((string)$current_user_role);
     $isSelf = $current_user === $user_id;
@@ -117,25 +141,14 @@ try {
         exit;
     }
 
-    // All counters in one round trip (was five separate queries).
-    $cnt = $db->prepare("
-        SELECT
-            (SELECT COUNT(*) FROM posts WHERE user_id = :uid AND status = 'published') AS posts_count,
-            COUNT(*) FILTER (WHERE c.requester_user_id = :uid2 OR c.addressee_user_id = :uid3) AS connections_count,
-            COUNT(*) FILTER (WHERE c.addressee_user_id = :uid4) AS followers_count,
-            COUNT(*) FILTER (WHERE c.requester_user_id = :uid5) AS following_count,
-            COUNT(*) FILTER (WHERE c.requester_user_id = :me AND c.addressee_user_id = :uid6) AS me_following
-        FROM connections c
-        WHERE c.status = 'accepted' AND (c.requester_user_id = :uid7 OR c.addressee_user_id = :uid8)
-    ");
-    $cnt->execute([':uid' => $user_id, ':uid2' => $user_id, ':uid3' => $user_id, ':uid4' => $user_id, ':uid5' => $user_id,
-                   ':uid6' => $user_id, ':uid7' => $user_id, ':uid8' => $user_id, ':me' => (int)$current_user]);
-    $c = $cnt->fetch(PDO::FETCH_ASSOC) ?: [];
+    $c = $profile;
     $profile['posts_count'] = (int)($c['posts_count'] ?? 0);
     $profile['connections_count'] = (int)($c['connections_count'] ?? 0);
     $profile['followers_count'] = (int)($c['followers_count'] ?? 0);
     $profile['following_count'] = (int)($c['following_count'] ?? 0);
-    $profile['is_connected'] = $current_user && (int)$current_user !== (int)$user_id && (int)($c['me_following'] ?? 0) > 0;
+    $profile['is_connected'] = $current_user && (int)$current_user !== (int)$user_id && ($profile['viewer_follow_status'] ?? '') === 'accepted';
+    $pairBlocked = filter_var($profile['pair_blocked'] ?? false, FILTER_VALIDATE_BOOLEAN);
+    unset($profile['viewer_follow_status'], $profile['pair_blocked']);
     
     foreach (['is_private', 'show_email', 'show_contact', 'open_to_mentor', 'open_to_refer', 'open_to_work', 'help_alumni_mates'] as $flag) {
         $profile[$flag] = filter_var($profile[$flag] ?? false, FILTER_VALIDATE_BOOLEAN);
@@ -225,36 +238,33 @@ try {
     $profile['joined_year'] = derive_joined_year($profile['roll_number'] ?? null, $profile['email'] ?? null);
     
     // Get tech stack
-    if(isset($techHelper)) {
-        $profile['tech_skills'] = $techHelper->getUserTechStackArray($user_id);
-        $profile["tech_stack"] = $profile['tech_skills'] ? implode(', ', $profile['tech_skills']) : null;   // same data, no second query
-    } else {
-        $profile["tech_stack"] = '';
-        $profile['tech_skills'] = [];
-    }
-    
-    // Get badges
-    $badge_query = "SELECT badge_type, earned_at FROM badges WHERE user_id = :user_id ORDER BY earned_at DESC";
-    $badge_stmt = $db->prepare($badge_query);
-    $badge_stmt->execute(['user_id' => $user_id]);
-    $profile['badges'] = $badge_stmt->fetchAll(PDO::FETCH_ASSOC);
-    
-    // Get pinned posts
-    $pinned_query = "SELECT p.post_id, p.title, p.post_type, p.content_file_path,
-                            p.thumbnail_url, p.reaction_count, p.comment_count,
-                            p.created_at, p.is_edited
-                     FROM pinned_posts pp
-                     JOIN posts p ON pp.post_id = p.post_id
-                     WHERE pp.user_id = :user_id AND p.status = 'published'
-                     ORDER BY pp.pin_order ASC";
-    $pinned_stmt = $db->prepare($pinned_query);
-    $pinned_stmt->execute(['user_id' => $user_id]);
+    // Skills, badges and pinned posts in one round trip (was three), each as a JSON array.
+    $extra = $db->prepare("
+        SELECT
+            (SELECT COALESCE(json_agg(us.skill_name ORDER BY us.skill_name), '[]'::json)
+               FROM user_tech_stats us WHERE us.user_id = :u1) AS skills,
+            (SELECT COALESCE(json_agg(json_build_object('badge_type', b.badge_type, 'earned_at', b.earned_at::text) ORDER BY b.earned_at DESC), '[]'::json)
+               FROM badges b WHERE b.user_id = :u2) AS badges,
+            (SELECT COALESCE(json_agg(json_build_object(
+                        'post_id', p.post_id, 'title', p.title, 'post_type', p.post_type, 'content_file_path', p.content_file_path,
+                        'thumbnail_url', p.thumbnail_url, 'reaction_count', p.reaction_count, 'comment_count', p.comment_count,
+                        'created_at', p.created_at::text, 'is_edited', p.is_edited) ORDER BY pp.pin_order), '[]'::json)
+               FROM pinned_posts pp JOIN posts p ON pp.post_id = p.post_id
+              WHERE pp.user_id = :u3 AND p.status = 'published') AS pinned
+    ");
+    $extra->execute(['u1' => $user_id, 'u2' => $user_id, 'u3' => $user_id]);
+    $ex = $extra->fetch(PDO::FETCH_ASSOC) ?: [];
+    $profile['tech_skills'] = json_decode((string)($ex['skills'] ?? '[]'), true) ?: [];
+    $profile['tech_stack'] = $profile['tech_skills'] ? implode(', ', $profile['tech_skills']) : null;
+    $profile['badges'] = json_decode((string)($ex['badges'] ?? '[]'), true) ?: [];
+    $pinned = json_decode((string)($ex['pinned'] ?? '[]'), true) ?: [];
+    prefetch_content_payloads($db, array_column($pinned, 'content_file_path'));
     $profile['pinned_posts'] = array_map(function (array $post) use ($db) {
         $payload = load_content_payload($db, (string)($post['content_file_path'] ?? ''));
         $post['content'] = $payload['content'];
         $post['attachments'] = $payload['attachments'];
         return $post;
-    }, $pinned_stmt->fetchAll(PDO::FETCH_ASSOC));
+    }, $pinned);
     
     // Contact details: owner decides; self and admins always see them.
     if (!$isSelf && !$isAdmin) {
@@ -316,20 +326,8 @@ try {
         $profile['recent_viewers'] = $viewers;
     }
     
-    // Check if current user has blocked this user or vice versa
-    if ($current_user) {
-        $block_query = "SELECT 1 FROM blocks 
-                       WHERE (blocker_user_id = :current_user AND blocked_user_id = :user_id)
-                          OR (blocker_user_id = :user_id AND blocked_user_id = :current_user)";
-        $block_stmt = $db->prepare($block_query);
-        $block_stmt->execute([
-            'current_user' => $current_user,
-            'user_id' => $user_id
-        ]);
-        $profile['is_blocked'] = $block_stmt->fetch() ? true : false;
-    } else {
-        $profile['is_blocked'] = false;
-    }
+    // Blocked either way (already known from the profile query)
+    $profile['is_blocked'] = $current_user ? $pairBlocked : false;
     
     $profile['redirected_from'] = $redirectedFrom;
     echo json_encode([

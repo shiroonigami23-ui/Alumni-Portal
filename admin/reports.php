@@ -70,13 +70,19 @@ if (session_status() === PHP_SESSION_NONE) {
                     <td class="py-3 px-3">
                         <div class="font-medium text-gray-900">${escapeHtml(r.post_title || 'Untitled')}</div>
                         <div class="text-xs text-gray-500">Post ID: ${Number(r.post_id || 0)} • ${Number(r.report_count || 0)} reports</div>
+                        ${['shadow_banned', 'hidden'].includes(r.post_status) ? '<span class="inline-block mt-1 text-xs font-semibold px-2 py-0.5 rounded-full bg-red-100 text-red-700">Hidden by reports</span>' : ''}
+                        ${r.post_restored ? '<span class="inline-block mt-1 text-xs font-semibold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700">Restored · can\'t be auto-hidden</span>' : ''}
                     </td>
                     <td class="py-3 px-3 text-sm">
                         <div class="font-medium text-gray-900">${escapeHtml(r.author_email || 'Unknown')}</div>
                         <div class="text-xs text-gray-500">${escapeHtml(r.author_role || 'member')}</div>
                     </td>
                     <td class="py-3 px-3 text-sm">${escapeHtml(r.reason || r.custom_reason || 'N/A')}</td>
-                    <td class="py-3 px-3 text-sm">${escapeHtml(r.reporter_email || 'Unknown')}</td>
+                    <td class="py-3 px-3 text-sm">
+                        <div>${escapeHtml(r.reporter_email || 'Unknown')}</div>
+                        ${Number(r.reporter_warnings) || Number(r.reporter_strikes) || Number(r.reporter_rejected_reports)
+                            ? `<div class="text-xs text-amber-700">${Number(r.reporter_warnings)}/3 warnings · ${Number(r.reporter_strikes)} strikes · ${Number(r.reporter_rejected_reports)} rejected reports</div>` : ''}
+                    </td>
                     <td class="py-3 px-3 text-sm">${badge((r.status || 'pending'), statusClass(r.status || 'pending'))}</td>
                     <td class="py-3 px-3 text-sm">${fmt(r.created_at)}</td>
                     <td class="py-3 px-3">
@@ -87,7 +93,10 @@ if (session_status() === PHP_SESSION_NONE) {
                             <button class="px-2 py-1 bg-red-600 text-white rounded hover:bg-red-700 text-sm" onclick="deleteReportedPost(${Number(r.post_id || 0)}, ${Number(r.report_id || 0)})">Delete Post</button>
                             <button class="px-2 py-1 bg-amber-600 text-white rounded hover:bg-amber-700 text-sm" onclick="banReportedAuthor(${Number(r.author_id || 0)}, ${Number(r.report_id || 0)})">Ban Author</button>
                             <button class="px-2 py-1 bg-gray-800 text-white rounded hover:bg-gray-900 text-sm" onclick="shadowBanAuthor(${Number(r.author_id || 0)}, ${Number(r.report_id || 0)})">Shadow 7d</button>
+                            ${['shadow_banned', 'hidden'].includes(r.post_status) ? `<button class="px-2 py-1 bg-emerald-600 text-white rounded hover:bg-emerald-700 text-sm" onclick="restorePost(${Number(r.post_id || 0)})">Restore post</button>` : ''}
                             <button class="px-2 py-1 border rounded hover:bg-gray-100 text-sm" onclick="dismissReport(${Number(r.report_id || 0)})">Dismiss</button>
+                            ${['pending', 'reviewed'].includes(r.status || 'pending') && !['admin', 'faculty'].includes(r.reporter_role)
+                                ? `<button class="px-2 py-1 border border-amber-400 text-amber-800 rounded hover:bg-amber-50 text-sm" onclick="penalizeReporter(${Number(r.report_id || 0)})" title="The report was false or malicious">False report</button>` : ''}
                         </div>
                     </td>
                 </tr>
@@ -154,6 +163,32 @@ if (session_status() === PHP_SESSION_NONE) {
                 return;
             }
             await makeApiCall('admin_report_action.php', 'POST', { action: 'resolve', report_id: reportId });
+            await loadReportsPage();
+        }
+
+        async function restorePost(postId) {
+            if (!await window.appConfirm(`Restore post #${postId}? It goes back on the feed, its open reports are dismissed, and reports can't hide it automatically again (you can still delete it by hand).`, {
+                title: 'Restore post', confirmText: 'Restore'
+            })) return;
+            const res = await makeApiCall('admin_report_action.php', 'POST', { action: 'restore_post', post_id: postId });
+            if (!res || res.success === false) {
+                await window.appAlert((res && res.message) || 'Could not restore the post.', { title: 'Restore failed', icon: 'triangle-alert', iconTone: 'danger' });
+                return;
+            }
+            window.toast?.(res.message);
+            await loadReportsPage();
+        }
+
+        async function penalizeReporter(reportId) {
+            if (!await window.appConfirm('Mark this report as false? The report is rejected and the reporter gets a warning. Three warnings = a strike and posting/messaging paused for 24 h × strikes. They are notified.', {
+                title: 'False report', confirmText: 'Warn reporter'
+            })) return;
+            const res = await makeApiCall('admin_report_action.php', 'POST', { action: 'penalize_reporter', report_id: reportId });
+            if (!res || res.success === false) {
+                await window.appAlert((res && res.message) || 'Could not penalise the reporter.', { title: 'False report', icon: 'triangle-alert', iconTone: 'danger' });
+                return;
+            }
+            window.toast?.(res.message);
             await loadReportsPage();
         }
 

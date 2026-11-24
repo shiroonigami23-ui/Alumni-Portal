@@ -15,14 +15,17 @@
                 <!-- Filter Tabs -->
                 <div class="mb-6 border-b border-gray-200">
                     <nav class="-mb-px flex space-x-8">
-                        <button onclick="filterEvents('upcoming')" class="event-filter-tab border-b-2 border-blue-500 py-4 px-1 text-sm font-medium text-blue-600">
+                        <button data-filter="upcoming" onclick="filterEvents('upcoming', this)" class="event-filter-tab border-b-2 border-blue-500 py-4 px-1 text-sm font-medium text-blue-600">
                             Upcoming Events
                         </button>
-                        <button onclick="filterEvents('my-events')" class="event-filter-tab border-b-2 border-transparent py-4 px-1 text-sm font-medium text-gray-500 hover:text-gray-700 hover:border-gray-300">
+                        <button data-filter="my-events" onclick="filterEvents('my-events', this)" class="event-filter-tab border-b-2 border-transparent py-4 px-1 text-sm font-medium text-gray-500 hover:text-gray-700 hover:border-gray-300">
                             My Events
                         </button>
-                        <button onclick="filterEvents('past')" class="event-filter-tab border-b-2 border-transparent py-4 px-1 text-sm font-medium text-gray-500 hover:text-gray-700 hover:border-gray-300">
+                        <button data-filter="past" onclick="filterEvents('past', this)" class="event-filter-tab border-b-2 border-transparent py-4 px-1 text-sm font-medium text-gray-500 hover:text-gray-700 hover:border-gray-300">
                             Past Events
+                        </button>
+                        <button id="pendingEventsTab" data-filter="pending" onclick="filterEvents('pending', this)" class="event-filter-tab hidden border-b-2 border-transparent py-4 px-1 text-sm font-medium text-gray-500 hover:text-gray-700 hover:border-gray-300">
+                            Pending approval <span id="pendingEventsCount" class="ml-1 hidden text-xs font-semibold px-1.5 py-0.5 rounded-full bg-amber-100 text-amber-800"></span>
                         </button>
                     </nav>
                 </div>
@@ -31,8 +34,9 @@
                 <div id="createEventSection" class="hidden mb-6">
                     <button onclick="showCreateEventModal()" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 flex items-center">
                         <i data-lucide="plus" class="h-5 w-5 mr-2"></i>
-                        Create Event
+                        <span id="createEventLabel">Create Event</span>
                     </button>
+                    <p id="proposeEventHint" class="hidden mt-2 text-sm text-gray-500">Alumni events are reviewed by a faculty member or admin before they go live.</p>
                 </div>
 
                 <!-- Events Grid -->
@@ -99,18 +103,25 @@
 <script>
     let currentFilter = 'upcoming';
 
-    document.addEventListener('DOMContentLoaded', function() {
-        // Check if user can create events
-        const userData = localStorage.getItem('user_data');
-        if (userData) {
-            const user = JSON.parse(userData);
+    document.addEventListener('DOMContentLoaded', async function() {
+        loadEvents('upcoming');   // start the list right away; role-specific controls follow
+        // What this user may do here comes from the live session (the server enforces it too)
+        const user = await (window.portalUser || Promise.resolve(null));
+        if (user) {
             const createEventSection = document.getElementById('createEventSection');
-            if ((user.role === 'admin' || user.role === 'faculty') && createEventSection) {
+            const isStaff = user.role === 'admin' || user.role === 'faculty';
+            if ((isStaff || user.role === 'alumni') && createEventSection) {
                 createEventSection.classList.remove('hidden');
             }
+            if (user.role === 'alumni') {
+                document.getElementById('createEventLabel').textContent = 'Propose an event';
+                document.getElementById('proposeEventHint').classList.remove('hidden');
+            }
+            if (isStaff) {
+                document.getElementById('pendingEventsTab').classList.remove('hidden');
+                refreshPendingCount();
+            }
         }
-
-        loadEvents('upcoming');
         lucide.createIcons();
     });
 
@@ -120,8 +131,11 @@
         grid.innerHTML = '<div class="col-span-full text-center py-12"><i data-lucide="loader" class="h-12 w-12 mx-auto text-gray-400 animate-spin"></i></div>';
         lucide.createIcons();
 
+        if (filter === 'pending' || filter === 'my-events') {
+            return loadEventQueue(filter);
+        }
         try {
-            const response = await makeApiCall(`events.php?action=list&filter=${filter}`);
+            const response = await makeApiCall(`events.php?action=list&filter=${encodeURIComponent(filter)}`);
 
             if (response && response.length > 0) {
                 grid.innerHTML = response.map(event => `
@@ -137,7 +151,7 @@
                         <div class="flex items-center justify-between">
                             <div class="flex items-center text-sm text-gray-500">
                                 <i data-lucide="map-pin" class="h-4 w-4 mr-1"></i>
-                                ${event.location || 'TBD'}
+                                ${escapeHtml(event.location || 'TBD')}
                             </div>
                             <button onclick="rsvpEvent(${escapeHtml(event.event_id)})" class="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-blue-700">
                                 RSVP
@@ -157,6 +171,74 @@
             console.error('Error loading events:', error);
             grid.innerHTML = '<div class="col-span-full text-center py-12 text-red-500">Error loading events</div>';
         }
+    }
+
+    const EVENT_STATUS = {
+        approved: ['Live', 'bg-emerald-100 text-emerald-800'],
+        pending_approval: ['Awaiting approval', 'bg-amber-100 text-amber-800'],
+        rejected: ['Not approved', 'bg-red-100 text-red-700'],
+        cancelled: ['Cancelled', 'bg-gray-100 text-gray-600'],
+        completed: ['Finished', 'bg-gray-100 text-gray-600'],
+        live: ['Happening now', 'bg-blue-100 text-blue-800'],
+    };
+
+    // "My events" (any status) and the staff "Pending approval" queue.
+    async function loadEventQueue(kind) {
+        const grid = document.getElementById('eventsGrid');
+        const res = await makeApiCall(`events.php?action=${kind === 'pending' ? 'pending' : 'mine'}`);
+        const rows = (res && Array.isArray(res.data)) ? res.data : [];
+        if (kind === 'pending') updatePendingBadge(rows.length);
+        if (!rows.length) {
+            grid.innerHTML = `<div class="col-span-full text-center py-12"><i data-lucide="${kind === 'pending' ? 'check-circle' : 'calendar-off'}" class="h-12 w-12 mx-auto text-gray-400"></i>
+                <p class="mt-4 text-gray-500">${kind === 'pending' ? 'Nothing waiting for approval.' : 'You haven\'t created any events yet.'}</p></div>`;
+            lucide.createIcons();
+            return;
+        }
+        grid.innerHTML = rows.map((ev) => {
+            const [label, tone] = EVENT_STATUS[ev.status] || [ev.status, 'bg-gray-100 text-gray-600'];
+            const when = window.portalTime ? window.portalTime.format(ev.start_datetime, 'datetime') : window.formatDate(ev.start_datetime);
+            return `
+            <div data-event-card="${Number(ev.event_id)}" class="bg-white rounded-lg shadow-sm border border-gray-200 p-6 flex flex-col">
+                <div class="flex items-start justify-between gap-2">
+                    <h3 class="text-lg font-semibold text-gray-900">${escapeHtml(ev.title)}</h3>
+                    <span class="shrink-0 text-xs font-semibold px-2 py-0.5 rounded-full ${tone}">${escapeHtml(label)}</span>
+                </div>
+                <p class="text-sm text-gray-500 mt-1">${escapeHtml(when)} · ${escapeHtml(ev.location_address || 'TBD')}</p>
+                ${kind === 'pending' ? `<p class="text-sm text-gray-600 mt-1">Proposed by <a class="text-blue-600 hover:underline" href="profile.php?id=${Number(ev.creator_user_id)}">${escapeHtml(ev.creator_name)}</a> (${escapeHtml(ev.creator_role)})</p>` : ''}
+                <p class="text-gray-600 text-sm mt-3 line-clamp-3">${escapeHtml(ev.description || '')}</p>
+                ${kind === 'pending' ? `
+                <div class="mt-4 flex gap-2">
+                    <button class="px-3 py-2 rounded-lg bg-emerald-600 text-white text-sm hover:bg-emerald-700" onclick="reviewEvent(${Number(ev.event_id)}, 'approve')">Approve</button>
+                    <button class="px-3 py-2 rounded-lg border border-gray-300 text-gray-700 text-sm hover:bg-gray-50" onclick="reviewEvent(${Number(ev.event_id)}, 'reject')">Decline</button>
+                </div>` : ''}
+            </div>`;
+        }).join('');
+        lucide.createIcons();
+    }
+
+    async function reviewEvent(eventId, decision) {
+        let reason = '';
+        if (decision === 'reject') {
+            const r = await window.appPrompt?.('Tell the organiser why (optional).', { title: 'Decline event', confirmText: 'Decline', inputLabel: 'Reason' });
+            if (r === null) return;
+            reason = String(r || '');
+        } else if (!await window.appConfirm('Approve this event? It goes live for everyone and the organiser is notified.', { title: 'Approve event', confirmText: 'Approve' })) {
+            return;
+        }
+        const res = await makeApiCall(`events.php?action=${decision}`, 'POST', { event_id: eventId, reason });
+        window.toast?.((res && res.message) || 'Done', res && res.success === false ? 'error' : 'success');
+        loadEventQueue('pending');
+    }
+
+    function updatePendingBadge(n) {
+        const b = document.getElementById('pendingEventsCount');
+        if (!b) return;
+        b.textContent = n;
+        b.classList.toggle('hidden', !n);
+    }
+    async function refreshPendingCount() {
+        const res = await makeApiCall('events.php?action=pending');
+        updatePendingBadge((res && Array.isArray(res.data)) ? res.data.length : 0);
     }
 
     function filterEvents(filter, trigger = null) {
@@ -227,9 +309,13 @@
         try {
             const response = await makeApiCall('events.php?action=create', 'POST', formData);
 
+            if (response && response.success === false) {
+                await window.appAlert(response.message || 'Could not create the event.', { title: 'Event not created', icon: 'triangle-alert', iconTone: 'danger' });
+                return;
+            }
             if (response && response.message) {
                 await window.appAlert(response.message, {
-                    title: 'Event created',
+                    title: response.status === 'pending_approval' ? 'Sent for approval' : 'Event created',
                     icon: 'calendar-plus',
                     iconTone: 'success'
                 });

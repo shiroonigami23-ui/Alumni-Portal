@@ -49,9 +49,19 @@ if (session_status() === PHP_SESSION_NONE) {
                         <option value="pending">Pending</option>
                         <option value="rejected">Rejected</option>
                         <option value="suspended">Suspended</option>
+                        <option value="banned">Banned</option>
                     </select>
                     <button onclick="loadUsers(1)" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">Apply Filters</button>
                 </div>
+            </div>
+
+            <div id="bulkBar" class="hidden sticky top-2 z-20 mb-3 rounded-xl border border-blue-200 bg-blue-50 px-4 py-3 flex flex-wrap items-center gap-2 shadow-sm">
+                <span class="text-sm font-semibold text-blue-900"><span id="bulkCount">0</span> selected</span>
+                <button class="px-3 py-1.5 rounded-lg bg-green-600 text-white text-sm hover:bg-green-700" onclick="bulkAction('approve')">Approve sign-ups</button>
+                <button class="px-3 py-1.5 rounded-lg bg-gray-700 text-white text-sm hover:bg-gray-800" onclick="bulkAction('reject')">Reject sign-ups</button>
+                <button class="px-3 py-1.5 rounded-lg bg-red-600 text-white text-sm hover:bg-red-700" onclick="bulkAction('ban')">Ban</button>
+                <button class="px-3 py-1.5 rounded-lg border border-gray-300 bg-white text-sm hover:bg-gray-50" onclick="bulkAction('unban')">Unban / unsuspend</button>
+                <button class="ml-auto text-sm text-blue-800 hover:underline" onclick="clearBulk()">Clear</button>
             </div>
 
             <div class="bg-white rounded-xl shadow-sm p-4">
@@ -59,6 +69,7 @@ if (session_status() === PHP_SESSION_NONE) {
                     <table class="w-full">
                         <thead>
                             <tr class="border-b">
+                                <th class="py-3 px-3 w-8"><input type="checkbox" id="bulkAll" title="Select all on this page" aria-label="Select all on this page"></th>
                                 <th class="text-left py-3 px-3 text-sm">User</th>
                                 <th class="text-left py-3 px-3 text-sm">Role</th>
                                 <th class="text-left py-3 px-3 text-sm">Status</th>
@@ -68,7 +79,7 @@ if (session_status() === PHP_SESSION_NONE) {
                             </tr>
                         </thead>
                         <tbody id="usersTable">
-                            <tr><td colspan="6" class="py-8 text-center text-gray-500">Loading users...</td></tr>
+                            <tr><td colspan="7" class="py-8 text-center text-gray-500">Loading users...</td></tr>
                         </tbody>
                     </table>
                 </div>
@@ -111,7 +122,7 @@ if (session_status() === PHP_SESSION_NONE) {
             const res = await makeApiCall(`admin_users.php?${params.toString()}`);
             const tbody = document.getElementById('usersTable');
             if (!res || !res.success) {
-                tbody.innerHTML = '<tr><td colspan="6" class="py-8 text-center text-red-600">Failed to load users</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="7" class="py-8 text-center text-red-600">Failed to load users</td></tr>';
                 return;
             }
 
@@ -119,10 +130,11 @@ if (session_status() === PHP_SESSION_NONE) {
             total = res.total || 0;
             const rows = res.data || [];
             if (!rows.length) {
-                tbody.innerHTML = '<tr><td colspan="6" class="py-8 text-center text-gray-500">No users found</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="7" class="py-8 text-center text-gray-500">No users found</td></tr>';
             } else {
                 tbody.innerHTML = rows.map(user => `
                     <tr class="border-b hover:bg-gray-50">
+                        <td class="py-3 px-3">${user.role !== 'admin' ? `<input type="checkbox" class="bulk-check" value="${Number(user.id)}" aria-label="Select ${escapeHtml(user.name)}">` : ''}</td>
                         <td class="py-3 px-3">
                             <div class="font-medium">${escapeHtml(user.name)}</div>
                             <div class="text-xs text-gray-500">${escapeHtml(user.email)}</div>
@@ -147,6 +159,9 @@ if (session_status() === PHP_SESSION_NONE) {
                                 ${!user.is_banned && !user.shadow_banned && user.messaging_restricted ? `<button class="px-2 py-1 border rounded hover:bg-gray-100" onclick="adminUserAction(${escapeHtml(user.id)}, 'lift_messaging_restriction')">Unmute DM</button>` : ''}
                                 ${user.role !== 'admin' && !user.is_moderator ? `<button class="px-2 py-1 bg-indigo-600 text-white rounded hover:bg-indigo-700" onclick="adminUserAction(${escapeHtml(user.id)}, 'promote_moderator')">Make Moderator</button>` : ''}
                                 ${user.role !== 'admin' && user.is_moderator ? `<button class="px-2 py-1 border rounded hover:bg-gray-100" onclick="adminUserAction(${escapeHtml(user.id)}, 'revoke_moderator')">Remove Moderator</button>` : ''}
+                                ${user.role !== 'admin' && user.status !== 'suspended' && !user.is_banned ? `<button class="px-2 py-1 bg-orange-600 text-white rounded hover:bg-orange-700" onclick="suspendUser(${Number(user.id)})">Suspend…</button>` : ''}
+                                ${user.status === 'suspended' ? `<button class="px-2 py-1 border rounded hover:bg-gray-100" onclick="adminUserAction(${Number(user.id)}, 'unsuspend')">Unsuspend</button>` : ''}
+                                ${user.role !== 'admin' ? `<button class="px-2 py-1 border rounded hover:bg-gray-100" data-email="${escapeHtml(user.email)}" onclick="changeEmail(${Number(user.id)}, this.dataset.email)">Change email…</button>` : ''}
                                 <button class="px-2 py-1 bg-blue-600 text-white rounded hover:bg-blue-700" onclick="resetUserPassword(${escapeHtml(user.id)}, '${escapeHtml(escapeJs(user.email))}')">Reset Password</button>
                             </div>
                         </td>
@@ -159,6 +174,60 @@ if (session_status() === PHP_SESSION_NONE) {
             document.getElementById('tableMeta').textContent = `Showing ${start}-${end} of ${total}`;
             document.getElementById('prevBtn').disabled = currentPage <= 1;
             document.getElementById('nextBtn').disabled = end >= total;
+        }
+
+        // ---- bulk selection
+        function selectedIds() { return [...document.querySelectorAll('.bulk-check:checked')].map(c => Number(c.value)); }
+        function syncBulkBar() {
+            const n = selectedIds().length;
+            document.getElementById('bulkCount').textContent = n;
+            document.getElementById('bulkBar').classList.toggle('hidden', n === 0);
+        }
+        function clearBulk() {
+            document.querySelectorAll('.bulk-check, #bulkAll').forEach(c => { c.checked = false; });
+            syncBulkBar();
+        }
+        document.addEventListener('change', (e) => {
+            if (e.target.id === 'bulkAll') document.querySelectorAll('.bulk-check').forEach(c => { c.checked = e.target.checked; });
+            if (e.target.id === 'bulkAll' || e.target.classList.contains('bulk-check')) syncBulkBar();
+        });
+        async function bulkAction(kind) {
+            const ids = selectedIds();
+            const words = { approve: 'approve the pending sign-ups among', reject: 'reject the pending sign-ups among', ban: 'ban', unban: 'unban / unsuspend' };
+            if (!ids.length || !await window.appConfirm(`Really ${words[kind]} ${ids.length} selected account${ids.length === 1 ? '' : 's'}? Accounts already in that state are skipped.`, {
+                title: 'Bulk action', confirmText: 'Apply', iconTone: kind === 'ban' ? 'danger' : 'info'
+            })) return;
+            const res = await makeApiCall('admin_user_actions.php', 'POST', { action: 'bulk', bulk_action: kind, user_ids: ids });
+            window.toast?.((res && res.message) || 'Done', res && res.success === false ? 'error' : 'success');
+            clearBulk();
+            loadUsers(currentPage);
+        }
+
+        async function suspendUser(userId) {
+            const days = await window.appPrompt?.('Suspend for how many days? (1–30). They are signed out and can\'t sign in until it ends; it lifts by itself.', {
+                title: 'Suspend account', confirmText: 'Suspend', inputLabel: 'Days', defaultValue: '3'
+            });
+            if (days === null || days === undefined) return;
+            const n = Math.max(1, Math.min(30, parseInt(days, 10) || 3));
+            const reason = await window.appPrompt?.('Reason (shown to them, optional).', { title: 'Suspend account', confirmText: 'Suspend', inputLabel: 'Reason' });
+            if (reason === null) return;
+            const res = await makeApiCall('admin_user_actions.php', 'POST', { action: 'suspend', target_user_id: userId, days: n, reason: String(reason || '') });
+            window.toast?.((res && res.message) || 'Done', res && res.success === false ? 'error' : 'success');
+            loadUsers(currentPage);
+        }
+
+        async function changeEmail(userId, currentEmail) {
+            const next = await window.appPrompt?.(`New sign-in email for this account (now ${currentEmail}). Their old password still works; old reset links stop working.`, {
+                title: 'Change sign-in email', confirmText: 'Change email', inputLabel: 'New email', defaultValue: ''
+            });
+            if (!next) return;
+            const res = await makeApiCall('admin_user_actions.php', 'POST', { action: 'change_email', target_user_id: userId, new_email: String(next).trim() });
+            if (res && res.success === false) {
+                await window.appAlert(res.message || 'Could not change the email.', { title: 'Change email', icon: 'triangle-alert', iconTone: 'danger' });
+                return;
+            }
+            window.toast?.(res.message);
+            loadUsers(currentPage);
         }
 
         async function updateUser(userId, action) {

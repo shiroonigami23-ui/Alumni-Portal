@@ -250,6 +250,57 @@ async def interactions(b, results):
     rec('No JavaScript errors in privacy / handle flows', not aerrs and not serrs, '; '.join((aerrs + serrs)[:2]))
     await actx.close(); await sctx.close()
 
+    # ---- event proposals: alumnus proposes, admin approves from the Pending tab
+    actx = await b.new_context(viewport={'width': 1440, 'height': 900}); await actx.route('**/*', route)
+    await login(actx, *ACCOUNTS['alumni'])
+    ap = await actx.new_page(); errs = []
+    ap.on('pageerror', lambda e: errs.append(str(e)))
+    await ap.goto(BASE + 'events.php', wait_until='networkidle'); await ap.wait_for_timeout(800)
+    rec('Alumni see "Propose an event"', await ap.is_visible('#createEventSection') and 'Propose' in (await ap.inner_text('#createEventLabel')))
+    await ap.click('#createEventSection button')
+    title = f'UI proposal {stamp}'
+    day = time.strftime('%Y-%m-%d', time.localtime(time.time() + 12 * 86400))
+    await ap.fill('#eventTitle', title); await ap.fill('#eventDescription', 'Mock interviews')
+    await ap.fill('#eventDate', day); await ap.fill('#eventTime', '17:30'); await ap.fill('#eventLocation', 'Seminar hall')
+    await ap.click('#createEventForm button[type="submit"]'); await ap.wait_for_timeout(1200)
+    sent = await ap.is_visible('#portalDialogConfirmBtn') and 'approval' in (await ap.inner_text('body')).lower()
+    if await ap.is_visible('#portalDialogConfirmBtn'):
+        await ap.click('#portalDialogConfirmBtn'); await ap.wait_for_timeout(300)
+    rec('Proposal is "sent for approval"', sent)
+    await ap.click('.event-filter-tab[data-filter="my-events"]'); await ap.wait_for_timeout(1000)
+    card = await ap.query_selector(f'[data-event-card]:has-text("{title}")')
+    rec('My events shows it as "Awaiting approval"', card is not None and 'Awaiting approval' in (await card.inner_text()))
+    rec('Alumni have no Pending approval tab', not await ap.is_visible('#pendingEventsTab'))
+    dctx = await b.new_context(viewport={'width': 1440, 'height': 900}); await dctx.route('**/*', route)
+    await login(dctx, *ACCOUNTS['admin'])
+    dp = await dctx.new_page()
+    dp.on('pageerror', lambda e: errs.append(str(e)))
+    await dp.goto(BASE + 'events.php', wait_until='networkidle'); await dp.wait_for_timeout(1000)
+    rec('Staff see the Pending approval tab with a count', await dp.is_visible('#pendingEventsTab') and (await dp.inner_text('#pendingEventsCount')).strip() not in ('', '0'))
+    await dp.click('#pendingEventsTab'); await dp.wait_for_timeout(1000)
+    card = await dp.query_selector(f'[data-event-card]:has-text("{title}")')
+    if card:
+        await (await card.query_selector('button:has-text("Approve")')).click(); await dp.wait_for_timeout(400)
+        await dp.click('#portalDialogConfirmBtn'); await dp.wait_for_timeout(1200)
+    gone = await dp.query_selector(f'[data-event-card]:has-text("{title}")') is None
+    rec('Admin approves it from the queue', card is not None and gone)
+    await ap.click('.event-filter-tab[data-filter="upcoming"]'); await ap.wait_for_timeout(1000)
+    rec('Approved event appears in Upcoming', await ap.query_selector(f'[data-event-card]:has-text("{title}")') is not None)
+
+    # ---- admin → users: suspend / change email / bulk bar
+    await dp.goto(BASE + 'admin/users.php', wait_until='networkidle'); await dp.wait_for_timeout(1200)
+    rec('Users table offers Suspend… and Change email…', await dp.query_selector('button:has-text("Suspend…")') is not None and await dp.query_selector('button:has-text("Change email…")') is not None)
+    boxes = await dp.query_selector_all('.bulk-check')
+    if len(boxes) >= 2:
+        await boxes[0].check(); await boxes[1].check(); await dp.wait_for_timeout(200)
+    rec('Selecting rows shows the bulk bar', await dp.is_visible('#bulkBar') and (await dp.inner_text('#bulkCount')).strip() == '2')
+    await dp.click('#bulkBar button:has-text("Clear")'); await dp.wait_for_timeout(200)
+    rec('Admins have no selection checkbox', 'admin@rjit.ac.in' not in ' '.join([await (await bx.evaluate_handle('e => e.closest("tr")')).inner_text() for bx in await dp.query_selector_all('.bulk-check')]))
+    await dp.goto(BASE + 'admin/reports.php', wait_until='networkidle'); await dp.wait_for_timeout(1200)
+    rec('Reports page shows reporter history', 'warning' in (await dp.inner_text('body')).lower() or 'no reports' in (await dp.inner_text('body')).lower())
+    rec('No JavaScript errors in events / admin flows', not errs, '; '.join(errs[:2]))
+    await actx.close(); await dctx.close()
+
 async def main():
     results = []
     async with async_playwright() as p:

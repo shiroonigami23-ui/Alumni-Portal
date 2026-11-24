@@ -25,8 +25,7 @@ if (empty($data->post_id)) {
 }
 
 // 1. Get Requester Role (The Moderator)
-$mod_stmt = $db->prepare("SELECT role FROM users WHERE user_id = :id");
-$mod_stmt->execute(['id' => $user_id]);
+$mod_stmt = api_role_stmt($db, $user_id);
 $mod = $mod_stmt->fetch(PDO::FETCH_ASSOC);
 
 // 2. Get Post Owner Role

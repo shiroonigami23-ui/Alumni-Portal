@@ -17,8 +17,7 @@ include_once __DIR__ . '/_content_store.php';
 $db = (new Database())->getConnection();
 $auth = new Auth($db);
 $userId = (int)$auth->validateRequest();
-$r = $db->prepare("SELECT role FROM users WHERE user_id = :u");
-$r->execute(['u' => $userId]);
+$r = api_role_stmt($db, $userId);
 $role = (string)$r->fetchColumn();
 $isAdmin = $role === 'admin';
 $data = json_decode((string)file_get_contents('php://input'), true) ?: [];
@@ -46,7 +45,9 @@ try {
                                WHERE $where ORDER BY s.display_order DESC, s.updated_at DESC LIMIT 60");
             $s->execute($params);
             $rows = [];
-            foreach ($s->fetchAll(PDO::FETCH_ASSOC) as $row) {
+            $all = $s->fetchAll(PDO::FETCH_ASSOC);
+            prefetch_content_payloads($db, array_column($all, 'story_content_file_path'));   // one query for every story's text
+            foreach ($all as $row) {
                 $path = (string)$row['story_content_file_path'];
                 if (extract_content_token($path)) {
                     $content = (string)(load_content_payload($db, $path)['content'] ?? '');

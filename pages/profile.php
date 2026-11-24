@@ -694,6 +694,11 @@ include 'includes/sidebar.php';
                             class="px-3 py-2 border border-gray-300 text-gray-600 rounded-lg hover:bg-gray-50 hover:text-red-600 font-medium">
                         <i data-lucide="ban" class="h-4 w-4 inline"></i><span class="sr-only">${data.is_blocked ? 'Unblock' : 'Block'}</span>
                     </button>` : ''}
+                    ${['admin', 'faculty'].includes(currentUserRole) && ['student', 'alumni'].includes(String(data.role || '').toLowerCase()) ? `
+                    <button onclick="staffSuspend(${Number(data.id)})" title="Suspend account (staff)"
+                            class="px-3 py-2 border border-orange-300 text-orange-700 rounded-lg hover:bg-orange-50 font-medium">
+                        <i data-lucide="timer-off" class="h-4 w-4 inline mr-1"></i>Suspend…
+                    </button>` : ''}
                     ${canReportUser ? `
                     <button onclick="reportUser(${Number(data.id)})"
                             class="px-4 py-2 border border-amber-300 text-amber-700 rounded-lg hover:bg-amber-50 font-medium">
@@ -1651,6 +1656,19 @@ include 'includes/sidebar.php';
                 try { await navigator.clipboard.writeText(url); window.toast ? window.toast('Profile link copied') : null; }
                 catch (e) { window.prompt('Copy this link', url); }
             });
+        }
+
+        async function staffSuspend(userId) {
+            const days = await window.appPrompt?.('Suspend for how many days? (1–30). They are signed out and can\'t sign in until it ends; it lifts by itself.', {
+                title: 'Suspend account', confirmText: 'Continue', inputLabel: 'Days', defaultValue: '3'
+            });
+            if (days === null || days === undefined) return;
+            const reason = await window.appPrompt?.('Reason (they will see it).', { title: 'Suspend account', confirmText: 'Suspend', inputLabel: 'Reason' });
+            if (reason === null) return;
+            const n = Math.max(1, Math.min(30, parseInt(days, 10) || 3));
+            const r = await makeApiCall('admin_user_actions.php', 'POST', { action: 'suspend', target_user_id: userId, days: n, reason: String(reason || '') });
+            if (r && r.success) { window.toast?.(r.message); }
+            else { await window.appAlert((r && r.message) || 'Could not suspend.', { title: 'Suspend', icon: 'triangle-alert', iconTone: 'danger' }); }
         }
 
         async function toggleBlock(userId, isBlocked) {

@@ -1,4 +1,5 @@
 <?php
+require_once __DIR__ . '/_roles.php';
 /**
  * One place for "who may see what".
  *
@@ -69,8 +70,7 @@ if (!function_exists('privacy_ensure_schema')) {
         if ($uid <= 0) {
             return '';
         }
-        $s = $db->prepare("SELECT role FROM users WHERE user_id = :u");
-        $s->execute([':u' => $uid]);
+        $s = api_role_stmt($db, $uid);
         return strtolower((string)($s->fetchColumn() ?: ''));
     }
 
@@ -79,14 +79,13 @@ if (!function_exists('privacy_ensure_schema')) {
         if ($a <= 0 || $b <= 0 || $a === $b) {
             return false;
         }
-        static $memo = [];
         $k = min($a, $b) . ':' . max($a, $b);
-        if (isset($memo[$k])) {
-            return $memo[$k];
+        if (isset($GLOBALS['__privacy_blocked'][$k])) {   // memo per request; endpoints that already joined `blocks` seed it
+            return $GLOBALS['__privacy_blocked'][$k];
         }
         $s = $db->prepare("SELECT 1 FROM blocks WHERE (blocker_user_id = :a AND blocked_user_id = :b) OR (blocker_user_id = :b AND blocked_user_id = :a) LIMIT 1");
         $s->execute([':a' => $a, ':b' => $b]);
-        return $memo[$k] = (bool)$s->fetchColumn();
+        return $GLOBALS['__privacy_blocked'][$k] = (bool)$s->fetchColumn();
     }
 
     /** 'self' | 'following' | 'requested' | 'none' */
@@ -240,5 +239,6 @@ if (!function_exists('privacy_forget')) {
     {
         $GLOBALS['__privacy_follow'] = [];
         $GLOBALS['__privacy_private'] = [];
+        $GLOBALS['__privacy_blocked'] = [];
     }
 }

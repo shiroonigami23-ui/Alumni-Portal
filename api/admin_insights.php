@@ -23,8 +23,7 @@ $auth = new Auth($db);
 $adminId = (int)$auth->validateRequest();
 $dbMs = round((microtime(true) - $t0) * 1000, 1);
 
-$r = $db->prepare("SELECT role FROM users WHERE user_id = :u");
-$r->execute(['u' => $adminId]);
+$r = api_role_stmt($db, $adminId);
 if ((string)$r->fetchColumn() !== 'admin') {
     http_response_code(403);
     echo json_encode(['success' => false, 'message' => 'Admins only.']);

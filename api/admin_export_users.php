@@ -13,8 +13,7 @@ $db = (new Database())->getConnection();
 $auth = new Auth($db);
 $adminId = (int)$auth->validateRequest();
 
-$r = $db->prepare("SELECT role FROM users WHERE user_id = :u");
-$r->execute(['u' => $adminId]);
+$r = api_role_stmt($db, $adminId);
 if ((string)$r->fetchColumn() !== 'admin') {
     http_response_code(403);
     header('Content-Type: application/json');
